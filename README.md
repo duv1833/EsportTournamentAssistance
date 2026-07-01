@@ -1,26 +1,27 @@
-Esports Tournament Engine (ETE)
+# Esports Tournament Assistance - Tournament Management Engine
 
-A high-performance, modular platform designed to orchestrate competitive Esports tournaments with precision.
+A full-stack web application designed to orchestrate and manage community and professional Esports tournaments with dynamic drafting workflows.
 
-Esports Tournament Engine is a comprehensive full-stack solution built to streamline the management of competitive gaming events. The system focuses on automating tournament logistics, providing a professional-grade experience from bracket creation to real-time match drafting.
+## Project Overview
 
-🚀 Key Features
-Tournament & Bracket Management: Robust backend logic for organizing teams, managing participants, and handling tournament progression.
+Esports Tournament Engine is a comprehensive platform built to streamline competitive gaming events, featuring:
 
-Dynamic Drafting Workflow: A specialized module for Map and Agent Ban/Pick (Valorant-style), ensuring seamless synchronization between players and organizers.
+* **Tournament Dashboard:** Centralized interface for team registrations, participant management, and automated bracket progression.
+* **Dynamic Drafting Workflow:** Interactive, real-time Map and Agent Ban/Pick system tailored specifically for Valorant-style competitive matches.
+* **Structured Business Logic:** Robust handling of tournament lifecycle states, match scores, and real-time synchronization between players and organizers.
+* **Admin Control Center:** Dedicated tools for match configuration, rule enforcement, and live status monitoring.
 
-Structured Business Logic: Clear separation of concerns, focusing on reliable state management for match progression and results.
+## Technology Stack
 
-Responsive Admin Dashboard: Dedicated interfaces for real-time tournament monitoring, match configuration, and rule enforcement.
+### Backend
 
-🛠 Tech Stack
-Backend: ASP.NET Core Web API, Entity Framework Core, SQL Server.
+* **Framework:** ASP.NET Core Web API
+* **Database:** Microsoft SQL Server
+* **ORM:** Entity Framework Core
+* **Architecture:** Layered Architecture (Modular Monolith) with Repository Pattern
 
-Frontend: React 19, Tailwind CSS.
+### Frontend
 
-Architecture: Layered Architecture (Modular Monolith) with Repository Pattern for high maintainability.
-
-📈 Project Highlights
-System Design: Engineered with a modular approach to handle complex drafting workflows and tournament lifecycle states.
-
-Interactive UI/UX: Designed to provide a smooth, high-tech experience with a dark-themed aesthetic optimized for competitive Esports environments.
+* **Framework:** React 19
+* **Styling:** Tailwind CSS
+* **Design Theme:** Dark-themed high-tech aesthetic optimized for gaming environments
