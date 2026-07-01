@@ -1,4 +1,5 @@
 Esports Tournament Engine (ETE)
+
 A high-performance, modular platform designed to orchestrate competitive Esports tournaments with precision.
 
 Esports Tournament Engine is a comprehensive full-stack solution built to streamline the management of competitive gaming events. The system focuses on automating tournament logistics, providing a professional-grade experience from bracket creation to real-time match drafting.
@@ -15,13 +16,11 @@ Responsive Admin Dashboard: Dedicated interfaces for real-time tournament monito
 🛠 Tech Stack
 Backend: ASP.NET Core Web API, Entity Framework Core, SQL Server.
 
-Frontend: React 19, [Optional: Insert UI library like Tailwind CSS/MUI].
+Frontend: React 19, Tailwind CSS.
 
 Architecture: Layered Architecture (Modular Monolith) with Repository Pattern for high maintainability.
 
 📈 Project Highlights
 System Design: Engineered with a modular approach to handle complex drafting workflows and tournament lifecycle states.
 
-Interactive UI/UX: Designed to provide a smooth, high-tech experience suitable for competitive Esports environments.
-
-Real-time Logic: Optimized business processes to handle match updates and state transitions efficiently.
+Interactive UI/UX: Designed to provide a smooth, high-tech experience with a dark-themed aesthetic optimized for competitive Esports environments.
