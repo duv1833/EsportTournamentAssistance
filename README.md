@@ -16,12 +16,32 @@ Esports Tournament Engine is a comprehensive platform built to streamline compet
 ### Backend
 
 * **Framework:** ASP.NET Core Web API
+* **Language:** C#
 * **Database:** Microsoft SQL Server
 * **ORM:** Entity Framework Core
-* **Architecture:** Layered Architecture (Modular Monolith) with Repository Pattern
+
 
 ### Frontend
 
 * **Framework:** React 19
+* **Build Tool:** Vite
+* **HTTP Client:** Axios
 * **Styling:** Tailwind CSS
-* **Design Theme:** Dark-themed high-tech aesthetic optimized for gaming environments
+
+## Project Structure
+
+```text
+├── Backend/
+│   ├── API/                  # Controllers handling HTTP requests and SignalR Hubs
+│   ├── Core/                 # Domain Entities, Interfaces, and Shared DTOs
+│   ├── Infrastructure/       # Database Context, EF Core Migrations, and Repositories
+│   └── Modules/
+│       ├── Tournament/       # Business logic for tournament and bracket management
+│       ├── Drafting/         # Core logic for Map and Agent Ban/Pick workflows
+│       └── Identity/         # User authentication and role-based authorization
+└── Frontend/
+    ├── src/
+    │   ├── components/       # Reusable UI components (Brackets, Dashboards)
+    │   ├── hooks/            # Custom React hooks for API and real-time data
+    │   ├── pages/            # Application views (Home, Lobby, Admin Panel)
+    │   └── services/         # Axios API configurations and SignalR client setup
