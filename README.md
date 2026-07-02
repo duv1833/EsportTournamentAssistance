@@ -15,11 +15,11 @@ Esports Tournament Engine is a comprehensive platform built to streamline compet
 
 ### Backend
 
-* **Framework:** ASP.NET Core Web API
-* **Language:** C#
+* **Framework:** Spring Boot 3.2.0
+* **Language:** Java 17
 * **Database:** Microsoft SQL Server
-* **ORM:** Entity Framework Core
-
+* **ORM:** Spring Data JPA
+* **Real-time Communication:** Spring WebSockets (STOMP)
 
 ### Frontend
 
@@ -32,16 +32,16 @@ Esports Tournament Engine is a comprehensive platform built to streamline compet
 
 ```text
 ├── Backend/
-│   ├── API/                  # Controllers handling HTTP requests and SignalR Hubs
-│   ├── Core/                 # Domain Entities, Interfaces, and Shared DTOs
-│   ├── Infrastructure/       # Database Context, EF Core Migrations, and Repositories
-│   └── Modules/
-│       ├── Tournament/       # Business logic for tournament and bracket management
-│       ├── Drafting/         # Core logic for Map and Agent Ban/Pick workflows
-│       └── Identity/         # User authentication and role-based authorization
+│   └── src/main/java/com/tournament/engine/
+│       ├── config/           # WebSocket, Security, and Database configurations
+│       ├── shared/           # Shared DTOs, custom exceptions, and utility classes
+│       └── modules/
+│           ├── tournament/   # Entities, Repositories, Services, and Controllers for tournament management
+│           ├── drafting/     # Core logic and WebSocket message handling for Map/Agent Ban-Pick
+│           └── identity/     # User management, JWT authentication, and role-based access control
 └── Frontend/
     ├── src/
-    │   ├── components/       # Reusable UI components (Brackets, Dashboards)
-    │   ├── hooks/            # Custom React hooks for API and real-time data
-    │   ├── pages/            # Application views (Home, Lobby, Admin Panel)
-    │   └── services/         # Axios API configurations and SignalR client setup
+    │   ├── components/       # Reusable UI components (Brackets, Dashboards, Pick-Ban grids)
+    │   ├── hooks/            # Custom React hooks for API requests and WebSocket subscriptions
+    │   ├── pages/            # Main application views (Home, Tournament Lobby, Admin Panel)
+    │   └── services/         # Axios API configurations and STOMP WebSocket client setup
