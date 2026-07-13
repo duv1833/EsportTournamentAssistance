@@ -1,6 +1,13 @@
 /* =====================================================================
    ESPORTS TOURNAMENT ASSISTANCE - DATABASE SCHEMA (Microsoft SQL Server)
-   Phiên bản: v1.1 - Đã tối ưu hóa kết nối cho Spring Data JPA
+   Phiên bản: v2.0 - Cập nhật theo Implementation Plan
+   Thay đổi chính:
+     - Thêm phone_number, avatar_url vào users
+     - Thêm bảng tournament_organizers (per-tournament role)
+     - Thêm description, start_date, end_date, banner_url vào tournaments
+     - Thêm is_active vào teams
+     - Đổi admin_user_id → performed_by trong match_audit_logs
+     - Thêm seed data BO3/BO5 cho draft_sequence_templates
    ===================================================================== */
 
 USE master;
@@ -25,6 +32,8 @@ CREATE TABLE users (
     email           NVARCHAR(255) NOT NULL UNIQUE,
     password_hash   NVARCHAR(255) NOT NULL,
     full_name       NVARCHAR(100) NULL,
+    phone_number    NVARCHAR(20)  NULL,
+    avatar_url      NVARCHAR(500) NULL,
     global_role     NVARCHAR(20)  NOT NULL
                     CONSTRAINT CK_users_global_role CHECK (global_role IN ('ADMIN','USER')),
     is_active       BIT NOT NULL DEFAULT 1,
@@ -52,6 +61,7 @@ CREATE TABLE teams (
     tag             NVARCHAR(10) NULL,
     captain_id      BIGINT NOT NULL,
     logo_url        NVARCHAR(500) NULL,
+    is_active       BIT NOT NULL DEFAULT 1,
     created_at      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     CONSTRAINT FK_teams_captain FOREIGN KEY (captain_id) REFERENCES users(id)
 );
@@ -60,6 +70,7 @@ CREATE TABLE team_members (
     id              BIGINT IDENTITY(1,1) PRIMARY KEY,
     team_id         BIGINT NOT NULL,
     user_id         BIGINT NOT NULL,
+    in_game_name    NVARCHAR(100) NULL,
     status          NVARCHAR(20) NOT NULL
                     CONSTRAINT CK_team_members_status CHECK (status IN ('INVITED','ACCEPTED','REJECTED','REMOVED')),
     invited_at      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
@@ -72,6 +83,7 @@ CREATE TABLE team_members (
 CREATE TABLE tournaments (
     id                    BIGINT IDENTITY(1,1) PRIMARY KEY,
     name                  NVARCHAR(150) NOT NULL,
+    description           NVARCHAR(MAX) NULL,
     format                NVARCHAR(5) NOT NULL
                           CONSTRAINT CK_tournaments_format CHECK (format IN ('BO1','BO3','BO5')),
     max_teams             TINYINT NOT NULL
@@ -79,10 +91,27 @@ CREATE TABLE tournaments (
     rules_description     NVARCHAR(MAX) NULL,
     registration_status   NVARCHAR(20) NOT NULL
                           CONSTRAINT CK_tournaments_reg_status CHECK (registration_status IN ('OPEN','LOCKED','IN_PROGRESS','COMPLETED','CANCELLED')),
+    start_date            DATETIME2 NULL,
+    end_date              DATETIME2 NULL,
+    banner_url            NVARCHAR(500) NULL,
     created_by            BIGINT NOT NULL,
     created_at            DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     updated_at            DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     CONSTRAINT FK_tournaments_creator FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE tournament_organizers (
+    id              BIGINT IDENTITY(1,1) PRIMARY KEY,
+    tournament_id   BIGINT NOT NULL,
+    user_id         BIGINT NOT NULL,
+    role            NVARCHAR(20) NOT NULL
+                    CONSTRAINT CK_organizers_role CHECK (role IN ('OWNER','CO_ORGANIZER')),
+    assigned_by     BIGINT NULL,
+    created_at      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_organizers_tournament FOREIGN KEY (tournament_id) REFERENCES tournaments(id),
+    CONSTRAINT FK_organizers_user FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT FK_organizers_assigned_by FOREIGN KEY (assigned_by) REFERENCES users(id),
+    CONSTRAINT UQ_organizers UNIQUE (tournament_id, user_id)
 );
 
 CREATE TABLE tournament_registrations (
@@ -203,7 +232,7 @@ CREATE INDEX IX_draft_actions_match ON draft_actions(match_id, step_number);
 CREATE TABLE match_audit_logs (
     id              BIGINT IDENTITY(1,1) PRIMARY KEY,
     match_id        BIGINT NOT NULL,
-    admin_user_id   BIGINT NOT NULL,
+    performed_by    BIGINT NOT NULL,
     action_type     NVARCHAR(20) NOT NULL
                     CONSTRAINT CK_audit_action_type CHECK (action_type IN ('SCORE_SUBMIT','SCORE_CORRECTION','ROLLBACK')),
     old_value       NVARCHAR(MAX) NULL,
@@ -211,13 +240,14 @@ CREATE TABLE match_audit_logs (
     reason          NVARCHAR(500) NULL,
     created_at      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     CONSTRAINT FK_audit_match FOREIGN KEY (match_id) REFERENCES matches(id),
-    CONSTRAINT FK_audit_admin FOREIGN KEY (admin_user_id) REFERENCES users(id)
+    CONSTRAINT FK_audit_performed_by FOREIGN KEY (performed_by) REFERENCES users(id)
 );
 
 /* =====================================================================
-   SEED DATA MẪU: draft_sequence_templates (Thể thức BO1)
+   SEED DATA: draft_sequence_templates
    ===================================================================== */
 
+-- BO1: 2 Agent Ban + 4 Map Ban (ban hết còn 1 map cuối cùng)
 INSERT INTO draft_sequence_templates (format, step_number, phase, action_type, turn_order) VALUES
 ('BO1', 1, 'AGENT', 'BAN', 1),
 ('BO1', 2, 'AGENT', 'BAN', 2),
@@ -225,3 +255,59 @@ INSERT INTO draft_sequence_templates (format, step_number, phase, action_type, t
 ('BO1', 4, 'MAP', 'BAN', 2),
 ('BO1', 5, 'MAP', 'BAN', 1),
 ('BO1', 6, 'MAP', 'BAN', 2);
+
+-- BO3: 2 Agent Ban + Map Ban/Pick (2 pick + 2 ban + 1 decider)
+INSERT INTO draft_sequence_templates (format, step_number, phase, action_type, turn_order) VALUES
+('BO3', 1,  'AGENT', 'BAN',  1),
+('BO3', 2,  'AGENT', 'BAN',  2),
+('BO3', 3,  'MAP',   'BAN',  1),
+('BO3', 4,  'MAP',   'BAN',  2),
+('BO3', 5,  'MAP',   'PICK', 1),
+('BO3', 6,  'MAP',   'PICK', 2),
+('BO3', 7,  'MAP',   'BAN',  1),
+('BO3', 8,  'MAP',   'BAN',  2);
+
+-- BO5: 2 Agent Ban + Map Ban/Pick (4 pick + 2 ban + 1 decider)
+INSERT INTO draft_sequence_templates (format, step_number, phase, action_type, turn_order) VALUES
+('BO5', 1,  'AGENT', 'BAN',  1),
+('BO5', 2,  'AGENT', 'BAN',  2),
+('BO5', 3,  'MAP',   'PICK', 1),
+('BO5', 4,  'MAP',   'PICK', 2),
+('BO5', 5,  'MAP',   'BAN',  1),
+('BO5', 6,  'MAP',   'BAN',  2),
+('BO5', 7,  'MAP',   'PICK', 1),
+('BO5', 8,  'MAP',   'PICK', 2);
+
+-- Seed data: Valorant Maps
+INSERT INTO maps (name, is_active) VALUES
+('Ascent', 1), ('Bind', 1), ('Haven', 1), ('Split', 1),
+('Icebox', 1), ('Breeze', 1), ('Fracture', 1), ('Pearl', 1),
+('Lotus', 1), ('Sunset', 1), ('Abyss', 1);
+
+-- Seed data: Valorant Agents
+INSERT INTO agents (name, role_type, is_active) VALUES
+('Jett',      'Duelist',     1),
+('Phoenix',   'Duelist',     1),
+('Reyna',     'Duelist',     1),
+('Raze',      'Duelist',     1),
+('Yoru',      'Duelist',     1),
+('Neon',      'Duelist',     1),
+('Iso',       'Duelist',     1),
+('Sage',      'Sentinel',    1),
+('Cypher',    'Sentinel',    1),
+('Killjoy',   'Sentinel',    1),
+('Chamber',   'Sentinel',    1),
+('Deadlock',  'Sentinel',    1),
+('Vyse',      'Sentinel',    1),
+('Sova',      'Initiator',   1),
+('Breach',    'Initiator',   1),
+('Skye',      'Initiator',   1),
+('KAY/O',     'Initiator',   1),
+('Fade',      'Initiator',   1),
+('Gekko',     'Initiator',   1),
+('Brimstone', 'Controller',  1),
+('Viper',     'Controller',  1),
+('Omen',      'Controller',  1),
+('Astra',     'Controller',  1),
+('Harbor',    'Controller',  1),
+('Clove',     'Controller',  1);
