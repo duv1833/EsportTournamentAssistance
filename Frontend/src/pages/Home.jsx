@@ -58,27 +58,27 @@ function HeroSlider({ slides, currentSlide, setCurrentSlide, isPlaying, setIsPla
       <TactileButton
         onClick={handlePrevSlide}
         aria-label="Previous slide"
-        className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-surface-charcoal/80 border border-outline-variant hover:border-primary-red text-off-white flex justify-center items-center backdrop-blur-sm z-20"
+        className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-surface-charcoal/80 border border-outline-variant hover:border-primary-red text-off-white flex justify-center items-center backdrop-blur-sm z-50"
       >
         <ChevronLeft size={20} />
       </TactileButton>
       <TactileButton
         onClick={handleNextSlide}
         aria-label="Next slide"
-        className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-surface-charcoal/80 border border-outline-variant hover:border-primary-red text-off-white flex justify-center items-center backdrop-blur-sm z-20"
+        className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-surface-charcoal/80 border border-outline-variant hover:border-primary-red text-off-white flex justify-center items-center backdrop-blur-sm z-50"
       >
         <ChevronRight size={20} />
       </TactileButton>
       <TactileButton
         onClick={() => setIsPlaying(!isPlaying)}
         aria-label="Pause/Play slider"
-        className="absolute bottom-8 right-12 w-10 h-10 bg-surface-charcoal/80 border border-outline-variant hover:border-primary-red text-off-white flex justify-center items-center backdrop-blur-sm z-20"
+        className="absolute bottom-8 right-12 w-10 h-10 bg-surface-charcoal/80 border border-outline-variant hover:border-primary-red text-off-white flex justify-center items-center backdrop-blur-sm z-50"
       >
         {isPlaying ? <Pause size={16} /> : <Play size={16} />}
       </TactileButton>
 
       {/* Pagination Dots */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-50">
         {slides.map((_, idx) => (
           <button
             key={idx}

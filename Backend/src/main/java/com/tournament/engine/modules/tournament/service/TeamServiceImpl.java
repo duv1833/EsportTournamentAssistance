@@ -143,6 +143,15 @@ public class TeamServiceImpl implements TeamService {
         teamMemberRepository.save(member);
     }
 
+    @Override
+    @Transactional
+    public void deleteTeam(Long teamId) {
+        if (!teamRepository.existsById(teamId)) {
+            throw new RuntimeException("Không tìm thấy đội tuyển");
+        }
+        teamRepository.deleteById(teamId);
+    }
+
     private TeamMember validateCaptainAndGetMember(Long teamId, Long memberId, Long captainId) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đội tuyển"));

@@ -101,4 +101,68 @@ public class TournamentController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    // Admin endpoints for Tournament Approval
+    @GetMapping("/admin/all")
+    public ResponseEntity<ApiResponse<List<TournamentResponse>>> getAdminTournaments(@RequestParam Long adminUserId) {
+        try {
+            List<TournamentResponse> response = tournamentService.getAllTournamentsForAdmin(adminUserId);
+            return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách tất cả giải đấu cho Admin thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/approve-tournament")
+    public ResponseEntity<ApiResponse<Void>> approveTournament(
+            @PathVariable Long id,
+            @RequestParam Long adminUserId
+    ) {
+        try {
+            tournamentService.approveTournament(id, adminUserId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Duyệt giải đấu thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/reject-tournament")
+    public ResponseEntity<ApiResponse<Void>> rejectTournament(
+            @PathVariable Long id,
+            @RequestParam Long adminUserId
+    ) {
+        try {
+            tournamentService.rejectTournament(id, adminUserId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Từ chối và xóa giải đấu thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/admin-update")
+    public ResponseEntity<ApiResponse<Void>> updateTournamentByAdmin(
+            @PathVariable Long id,
+            @RequestBody TournamentCreateRequest request,
+            @RequestParam Long adminUserId
+    ) {
+        try {
+            tournamentService.updateTournamentByAdmin(id, request, adminUserId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Cập nhật giải đấu thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}/admin-delete")
+    public ResponseEntity<ApiResponse<Void>> deleteTournamentByAdmin(
+            @PathVariable Long id,
+            @RequestParam Long adminUserId
+    ) {
+        try {
+            tournamentService.deleteTournamentByAdmin(id, adminUserId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Xóa giải đấu thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

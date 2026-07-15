@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Home, Swords, Trophy, Shield, Newspaper, Gamepad2, Layers, LogOut, Menu, X } from 'lucide-react';
+import { Home, Swords, Trophy, Shield, Newspaper, Gamepad2, Layers, LogOut, Menu, X, ShieldCheck, User, ChevronDown, Settings } from 'lucide-react';
 import TactileButton from '../common/TactileButton';
 
 export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout, onAuthNav }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const navItems = [
     { key: 'home', label: 'TRANG CHỦ', icon: Home },
@@ -14,8 +15,10 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
     { key: 'lobby', label: 'PHÒNG BAN/PICK', icon: Gamepad2 },
   ];
 
+  // Admin dashboard link is now in the user dropdown
+
   return (
-    <header className="fixed top-0 w-full z-50 flex justify-between items-center px-6 md:px-12 py-4 bg-background/95 backdrop-blur-sm border-b-2 border-outline-variant">
+    <header className="fixed top-0 w-full z-[100] flex justify-between items-center px-6 md:px-12 py-4 bg-background/95 backdrop-blur-sm border-b-2 border-outline-variant">
       <div className="flex items-center gap-8">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
           <Layers className="w-8 h-8 text-primary-red" strokeWidth={2.5} />
@@ -37,16 +40,53 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
       </div>
       <div className="flex items-center gap-4">
         {currentUser ? (
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-xs text-success-cyan uppercase tracking-wider hidden sm:inline-block">
-              // WELCOME, {currentUser.username}
-            </span>
-            <TactileButton
-              onClick={onLogout}
-              className="font-display text-sm uppercase tracking-wider text-primary-red hover:text-off-white flex items-center gap-1.5"
+          <div className="relative">
+            <button 
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center gap-2 hover:bg-surface-bright/20 p-2 rounded transition-colors"
             >
-              <LogOut size={14} /> LOGOUT
-            </TactileButton>
+              <div className="w-8 h-8 rounded-full bg-surface-bright border border-outline-variant flex items-center justify-center overflow-hidden">
+                <User size={18} className="text-off-white/70" />
+              </div>
+              <span className="font-mono text-sm text-off-white hidden sm:block">
+                {currentUser.username}
+              </span>
+              <ChevronDown size={14} className={`text-tactical-gray transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {userMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-surface-charcoal border border-outline-variant shadow-lg z-[110] py-2">
+                <div className="px-4 py-2 border-b border-outline-variant/50 mb-2">
+                  <p className="font-body text-sm font-bold text-off-white">{currentUser.username}</p>
+                  <p className="font-mono text-xs text-tactical-gray truncate">{currentUser.email}</p>
+                </div>
+                
+                <button
+                  onClick={() => { setActiveTab('profile'); setUserMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 font-display text-xs uppercase tracking-wider text-off-white/80 hover:bg-surface-bright/40 hover:text-off-white flex items-center gap-2"
+                >
+                  <Settings size={14} /> Hồ sơ cá nhân
+                </button>
+
+                {currentUser.globalRole === 'ADMIN' && (
+                  <button
+                    onClick={() => { setActiveTab('admin_dashboard'); setUserMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2 font-display text-xs uppercase tracking-wider text-warning-amber hover:bg-surface-bright/40 flex items-center gap-2"
+                  >
+                    <ShieldCheck size={14} /> Admin Dashboard
+                  </button>
+                )}
+
+                <div className="border-t border-outline-variant/50 mt-2 pt-2">
+                  <button
+                    onClick={() => { onLogout(); setUserMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2 font-display text-xs uppercase tracking-wider text-primary-red hover:bg-surface-bright/40 flex items-center gap-2"
+                  >
+                    <LogOut size={14} /> Đăng xuất
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -108,12 +148,35 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
                   </TactileButton>
                 </>
               ) : (
-                <TactileButton
-                  onClick={() => { onLogout(); setMobileMenuOpen(false); }}
-                  className="font-display text-sm uppercase tracking-wider py-3 px-4 text-primary-red hover:text-off-white flex items-center gap-2"
-                >
-                  <LogOut size={14} /> LOGOUT
-                </TactileButton>
+                <>
+                  <div className="px-4 py-2 border-b border-outline-variant/50 mb-2">
+                    <p className="font-body text-sm font-bold text-off-white">{currentUser.username}</p>
+                    <p className="font-mono text-xs text-tactical-gray truncate">{currentUser.email}</p>
+                  </div>
+                  
+                  <TactileButton
+                    onClick={() => { setActiveTab('profile'); setMobileMenuOpen(false); }}
+                    className="font-display text-sm uppercase tracking-wider py-3 px-4 text-off-white/70 hover:text-off-white flex items-center gap-2"
+                  >
+                    <Settings size={16} /> HỒ SƠ CÁ NHÂN
+                  </TactileButton>
+
+                  {currentUser.globalRole === 'ADMIN' && (
+                    <TactileButton
+                      onClick={() => { setActiveTab('admin_dashboard'); setMobileMenuOpen(false); }}
+                      className="font-display text-sm uppercase tracking-wider py-3 px-4 text-warning-amber hover:text-warning-amber/80 flex items-center gap-2"
+                    >
+                      <ShieldCheck size={16} /> ADMIN DASHBOARD
+                    </TactileButton>
+                  )}
+
+                  <TactileButton
+                    onClick={() => { onLogout(); setMobileMenuOpen(false); }}
+                    className="font-display text-sm uppercase tracking-wider py-3 px-4 text-primary-red hover:text-off-white flex items-center gap-2"
+                  >
+                    <LogOut size={16} /> ĐĂNG XUẤT
+                  </TactileButton>
+                </>
               )}
             </div>
           </nav>

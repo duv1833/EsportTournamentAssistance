@@ -37,7 +37,7 @@ public class TournamentServiceImpl implements TournamentService {
     @Override
     @Transactional(readOnly = true)
     public List<TournamentResponse> getAllTournaments() {
-        return tournamentRepository.findAll().stream()
+        return tournamentRepository.findByApprovalStatus(Tournament.ApprovalStatus.APPROVED).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -61,7 +61,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .format(Tournament.MatchFormat.valueOf(request.getFormat()))
                 .maxTeams(request.getMaxTeams())
                 .rulesDescription(request.getRulesDescription())
-                .registrationStatus(Tournament.RegistrationStatus.OPEN) // Default to OPEN instead of PENDING
+                .registrationStatus(Tournament.RegistrationStatus.LOCKED)
+                .approvalStatus(Tournament.ApprovalStatus.PENDING)
                 .creator(creator)
                 .build();
 
@@ -76,6 +77,83 @@ public class TournamentServiceImpl implements TournamentService {
         tournamentOrganizerRepository.save(organizer);
 
         return mapToResponse(tournament);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TournamentResponse> getAllTournamentsForAdmin(Long adminUserId) {
+        validateAdmin(adminUserId);
+        return tournamentRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void approveTournament(Long tournamentId, Long adminUserId) {
+        validateAdmin(adminUserId);
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
+        
+        tournament.setApprovalStatus(Tournament.ApprovalStatus.APPROVED);
+        tournament.setRegistrationStatus(Tournament.RegistrationStatus.OPEN);
+        tournamentRepository.save(tournament);
+    }
+
+    @Override
+    @Transactional
+    public void rejectTournament(Long tournamentId, Long adminUserId) {
+        deleteTournamentByAdmin(tournamentId, adminUserId);
+    }
+
+    @Override
+    @Transactional
+    public void updateTournamentByAdmin(Long tournamentId, TournamentCreateRequest request, Long adminUserId) {
+        validateAdmin(adminUserId);
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
+
+        if (request.getName() != null && !request.getName().isBlank()) {
+            tournament.setName(request.getName());
+        }
+        if (request.getFormat() != null) {
+            tournament.setFormat(Tournament.MatchFormat.valueOf(request.getFormat()));
+        }
+        if (request.getMaxTeams() != null && request.getMaxTeams() > 0) {
+            tournament.setMaxTeams(request.getMaxTeams());
+        }
+        if (request.getRulesDescription() != null) {
+            tournament.setRulesDescription(request.getRulesDescription());
+        }
+
+        tournamentRepository.save(tournament);
+    }
+
+    @Override
+    @Transactional
+    public void deleteTournamentByAdmin(Long tournamentId, Long adminUserId) {
+        validateAdmin(adminUserId);
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
+
+        // Delete all registrations for this tournament
+        List<TournamentRegistration> registrations = registrationRepository.findByTournamentId(tournamentId);
+        registrationRepository.deleteAll(registrations);
+
+        // Delete all organizers for this tournament
+        List<TournamentOrganizer> organizers = tournamentOrganizerRepository.findByTournamentId(tournamentId);
+        tournamentOrganizerRepository.deleteAll(organizers);
+
+        // Delete the tournament
+        tournamentRepository.delete(tournament);
+    }
+
+    private void validateAdmin(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
+        if (user.getGlobalRole() != User.GlobalRole.ADMIN) {
+            throw new RuntimeException("Bạn không có quyền thực hiện thao tác này (Chỉ dành cho Admin)!");
+        }
     }
 
     @Override
@@ -277,6 +355,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .maxTeams(tournament.getMaxTeams())
                 .rulesDescription(tournament.getRulesDescription())
                 .registrationStatus(tournament.getRegistrationStatus().name())
+                .approvalStatus(tournament.getApprovalStatus() != null ? tournament.getApprovalStatus().name() : "PENDING")
+                .creatorId(tournament.getCreator().getId())
                 .creatorUsername(tournament.getCreator().getUsername())
                 .registeredTeams(registeredTeams)
                 .build();

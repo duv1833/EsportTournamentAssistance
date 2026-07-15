@@ -41,6 +41,11 @@ public class Tournament {
     @Column(name = "registration_status", nullable = false)
     private RegistrationStatus registrationStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false)
+    @Builder.Default
+    private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
+
     @Column(name = "start_date")
     private LocalDateTime startDate;
 
@@ -66,6 +71,10 @@ public class Tournament {
 
     public enum RegistrationStatus {
         OPEN, LOCKED, IN_PROGRESS, COMPLETED, CANCELLED
+    }
+
+    public enum ApprovalStatus {
+        PENDING, APPROVED, REJECTED
     }
 
     @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -12,4 +12,7 @@ public interface TeamService {
     void approveJoinRequest(Long teamId, Long memberId, Long captainId);
     void rejectJoinRequest(Long teamId, Long memberId, Long captainId);
     void kickMember(Long teamId, Long memberId, Long captainId);
+    
+    // Admin features
+    void deleteTeam(Long teamId);
 }

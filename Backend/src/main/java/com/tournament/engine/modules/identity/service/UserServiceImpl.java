@@ -32,6 +32,7 @@ public class UserServiceImpl implements UserService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .globalRole(User.GlobalRole.USER)
+                .roles(java.util.Set.of(User.GlobalRole.USER))
                 .isActive(true)
                 .build();
 
@@ -73,5 +74,40 @@ public class UserServiceImpl implements UserService {
                 .email(user.getEmail())
                 .globalRole(user.getGlobalRole().name())
                 .build();
+    }
+
+    @Override
+    public java.util.List<com.tournament.engine.modules.identity.dto.UserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(user -> com.tournament.engine.modules.identity.dto.UserResponse.builder()
+                        .id(user.getId())
+                        .username(user.getUsername())
+                        .email(user.getEmail())
+                        .fullName(user.getFullName())
+                        .globalRole(user.getGlobalRole().name())
+                        .isActive(user.getIsActive())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    public void banUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        
+        if (user.getGlobalRole() == User.GlobalRole.ADMIN) {
+            throw new RuntimeException("Không thể khóa tài khoản Admin");
+        }
+        
+        user.setIsActive(false);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void unbanUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        user.setIsActive(true);
+        userRepository.save(user);
     }
 }

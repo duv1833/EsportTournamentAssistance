@@ -35,3 +35,29 @@ export const rejectRegistration = async (tournamentId, teamId, organizerUserId) 
   return response.data;
 };
 
+// Admin endpoints
+export const getAdminTournaments = async (adminUserId) => {
+  const response = await api.get('/tournaments/admin/all', { params: { adminUserId } });
+  return response.data;
+};
+
+export const approveTournament = async (tournamentId, adminUserId) => {
+  const response = await api.put(`/tournaments/${tournamentId}/approve-tournament`, null, { params: { adminUserId } });
+  return response.data;
+};
+
+export const rejectTournament = async (tournamentId, adminUserId) => {
+  const response = await api.put(`/tournaments/${tournamentId}/reject-tournament`, null, { params: { adminUserId } });
+  return response.data;
+};
+
+export const updateTournamentByAdmin = async (tournamentId, data, adminUserId) => {
+  const response = await api.put(`/tournaments/${tournamentId}/admin-update`, data, { params: { adminUserId } });
+  return response.data;
+};
+
+export const deleteTournamentByAdmin = async (tournamentId, adminUserId) => {
+  const response = await api.delete(`/tournaments/${tournamentId}/admin-delete`, { params: { adminUserId } });
+  return response.data;
+};
+

@@ -16,4 +16,11 @@ public interface TournamentService {
     List<com.tournament.engine.modules.tournament.dto.TournamentRegistrationResponse> getTournamentRegistrations(Long tournamentId, Long organizerUserId);
     void approveRegistration(Long tournamentId, Long teamId, Long organizerUserId);
     void rejectRegistration(Long tournamentId, Long teamId, Long organizerUserId);
+
+    // Admin endpoints
+    List<TournamentResponse> getAllTournamentsForAdmin(Long adminUserId);
+    void approveTournament(Long tournamentId, Long adminUserId);
+    void rejectTournament(Long tournamentId, Long adminUserId);
+    void updateTournamentByAdmin(Long tournamentId, com.tournament.engine.modules.tournament.dto.TournamentCreateRequest request, Long adminUserId);
+    void deleteTournamentByAdmin(Long tournamentId, Long adminUserId);
 }

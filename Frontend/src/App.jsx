@@ -18,6 +18,8 @@ import RegisterForm from './components/auth/RegisterForm';
 import EmptyState from './components/common/EmptyState';
 import Home from './pages/Home';
 import JoinTeamModal from './components/tournament/JoinTeamModal';
+import AdminTournamentManagement from './pages/AdminTournamentManagement';
+import AdminDashboard from './pages/AdminDashboard';
 
 
 
@@ -26,7 +28,14 @@ import JoinTeamModal from './components/tournament/JoinTeamModal';
 function App() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTabState] = useState(() => {
+    return localStorage.getItem('activeTab') || 'home';
+  });
+
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    localStorage.setItem('activeTab', tab);
+  };
 
   // Auth states
   const [currentUser, setCurrentUser] = useState(null);
@@ -90,13 +99,13 @@ function App() {
         currentUser.id
       );
       if (res.success) {
-        setTournamentSuccess('Tạo giải đấu thành công!');
+        setTournamentSuccess('Tạo giải đấu thành công! Giải đấu của bạn đang chờ Admin phê duyệt trước khi được xuất bản công khai.');
         setCreateForm({ name: '', format: 'BO3', maxTeams: 16, rulesDescription: '' });
         await fetchTournaments();
         setTimeout(() => {
           setTournamentViewMode('list');
           setTournamentSuccess('');
-        }, 1500);
+        }, 2500);
       } else {
         setTournamentError(res.message || 'Tạo giải đấu thất bại!');
       }
@@ -813,6 +822,26 @@ function App() {
         {/* Tab Manage Team */}
         {activeTab === 'manage_team' && (
           <ManageTeam currentUser={currentUser} />
+        )}
+
+        {/* Tab Profile Placeholder */}
+        {activeTab === 'profile' && (
+          <div className="container mx-auto max-w-7xl px-6 md:px-12 py-12">
+            <h2 className="font-display text-3xl text-off-white uppercase mb-2">Hồ sơ cá nhân</h2>
+            <p className="font-mono text-sm text-tactical-gray mb-8">// Cập nhật thông tin cá nhân</p>
+            <div className="bg-surface-charcoal border border-outline-variant p-6 clip-corner">
+              <p className="text-off-white font-body">Tính năng cập nhật hồ sơ cá nhân đang được phát triển.</p>
+              <div className="mt-4 p-4 bg-background border border-outline-variant">
+                <p className="text-tactical-gray font-mono text-sm">Username: {currentUser?.username}</p>
+                <p className="text-tactical-gray font-mono text-sm">Email: {currentUser?.email}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Admin Dashboard */}
+        {activeTab === 'admin_dashboard' && (
+          <AdminDashboard currentUser={currentUser} />
         )}
 
         {/* Tab News — Empty State */}

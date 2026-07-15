@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -41,6 +43,13 @@ public class User {
     @Builder.Default
     private GlobalRole globalRole = GlobalRole.USER;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "roles")
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Set<GlobalRole> roles = new HashSet<>();
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
@@ -52,6 +61,6 @@ public class User {
     private LocalDateTime updatedAt;
 
     public enum GlobalRole {
-        ADMIN, USER
+        ADMIN, ORGANIZER, REFEREE, USER
     }
 }

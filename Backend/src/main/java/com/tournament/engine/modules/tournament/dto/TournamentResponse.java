@@ -14,6 +14,8 @@ public class TournamentResponse {
     private Integer maxTeams;
     private String rulesDescription;
     private String registrationStatus;
+    private String approvalStatus;
+    private Long creatorId;
     private String creatorUsername;
     private List<RegisteredTeamDto> registeredTeams;
 
