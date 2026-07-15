@@ -8,4 +8,6 @@ public class TournamentRegisterRequest {
     private String teamTag;
     private Long userId;
     private String captainInGameName;
+    private String logoUrl;
+    private String captainPhoneNumber;
 }

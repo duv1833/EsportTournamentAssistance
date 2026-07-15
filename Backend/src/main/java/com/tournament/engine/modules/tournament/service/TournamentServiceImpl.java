@@ -186,6 +186,12 @@ public class TournamentServiceImpl implements TournamentService {
             throw new RuntimeException("Bạn đã tham gia một đội trong giải đấu này rồi!");
         }
 
+        // Update captain phone number if provided
+        if (request.getCaptainPhoneNumber() != null && !request.getCaptainPhoneNumber().isBlank()) {
+            user.setPhoneNumber(request.getCaptainPhoneNumber());
+            userRepository.save(user);
+        }
+
         // Find or create team
         Optional<Team> existingTeamOpt = teamRepository.findByName(request.getTeamName());
         Team team;
@@ -194,10 +200,15 @@ public class TournamentServiceImpl implements TournamentService {
             if (!team.getCaptain().getId().equals(user.getId())) {
                 throw new RuntimeException("Tên đội tuyển này đã được đăng ký bởi người khác!");
             }
+            if (request.getLogoUrl() != null && !request.getLogoUrl().isBlank()) {
+                team.setLogoUrl(request.getLogoUrl());
+                teamRepository.save(team);
+            }
         } else {
             team = Team.builder()
                     .name(request.getTeamName())
                     .tag(request.getTeamTag())
+                    .logoUrl(request.getLogoUrl())
                     .captain(user)
                     .isActive(true)
                     .build();

@@ -15,8 +15,15 @@ export const createTournament = async (name, format, maxTeams, rulesDescription,
   return response.data;
 };
 
-export const registerForTournament = async (tournamentId, teamName, teamTag, userId) => {
-  const response = await api.post(`/tournaments/${tournamentId}/register`, { teamName, teamTag, userId });
+export const registerForTournament = async (tournamentId, teamName, teamTag, userId, captainInGameName, logoUrl, captainPhoneNumber) => {
+  const response = await api.post(`/tournaments/${tournamentId}/register`, { 
+    teamName, 
+    teamTag, 
+    userId, 
+    captainInGameName,
+    logoUrl,
+    captainPhoneNumber
+  });
   return response.data;
 };
 
