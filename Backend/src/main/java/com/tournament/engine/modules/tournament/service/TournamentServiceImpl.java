@@ -324,6 +324,7 @@ public class TournamentServiceImpl implements TournamentService {
     private TournamentResponse mapToResponse(Tournament tournament) {
         List<TournamentRegistration> registrations = registrationRepository.findByTournamentId(tournament.getId());
         List<TournamentResponse.RegisteredTeamDto> registeredTeams = registrations.stream()
+                .filter(r -> r.getStatus() == TournamentRegistration.RegistrationStatus.APPROVED)
                 .map(r -> {
                     Team team = r.getTeam();
                     int approvedMembers = (int) team.getMembers().stream()
@@ -350,6 +351,7 @@ public class TournamentServiceImpl implements TournamentService {
                             .id(team.getId())
                             .name(team.getName())
                             .tag(team.getTag())
+                            .logoUrl(team.getLogoUrl())
                             .captainId(team.getCaptain().getId())
                             .captainUsername(team.getCaptain().getUsername())
                             .captainInGameName(captainInGameName)

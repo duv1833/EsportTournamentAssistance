@@ -25,6 +25,7 @@ public class TournamentResponse {
         private Long id;
         private String name;
         private String tag;
+        private String logoUrl;
         private Long captainId;
         private String captainUsername;
         private String captainInGameName;
