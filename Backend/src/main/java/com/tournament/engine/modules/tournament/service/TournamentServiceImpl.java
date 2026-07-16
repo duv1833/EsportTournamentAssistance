@@ -176,14 +176,17 @@ public class TournamentServiceImpl implements TournamentService {
         }
 
         // Check if user is already part of a team in this tournament
-        boolean userAlreadyInTournament = registrations.stream().anyMatch(r -> {
+        Optional<TournamentRegistration> userRegOpt = registrations.stream().filter(r -> {
             Team t = r.getTeam();
             if (t.getCaptain().getId().equals(user.getId())) return true;
             return t.getMembers().stream()
-                    .anyMatch(m -> m.getUser().getId().equals(user.getId()) && m.getStatus() == TeamMember.MembershipStatus.ACCEPTED);
-        });
-        if (userAlreadyInTournament) {
-            throw new RuntimeException("Bạn đã tham gia một đội trong giải đấu này rồi!");
+                    .anyMatch(m -> m.getUser().getId().equals(user.getId()) && 
+                            (m.getStatus() == TeamMember.MembershipStatus.ACCEPTED || m.getStatus() == TeamMember.MembershipStatus.INVITED));
+        }).findFirst();
+
+        if (userRegOpt.isPresent()) {
+            String teamName = userRegOpt.get().getTeam().getName();
+            throw new RuntimeException("Bạn đã tạo hoặc đang trong đội tuyển [" + teamName + "] ở trong giải đấu này rồi!");
         }
 
         // Update captain phone number if provided
@@ -341,7 +344,7 @@ public class TournamentServiceImpl implements TournamentService {
                             .map(m -> com.tournament.engine.modules.tournament.dto.TeamMemberResponse.builder()
                                     .id(m.getId())
                                     .userId(m.getUser().getId())
-                                    .username(m.getUser().getUsername())
+                                    .username(m.getUser().getDisplayName())
                                     .inGameName(m.getInGameName())
                                     .status(m.getStatus().name())
                                     .build())
@@ -353,7 +356,7 @@ public class TournamentServiceImpl implements TournamentService {
                             .tag(team.getTag())
                             .logoUrl(team.getLogoUrl())
                             .captainId(team.getCaptain().getId())
-                            .captainUsername(team.getCaptain().getUsername())
+                            .captainUsername(team.getCaptain().getDisplayName())
                             .captainInGameName(captainInGameName)
                             .memberCount(approvedMembers) // Since captain is now in members, just count all ACCEPTED members
                             .members(memberResponses)
@@ -370,7 +373,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .registrationStatus(tournament.getRegistrationStatus().name())
                 .approvalStatus(tournament.getApprovalStatus() != null ? tournament.getApprovalStatus().name() : "PENDING")
                 .creatorId(tournament.getCreator().getId())
-                .creatorUsername(tournament.getCreator().getUsername())
+                .creatorUsername(tournament.getCreator().getDisplayName())
                 .registeredTeams(registeredTeams)
                 .build();
     }

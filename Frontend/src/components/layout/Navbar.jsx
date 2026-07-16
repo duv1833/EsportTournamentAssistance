@@ -49,7 +49,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
                 <User size={18} className="text-off-white/70" />
               </div>
               <span className="font-mono text-sm text-off-white hidden sm:block">
-                {currentUser.username}
+                {currentUser.displayName || currentUser.nickname || currentUser.fullName || currentUser.username}
               </span>
               <ChevronDown size={14} className={`text-tactical-gray transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -57,8 +57,11 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
             {userMenuOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-surface-charcoal border border-outline-variant shadow-lg z-[110] py-2">
                 <div className="px-4 py-2 border-b border-outline-variant/50 mb-2">
-                  <p className="font-body text-sm font-bold text-off-white">{currentUser.username}</p>
-                  <p className="font-mono text-xs text-tactical-gray truncate">{currentUser.email}</p>
+                  <p className="font-body text-sm font-bold text-off-white">
+                    {currentUser.displayName || currentUser.nickname || currentUser.fullName || currentUser.username}
+                  </p>
+                  <p className="font-mono text-[10px] text-success-cyan truncate">@{currentUser.username}</p>
+                  <p className="font-mono text-xs text-tactical-gray truncate mt-0.5">{currentUser.email}</p>
                 </div>
                 
                 <button

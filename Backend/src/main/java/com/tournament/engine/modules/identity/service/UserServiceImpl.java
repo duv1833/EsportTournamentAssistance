@@ -43,6 +43,11 @@ public class UserServiceImpl implements UserService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .fullName(user.getFullName())
+                .nickname(user.getNickname())
+                .phoneNumber(user.getPhoneNumber())
+                .avatarUrl(user.getAvatarUrl())
+                .displayName(user.getDisplayName())
                 .globalRole(user.getGlobalRole().name())
                 .build();
     }
@@ -72,22 +77,64 @@ public class UserServiceImpl implements UserService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .fullName(user.getFullName())
+                .nickname(user.getNickname())
+                .phoneNumber(user.getPhoneNumber())
+                .avatarUrl(user.getAvatarUrl())
+                .displayName(user.getDisplayName())
                 .globalRole(user.getGlobalRole().name())
                 .build();
     }
 
     @Override
+    public com.tournament.engine.modules.identity.dto.UserResponse getUserProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        return mapToUserResponse(user);
+    }
+
+    @Override
+    public com.tournament.engine.modules.identity.dto.UserResponse updateUserProfile(Long userId, com.tournament.engine.modules.identity.dto.UserProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
+        if (request.getNickname() != null) {
+            user.setNickname(request.getNickname());
+        }
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
+
+        user = userRepository.save(user);
+        return mapToUserResponse(user);
+    }
+
+    @Override
     public java.util.List<com.tournament.engine.modules.identity.dto.UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
-                .map(user -> com.tournament.engine.modules.identity.dto.UserResponse.builder()
-                        .id(user.getId())
-                        .username(user.getUsername())
-                        .email(user.getEmail())
-                        .fullName(user.getFullName())
-                        .globalRole(user.getGlobalRole().name())
-                        .isActive(user.getIsActive())
-                        .build())
+                .map(this::mapToUserResponse)
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    private com.tournament.engine.modules.identity.dto.UserResponse mapToUserResponse(User user) {
+        return com.tournament.engine.modules.identity.dto.UserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .nickname(user.getNickname())
+                .phoneNumber(user.getPhoneNumber())
+                .avatarUrl(user.getAvatarUrl())
+                .displayName(user.getDisplayName())
+                .globalRole(user.getGlobalRole().name())
+                .isActive(user.getIsActive())
+                .build();
     }
 
     @Override

@@ -11,6 +11,10 @@ public interface UserService {
     AuthResponse register(RegisterRequest request);
     AuthResponse login(LoginRequest request);
     
+    // Profile features
+    UserResponse getUserProfile(Long userId);
+    UserResponse updateUserProfile(Long userId, com.tournament.engine.modules.identity.dto.UserProfileRequest request);
+
     // Admin features
     List<UserResponse> getAllUsers();
     void banUser(Long userId);

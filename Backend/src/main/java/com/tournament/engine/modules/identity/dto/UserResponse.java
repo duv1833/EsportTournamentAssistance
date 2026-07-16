@@ -14,6 +14,10 @@ public class UserResponse {
     private String username;
     private String email;
     private String fullName;
+    private String nickname;
+    private String phoneNumber;
+    private String avatarUrl;
+    private String displayName;
     private String globalRole;
     private Boolean isActive;
 }

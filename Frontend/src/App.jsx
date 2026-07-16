@@ -20,6 +20,7 @@ import Home from './pages/Home';
 import JoinTeamModal from './components/tournament/JoinTeamModal';
 import AdminTournamentManagement from './pages/AdminTournamentManagement';
 import AdminDashboard from './pages/AdminDashboard';
+import UserProfile from './pages/UserProfile';
 
 
 
@@ -123,6 +124,23 @@ function App() {
       return;
     }
     if (!selectedTournament) return;
+
+    const userTeamInTournament = selectedTournament.registeredTeams?.find(team => {
+      const isCaptain = (team.captainId && currentUser.id && team.captainId === currentUser.id) ||
+                        (team.captainUsername && currentUser.username && team.captainUsername === currentUser.username);
+      const isMember = team.members && team.members.some(m => 
+        ((m.userId && currentUser.id && m.userId === currentUser.id) ||
+         (m.username && currentUser.username && m.username === currentUser.username)) &&
+        (m.status === 'APPROVED' || m.status === 'ACCEPTED' || m.status === 'PENDING' || m.status === 'INVITED')
+      );
+      return isCaptain || isMember;
+    });
+
+    if (userTeamInTournament) {
+      setTournamentError(`Bạn đã tạo hoặc đang trong đội tuyển [${userTeamInTournament.name}] ở trong giải đấu này rồi!`);
+      return;
+    }
+
     setTournamentError('');
     setTournamentSuccess('');
     setIsTournamentLoading(true);
@@ -595,6 +613,22 @@ function App() {
                             if (!currentUser) {
                               setActiveTab('login');
                             } else {
+                              const userTeamInTournament = selectedTournament.registeredTeams?.find(team => {
+                                const isCaptain = (team.captainId && currentUser.id && team.captainId === currentUser.id) ||
+                                                  (team.captainUsername && currentUser.username && team.captainUsername === currentUser.username);
+                                const isMember = team.members && team.members.some(m => 
+                                  ((m.userId && currentUser.id && m.userId === currentUser.id) ||
+                                   (m.username && currentUser.username && m.username === currentUser.username)) &&
+                                  (m.status === 'APPROVED' || m.status === 'ACCEPTED' || m.status === 'PENDING' || m.status === 'INVITED')
+                                );
+                                return isCaptain || isMember;
+                              });
+
+                              if (userTeamInTournament) {
+                                setTournamentError(`Bạn đã tạo hoặc đang trong đội tuyển [${userTeamInTournament.name}] ở trong giải đấu này rồi!`);
+                                return;
+                              }
+
                               setTournamentError('');
                               setTournamentSuccess('');
                               setTournamentViewMode('register');
@@ -934,19 +968,12 @@ function App() {
           <ManageTeam currentUser={currentUser} />
         )}
 
-        {/* Tab Profile Placeholder */}
+        {/* Tab Profile */}
         {activeTab === 'profile' && (
-          <div className="container mx-auto max-w-7xl px-6 md:px-12 py-12">
-            <h2 className="font-display text-3xl text-off-white uppercase mb-2">Hồ sơ cá nhân</h2>
-            <p className="font-mono text-sm text-tactical-gray mb-8">// Cập nhật thông tin cá nhân</p>
-            <div className="bg-surface-charcoal border border-outline-variant p-6 clip-corner">
-              <p className="text-off-white font-body">Tính năng cập nhật hồ sơ cá nhân đang được phát triển.</p>
-              <div className="mt-4 p-4 bg-background border border-outline-variant">
-                <p className="text-tactical-gray font-mono text-sm">Username: {currentUser?.username}</p>
-                <p className="text-tactical-gray font-mono text-sm">Email: {currentUser?.email}</p>
-              </div>
-            </div>
-          </div>
+          <UserProfile
+            currentUser={currentUser}
+            onUserUpdated={(updatedUser) => setCurrentUser(updatedUser)}
+          />
         )}
 
         {/* Tab Admin Dashboard */}

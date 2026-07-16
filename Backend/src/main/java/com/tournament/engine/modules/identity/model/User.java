@@ -32,11 +32,24 @@ public class User {
     @Column(name = "full_name")
     private String fullName;
 
+    @Column(name = "nickname")
+    private String nickname;
+
     @Column(name = "phone_number")
     private String phoneNumber;
 
     @Column(name = "avatar_url")
     private String avatarUrl;
+
+    public String getDisplayName() {
+        if (nickname != null && !nickname.isBlank()) {
+            return nickname;
+        }
+        if (fullName != null && !fullName.isBlank()) {
+            return fullName;
+        }
+        return username;
+    }
 
     @Enumerated(EnumType.STRING)
     @Column(name = "global_role", nullable = false)
