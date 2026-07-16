@@ -676,6 +676,25 @@ function App() {
                         const isFull = team.memberCount >= 7;
                         const acceptedMembers = team.members ? team.members.filter(m => m.status === 'APPROVED' || m.status === 'ACCEPTED') : [];
 
+                        const isCaptain = currentUser && (
+                          (team.captainId && currentUser.id && team.captainId === currentUser.id) ||
+                          (team.captainUsername && currentUser.username && team.captainUsername === currentUser.username)
+                        );
+
+                        const isMember = currentUser && (
+                          isCaptain || (team.members && team.members.some(m =>
+                            ((m.userId && currentUser.id && m.userId === currentUser.id) ||
+                             (m.username && currentUser.username && m.username === currentUser.username)) &&
+                            (m.status === 'APPROVED' || m.status === 'ACCEPTED')
+                          ))
+                        );
+
+                        const hasRequested = currentUser && team.members && team.members.some(m =>
+                          ((m.userId && currentUser.id && m.userId === currentUser.id) ||
+                           (m.username && currentUser.username && m.username === currentUser.username)) &&
+                          (m.status === 'PENDING' || m.status === 'INVITED')
+                        );
+
                         return (
                           <div key={team.id} className="bg-surface-charcoal border border-outline-variant flex flex-col justify-between clip-corner overflow-hidden group hover:border-primary-red/50 transition-all">
                             {/* Team Header */}
@@ -726,9 +745,26 @@ function App() {
                               ))}
                             </div>
 
-                            {/* Join Action Footer Button */}
+                            {/* Join / Manage Action Footer Button */}
                             <div className="p-3 bg-surface-charcoal">
-                              {isFull ? (
+                              {isCaptain ? (
+                                <TactileButton
+                                  onClick={() => setActiveTab('manage_team')}
+                                  className="w-full bg-primary-red hover:bg-primary-red/90 text-off-white font-display text-xs py-2 uppercase font-bold flex justify-center items-center gap-1.5 cursor-pointer"
+                                >
+                                  <Shield size={14} /> Quản Lý Đội
+                                </TactileButton>
+                              ) : isMember ? (
+                                hasRequested ? (
+                                  <TactileButton disabled className="w-full bg-surface-bright text-warning-amber font-mono text-xs py-2 uppercase opacity-75 cursor-not-allowed">
+                                    Đang Chờ Duyệt
+                                  </TactileButton>
+                                ) : (
+                                  <TactileButton disabled className="w-full bg-surface-bright text-success-cyan font-mono text-xs py-2 uppercase opacity-75 cursor-not-allowed">
+                                    Đã Tham Gia
+                                  </TactileButton>
+                                )
+                              ) : isFull ? (
                                 <TactileButton disabled className="w-full bg-surface-bright text-tactical-gray font-mono text-xs py-2 uppercase opacity-50 cursor-not-allowed">
                                   Đội Đã Đầy (FULL)
                                 </TactileButton>

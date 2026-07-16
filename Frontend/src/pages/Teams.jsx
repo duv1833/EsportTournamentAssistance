@@ -86,8 +86,8 @@ export default function Teams({ currentUser }) {
         {teams.map((team) => {
           // Check if current user is already a member (approved or pending) or captain
           const isCaptain = currentUser && team.captainId === currentUser.id;
-          const isMember = currentUser && team.members.some(m => m.userId === currentUser.id);
-          const hasRequested = currentUser && team.members.some(m => m.userId === currentUser.id && m.status === 'PENDING');
+          const isMember = currentUser && team.members.some(m => m.userId === currentUser.id && (m.status === 'APPROVED' || m.status === 'ACCEPTED'));
+          const hasRequested = currentUser && team.members.some(m => m.userId === currentUser.id && (m.status === 'PENDING' || m.status === 'INVITED'));
 
           return (
             <div key={team.id} className="bg-surface-charcoal border border-outline-variant p-6 flex flex-col clip-corner-top hover:border-primary-red transition-colors">
@@ -107,7 +107,7 @@ export default function Teams({ currentUser }) {
                 
                 <p className="font-mono text-xs text-tactical-gray uppercase mb-1 mt-4">SỐ THÀNH VIÊN:</p>
                 <p className="font-body text-sm text-off-white">
-                  {1 + team.members.filter(m => m.status === 'APPROVED').length} / 7
+                  {1 + team.members.filter(m => m.status === 'APPROVED' || m.status === 'ACCEPTED').length} / 7
                 </p>
               </div>
 

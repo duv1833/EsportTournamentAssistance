@@ -101,9 +101,9 @@ export default function ManageTeam({ currentUser }) {
 
       <div className="space-y-8">
         {teams.map(team => {
-          const approvedMembers = team.members.filter(m => m.status === 'APPROVED');
-          const pendingMembers = team.members.filter(m => m.status === 'PENDING');
-          const totalMembers = 1 + approvedMembers.length; // Captain + approved
+          const approvedMembers = team.members ? team.members.filter(m => (m.status === 'APPROVED' || m.status === 'ACCEPTED') && m.username !== team.captainUsername && m.userId !== team.captainId) : [];
+          const pendingMembers = team.members ? team.members.filter(m => (m.status === 'PENDING' || m.status === 'INVITED') && m.username !== team.captainUsername && m.userId !== team.captainId) : [];
+          const totalMembers = 1 + approvedMembers.length; // Captain (1) + approved members
 
           return (
             <div key={team.id} className="bg-surface-charcoal border border-outline-variant clip-corner-top overflow-hidden">
