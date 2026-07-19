@@ -41,6 +41,6 @@ public class TournamentOrganizer {
     private LocalDateTime createdAt;
 
     public enum OrganizerRole {
-        OWNER, CO_ORGANIZER
+        OWNER, CO_ORGANIZER, REFEREE
     }
 }

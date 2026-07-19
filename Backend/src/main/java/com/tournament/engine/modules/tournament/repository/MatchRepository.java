@@ -12,4 +12,7 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findByTournamentIdOrderByRoundNumberAscPositionInRoundAsc(Long tournamentId);
     List<Match> findByTournamentIdAndRoundNumber(Long tournamentId, Integer roundNumber);
     List<Match> findByStatusAndScheduledTimeBefore(Match.MatchStatus status, LocalDateTime time);
+    List<Match> findByStatusInOrderByScheduledTimeAsc(List<Match.MatchStatus> statuses);
+    List<Match> findByTournamentIdAndStatus(Long tournamentId, Match.MatchStatus status);
+    boolean existsByTournamentId(Long tournamentId);
 }

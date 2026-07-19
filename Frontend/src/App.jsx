@@ -21,6 +21,7 @@ import JoinTeamModal from './components/tournament/JoinTeamModal';
 import AdminTournamentManagement from './pages/AdminTournamentManagement';
 import AdminDashboard from './pages/AdminDashboard';
 import UserProfile from './pages/UserProfile';
+import MatchSchedule from './pages/MatchSchedule';
 
 
 
@@ -381,18 +382,6 @@ function App() {
           </div>
         )}
 
-        {/* Tab Matches — Empty State */}
-        {activeTab === 'matches' && (
-          <div className="container mx-auto max-w-7xl px-6 md:px-12 py-12">
-            <h2 className="font-display text-3xl text-off-white uppercase mb-2">Lịch thi đấu</h2>
-            <p className="font-mono text-sm text-tactical-gray mb-8">// Bảng đấu và các cặp đấu đang diễn ra</p>
-            <EmptyState
-              icon={Swords}
-              title="Chưa có lịch đấu mới"
-              desc="Các trận đấu mới sẽ được cập nhật tại đây. Hãy quay lại sau để theo dõi lịch trình giải đấu."
-            />
-          </div>
-        )}
 
         {/* Tab Tournaments */}
         {activeTab === 'tournaments' && (
@@ -961,6 +950,11 @@ function App() {
               />
             )}
           </div>
+        )}
+
+        {/* Tab Match Schedule */}
+        {activeTab === 'matches' && (
+          <MatchSchedule currentUser={currentUser} />
         )}
 
         {/* Tab Manage Team */}
