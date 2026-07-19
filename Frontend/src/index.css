@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a141e;
+  --color-on-surface: #ffffff;
+  --color-primary-red: #FF4655;
+  --color-success-cyan: #00FFD1;
+  --color-warning-amber: #FFB800;
+  --color-tactical-gray: #8B978F;
+  --color-off-white: #ECE8E1;
+  --color-surface-charcoal: #1F2326;
+  --color-surface-container: #17202b;
+  --color-surface-container-low: #121c27;
+  --color-surface-container-lowest: #050f19;
+  --color-surface-bright: #303a45;
+  --color-outline-variant: #5b403f;
+  
+  --color-status-live: #FF4655;
+  --color-status-upcoming: #FFB800;
+  --color-status-open: #00FF94;
+  --color-status-ended: #666666;
+
+  --font-display: "Anton", sans-serif;
+  --font-body: "Hanken Grotesk", "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+.clip-corner {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+}
+
+.clip-corner-top {
+  clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px);
+}
+
+.bg-pattern-scanline {
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(139, 151, 143, 0.05) 10px, rgba(139, 151, 143, 0.05) 11px);
+}
+
+.glow-active {
+  box-shadow: 0 0 15px rgba(255, 70, 85, 0.4);
+}
+
+.glitch-anim {
+  animation: glitch 1s linear infinite;
+}
+
+@keyframes glitch {
+  2%, 64% { transform: translate(2px, 0) skew(0deg); }
+  4%, 60% { transform: translate(-2px, 0) skew(0deg); }
+  62% { transform: translate(0, 0) skew(5deg); }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
