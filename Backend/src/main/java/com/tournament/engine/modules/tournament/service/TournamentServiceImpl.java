@@ -198,13 +198,7 @@ public class TournamentServiceImpl implements TournamentService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
 
-        if (!tournament.getCreator().getId().equals(organizerUserId)) {
-            User user = userRepository.findById(organizerUserId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
-            if (user.getGlobalRole() != User.GlobalRole.ADMIN) {
-                throw new RuntimeException("Bạn không có quyền chỉnh sửa giải đấu này!");
-            }
-        }
+        validateOrganizer(tournamentId, organizerUserId);
 
         if (request.getName() != null && !request.getName().isBlank()) {
             tournament.setName(request.getName());

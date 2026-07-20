@@ -39,6 +39,7 @@ function App() {
     if (path.startsWith('/tournaments')) return 'tournaments';
     if (path === '/lobby') return 'lobby';
     if (path === '/matches') return 'matches';
+    if (path === '/teams') return 'teams';
     if (path === '/manage_team') return 'manage_team';
     if (path === '/news') return 'news';
     if (path === '/profile') return 'profile';
@@ -229,9 +230,11 @@ function App() {
         setTournamentSuccess('Đã gửi yêu cầu tham gia đội tuyển!');
         setJoinTeamModal({ isOpen: false, teamId: null, inGameName: '' });
         
-        const detailsRes = await getTournamentDetails(selectedTournament.id);
-        if (detailsRes.success) {
-          setSelectedTournament(detailsRes.data);
+        if (selectedTournament?.id) {
+          const detailsRes = await getTournamentDetails(selectedTournament.id);
+          if (detailsRes.success) {
+            setSelectedTournament(detailsRes.data);
+          }
         }
       } else {
         setTournamentError(res.message || 'Xin gia nhập thất bại!');
@@ -361,7 +364,7 @@ function App() {
       <main className="flex-grow pt-20">
         {/* Main Content Router */}
         <Routes>
-          <Route path="/tournaments/:id/*" element={<TournamentDetailsVLR currentUser={currentUser} />} />
+          <Route path="/tournaments/:id/*" element={<TournamentDetailsVLR currentUser={currentUser} onJoinTeam={(teamId) => setJoinTeamModal({ isOpen: true, teamId, inGameName: '' })} />} />
           <Route path="/*" element={
             <>
               {activeTab === 'home' && (
@@ -763,6 +766,14 @@ function App() {
         {/* Tab Match Schedule */}
         {activeTab === 'matches' && (
           <MatchSchedule currentUser={currentUser} />
+        )}
+
+        {/* Tab Teams */}
+        {activeTab === 'teams' && (
+          <Teams 
+            currentUser={currentUser} 
+            onJoinTeam={(teamId) => setJoinTeamModal({ isOpen: true, teamId, inGameName: '' })} 
+          />
         )}
 
         {/* Tab Manage Team */}

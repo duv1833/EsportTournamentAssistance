@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 // ─── Internal Bracket Node (Read-only) ───────────────
 function BracketMatchNode({ match }) {
@@ -57,8 +57,11 @@ export default function TournamentOverview({
   activeSubTab,
   setActiveSubTab,
   tournament,
-  standings = []
+  standings = [],
+  currentUser,
+  onJoinTeam
 }) {
+  const [showRosters, setShowRosters] = useState(false);
   const isGroupKnockout = tournament?.structure === 'GROUP_KNOCKOUT';
   const groupMatches = internalMatches.filter(m => m.stage === 'GROUP');
   const bracketMatches = isGroupKnockout ? internalMatches.filter(m => m.stage === 'KNOCKOUT') : internalMatches;
@@ -224,32 +227,83 @@ export default function TournamentOverview({
           {/* Participating Teams Grid */}
           <div className="flex justify-between items-center mb-3">
              <h2 className="text-primary-red text-xs font-bold uppercase tracking-wider">Participating Teams</h2>
-             <button className="bg-[#222] border border-[#333] text-[#a0a0a0] hover:text-white text-[10px] font-bold px-3 py-1 transition-colors">
-               Toggle Rosters
+             <button 
+               onClick={() => setShowRosters(!showRosters)}
+               className={`border text-[10px] font-bold px-3 py-1 transition-colors uppercase tracking-wider ${
+                 showRosters 
+                   ? 'bg-primary-red border-primary-red text-white' 
+                   : 'bg-[#222] border-[#333] text-[#a0a0a0] hover:text-white hover:border-[#444]'
+               }`}
+             >
+               {showRosters ? 'Hide Rosters' : 'Toggle Rosters'}
              </button>
           </div>
           
           {registeredTeams.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {registeredTeams.map(team => (
-                <div key={team.id} className="bg-[#222] border border-[#333] flex flex-col h-40 hover:bg-[#2a2a2a] transition-colors cursor-pointer group">
-                   <div className="bg-[#2a2a2a] group-hover:bg-[#333] p-2 text-center text-xs font-bold text-white border-b border-[#333] truncate">
-                     {team.name}
-                   </div>
-                   <div className="flex-1 flex items-center justify-center p-4">
-                     {team.logoUrl ? (
-                       <img src={team.logoUrl} alt={team.name} className="max-h-16 object-contain" />
-                     ) : (
-                       <div className="text-4xl font-display font-bold text-[#444] group-hover:text-[#555]">
-                         {team.name.substring(0,2).toUpperCase()}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {registeredTeams.map(team => {
+                const activeMembers = team.members ? team.members.filter(m => m.status === 'ACCEPTED' || m.status === 'APPROVED') : [];
+                return (
+                  <div key={team.id} className="bg-[#222] border border-[#333] flex flex-col hover:bg-[#2a2a2a] transition-all cursor-pointer group rounded-sm overflow-hidden">
+                     <div className="bg-[#2a2a2a] group-hover:bg-[#333] p-2 text-center text-xs font-bold text-white border-b border-[#333] truncate flex items-center justify-between px-3">
+                       <span className="truncate">{team.name}</span>
+                       {team.tag && <span className="text-[10px] text-primary-red font-mono font-normal">[{team.tag}]</span>}
+                     </div>
+                     
+                     <div className="p-4 flex flex-col items-center justify-center min-h-[90px]">
+                       {team.logoUrl ? (
+                         <img src={team.logoUrl} alt={team.name} className="max-h-14 object-contain mb-2" />
+                       ) : (
+                         <div className="w-10 h-10 rounded bg-[#1a1a1a] border border-[#333] flex items-center justify-center text-lg font-display font-bold text-primary-red mb-2">
+                           {team.name.substring(0, 2).toUpperCase()}
+                         </div>
+                       )}
+                       <div className="text-[11px] text-[#888] font-medium text-center truncate w-full">
+                         Captain: <span className="text-white font-semibold">{team.captainInGameName || team.captainUsername || 'N/A'}</span>
+                       </div>
+                     </div>
+
+                     {/* Roster Section */}
+                     {showRosters && (
+                       <div className="bg-[#161616] p-3 border-t border-[#333] space-y-1.5 text-[11px]">
+                         <div className="text-[10px] font-bold text-primary-red uppercase tracking-wider mb-1.5 flex items-center justify-between border-b border-[#282828] pb-1">
+                           <span>Roster</span>
+                           <span className="text-[#666] font-normal">{activeMembers.length} players</span>
+                         </div>
+                         {activeMembers.length > 0 ? (
+                           activeMembers.map((m, idx) => (
+                             <div key={m.id || idx} className="flex items-center justify-between text-[#ccc] py-0.5 px-1 rounded hover:bg-[#222]">
+                               <span className="font-medium text-white truncate flex items-center gap-1.5">
+                                 {m.userId === team.captainId && (
+                                   <span className="text-[9px] bg-amber-500/20 text-amber-400 font-bold px-1 rounded uppercase">C</span>
+                                 )}
+                                 {m.inGameName || m.username}
+                               </span>
+                               {m.inGameName && m.username && m.inGameName !== m.username && (
+                                 <span className="text-[10px] text-[#666] truncate font-mono">(@{m.username})</span>
+                               )}
+                             </div>
+                           ))
+                         ) : (
+                           <div className="text-[10px] text-[#666] italic py-1 text-center">No active members</div>
+                         )}
                        </div>
                      )}
-                   </div>
-                   <div className="p-2 text-center text-[10px] text-[#666] border-t border-[#333]">
-                     Registered Team
-                   </div>
-                </div>
-              ))}
+
+                     <div className="p-2 text-center text-[10px] text-[#666] border-t border-[#333] bg-[#1a1a1a] mt-auto flex items-center justify-between px-3">
+                       <span>{activeMembers.length ? `${activeMembers.length} Active Players` : `${team.memberCount || 0} Members`}</span>
+                       {currentUser && onJoinTeam && team.captainId !== currentUser.id && !(team.members && team.members.some(m => m.userId === currentUser.id)) && (
+                         <button 
+                           onClick={(e) => { e.stopPropagation(); onJoinTeam(team.id); }}
+                           className="text-[10px] bg-primary-red/20 text-primary-red hover:bg-primary-red hover:text-white px-2 py-0.5 rounded transition-colors uppercase font-bold"
+                         >
+                           Xin gia nhập
+                         </button>
+                       )}
+                     </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="bg-[#222] border border-[#333] p-8 text-center text-sm text-[#a0a0a0]">
