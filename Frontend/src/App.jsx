@@ -24,9 +24,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import UserProfile from './pages/UserProfile';
 import MatchSchedule from './pages/MatchSchedule';
 import TournamentDetailsVLR from './pages/TournamentDetailsVLR';
-
-
-
+import Lobby from './pages/Lobby';
 
 // ─── Main App ─────────────────────────────────────────────
 function App() {
@@ -372,31 +370,7 @@ function App() {
 
               {/* Lobby / Draft Screen */}
               {activeTab === 'lobby' && (
-                <div className="container mx-auto max-w-7xl px-6 md:px-12 py-12">
-                  <div className="bg-surface-charcoal border border-outline-variant p-8 clip-corner-top">
-                    <h2 className="font-display text-3xl text-off-white uppercase mb-2">Match Lobby</h2>
-                    <p className="font-mono text-sm text-tactical-gray uppercase mb-6">// Real-time Map & Agent drafting interface.</p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="bg-background border-l-4 border-success-cyan p-6">
-                        <h3 className="font-display text-lg text-off-white mb-4">TEAM BLUE</h3>
-                        <div className="flex flex-wrap gap-3">
-                          <span className="px-3 py-1.5 bg-surface-charcoal border border-success-cyan text-success-cyan font-mono text-xs">PICK: JETT</span>
-                          <span className="px-3 py-1.5 bg-surface-charcoal border border-outline-variant text-off-white/60 font-mono text-xs">PICK: SOVA</span>
-                          <span className="px-3 py-1.5 bg-surface-charcoal border border-primary-red text-primary-red font-mono text-xs">BAN: REYNA</span>
-                        </div>
-                      </div>
-                      <div className="bg-background border-l-4 border-primary-red p-6">
-                        <h3 className="font-display text-lg text-off-white mb-4">TEAM RED</h3>
-                        <div className="flex flex-wrap gap-3">
-                          <span className="px-3 py-1.5 bg-surface-charcoal border border-primary-red text-primary-red font-mono text-xs">PICK: OMEN</span>
-                          <span className="px-3 py-1.5 bg-surface-charcoal border border-outline-variant text-off-white/60 font-mono text-xs">PICK: CYPHER</span>
-                          <span className="px-3 py-1.5 bg-surface-charcoal border border-primary-red text-primary-red font-mono text-xs">BAN: RAZE</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <Lobby />
               )}
 
 

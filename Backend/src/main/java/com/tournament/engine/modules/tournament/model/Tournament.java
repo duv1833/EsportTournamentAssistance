@@ -29,7 +29,7 @@ public class Tournament {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private MatchFormat format;
+    private MatchFormat format; // BO1, BO3, BO5
 
     @Enumerated(EnumType.STRING)
     @Column(name = "structure")
@@ -62,7 +62,6 @@ public class Tournament {
 
     @Column(name = "location")
     private String location;
-
     @Column(name = "banner_url")
     private String bannerUrl;
 
@@ -83,7 +82,6 @@ public class Tournament {
     public enum TournamentStructure {
         SINGLE_ELIMINATION, GROUP_KNOCKOUT
     }
-
     public enum RegistrationStatus {
         OPEN, LOCKED, IN_PROGRESS, COMPLETED, CANCELLED
     }
