@@ -546,7 +546,8 @@ export default function MatchSchedule({ currentUser }) {
 
   const isOrganizer = currentUser && (
     currentUser.globalRole === 'ADMIN' ||
-    tournaments.find(t => t.id === selectedTournamentId)?.creatorId === currentUser.id
+    tournaments.find(t => t.id === selectedTournamentId)?.creatorId === currentUser.id ||
+    tournaments.find(t => t.id === selectedTournamentId)?.organizerIds?.includes(currentUser.id)
   );
 
   return (

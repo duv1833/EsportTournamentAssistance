@@ -481,6 +481,11 @@ public class TournamentServiceImpl implements TournamentService {
                 })
                 .collect(Collectors.toList());
 
+        List<Long> organizerIds = tournamentOrganizerRepository.findByTournamentId(tournament.getId())
+                .stream()
+                .map(org -> org.getUser().getId())
+                .collect(Collectors.toList());
+
         return TournamentResponse.builder()
                 .id(tournament.getId())
                 .name(tournament.getName())
@@ -496,6 +501,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .location(tournament.getLocation())
                 .creatorId(tournament.getCreator().getId())
                 .creatorUsername(tournament.getCreator().getDisplayName())
+                .organizerIds(organizerIds)
                 .registeredTeams(registeredTeams)
                 .build();
     }
