@@ -5,9 +5,7 @@ import {
   Shield
 } from 'lucide-react';
 import {
-  getExternalUpcomingMatches,
-  getExternalRunningMatches,
-  getExternalPastMatches,
+  getAllUpcomingMatches,
   getMatchesByTournament,
   generateBracket,
   updateMatchResult
@@ -48,20 +46,16 @@ function StatusBadge({ status }) {
   );
 }
 
-// ─── External Match Card ─────────────────
-function ExternalMatchCard({ match }) {
-  const opponents = match.opponents || [];
-  const team1 = opponents[0]?.opponent || {};
-  const team2 = opponents[1]?.opponent || {};
-  const results = match.results || [];
-  const score1 = results[0]?.score ?? '-';
-  const score2 = results[1]?.score ?? '-';
-  const scheduledAt = match.scheduled_at || match.begin_at;
-  const leagueName = match.league?.name || 'Unknown League';
-  const serieName = match.serie?.full_name || '';
-  const tournamentName = match.tournament?.name || '';
-  const matchName = match.name || `Match #${match.id}`;
-  const status = match.status || 'not_started';
+// ─── Internal System Match Card ──────────
+function InternalSystemMatchCard({ match }) {
+  const team1Name = match.team1Name || 'TBD';
+  const team2Name = match.team2Name || 'TBD';
+  const score1 = match.scoreTeam1 ?? '-';
+  const score2 = match.scoreTeam2 ?? '-';
+  const scheduledAt = match.scheduledTime;
+  const tournamentName = match.tournamentName || 'Giải Đấu Nội Bộ';
+  const matchName = match.stage === 'GROUP' ? `Vòng Bảng - Bảng ${match.groupName} - Trận ${match.positionInRound}` : `Vòng ${match.roundNumber} - Trận ${match.positionInRound}`;
+  const status = match.status || 'PENDING';
 
   const formatDate = (dateStr) => {
     if (!dateStr) return 'TBD';
@@ -69,7 +63,7 @@ function ExternalMatchCard({ match }) {
     return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   };
 
-  const isLive = status === 'running';
+  const isLive = status === 'LIVE';
 
   return (
     <div className={`bg-surface-charcoal border ${isLive ? 'border-primary-red/60 shadow-lg shadow-primary-red/10' : 'border-outline-variant'} p-4 clip-corner hover:border-primary-red/40 transition-all group`}>
@@ -77,25 +71,25 @@ function ExternalMatchCard({ match }) {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Trophy size={12} className="text-warning-amber shrink-0" />
-          <span className="font-mono text-[10px] text-tactical-gray truncate">{leagueName} {serieName ? `• ${serieName}` : ''}</span>
+          <span className="font-mono text-[10px] text-tactical-gray truncate">{tournamentName}</span>
         </div>
         <StatusBadge status={status} />
       </div>
 
       {/* Match Name */}
-      <p className="font-mono text-[10px] text-tactical-gray/60 mb-2 truncate">{tournamentName} — {matchName}</p>
+      <p className="font-mono text-[10px] text-tactical-gray/60 mb-2 truncate">{matchName}</p>
 
       {/* Teams */}
       <div className="flex items-center gap-3">
         {/* Team 1 */}
         <div className="flex-1 flex items-center gap-2 min-w-0">
           <div className="w-8 h-8 shrink-0 bg-background border border-outline-variant rounded overflow-hidden flex items-center justify-center">
-            {team1.image_url ? (
-              <img src={team1.image_url} alt={team1.name} className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+            {match.team1LogoUrl ? (
+              <img src={match.team1LogoUrl} alt={team1Name} className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
             ) : <Shield size={14} className="text-tactical-gray/40" />}
           </div>
           <span className={`font-display text-sm uppercase truncate ${score1 > score2 ? 'text-off-white font-bold' : 'text-tactical-gray'}`}>
-            {team1.name || 'TBD'}
+            {team1Name}
           </span>
         </div>
 
@@ -113,11 +107,11 @@ function ExternalMatchCard({ match }) {
         {/* Team 2 */}
         <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
           <span className={`font-display text-sm uppercase truncate text-right ${score2 > score1 ? 'text-off-white font-bold' : 'text-tactical-gray'}`}>
-            {team2.name || 'TBD'}
+            {team2Name}
           </span>
           <div className="w-8 h-8 shrink-0 bg-background border border-outline-variant rounded overflow-hidden flex items-center justify-center">
-            {team2.image_url ? (
-              <img src={team2.image_url} alt={team2.name} className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+            {match.team2LogoUrl ? (
+              <img src={match.team2LogoUrl} alt={team2Name} className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
             ) : <Shield size={14} className="text-tactical-gray/40" />}
           </div>
         </div>
@@ -128,9 +122,9 @@ function ExternalMatchCard({ match }) {
         <span className="font-mono text-[10px] text-tactical-gray flex items-center gap-1">
           <Clock size={10} /> {formatDate(scheduledAt)}
         </span>
-        {match.number_of_games && (
+        {match.format && (
           <span className="font-mono text-[10px] text-warning-amber">
-            BO{match.number_of_games}
+            {match.format}
           </span>
         )}
       </div>
@@ -420,25 +414,28 @@ export default function MatchSchedule({ currentUser }) {
   const [scoreLoading, setScoreLoading] = useState(false);
   const [generateModal, setGenerateModal] = useState({ open: false });
 
-  // Fetch external matches
+  // Fetch internal matches
   const fetchExternalMatches = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      let res;
-      if (externalFilter === 'running') res = await getExternalRunningMatches(1, 20);
-      else if (externalFilter === 'upcoming') res = await getExternalUpcomingMatches(1, 20);
-      else res = await getExternalPastMatches(1, 20);
-
-      if (res.success && res.data && res.data.length > 0) {
-        setExternalMatches(res.data);
+      const res = await getAllUpcomingMatches();
+      if (res.success && res.data) {
+        let filtered = [];
+        if (externalFilter === 'running') {
+           filtered = res.data.filter(m => m.status === 'LIVE');
+        } else if (externalFilter === 'upcoming') {
+           filtered = res.data.filter(m => m.status === 'PENDING');
+        } else {
+           filtered = res.data.filter(m => m.status === 'COMPLETED' || m.status === 'CANCELLED');
+        }
+        setExternalMatches(filtered);
       } else {
-        // Fallback to sample VCT matches if PandaScore API token is empty or returns 0 matches
-        setExternalMatches(MOCK_EXTERNAL_MATCHES[externalFilter] || []);
+        setExternalMatches([]);
       }
     } catch (err) {
-      console.warn('Dùng dữ liệu đấu mẫu (VCT Masters) do API key PandaScore chưa kích hoạt.');
-      setExternalMatches(MOCK_EXTERNAL_MATCHES[externalFilter] || []);
+      console.error('Lỗi khi tải lịch thi đấu hệ thống:', err);
+      setExternalMatches([]);
     } finally {
       setLoading(false);
     }
@@ -557,7 +554,7 @@ export default function MatchSchedule({ currentUser }) {
         <h2 className="font-display text-4xl text-off-white uppercase tracking-wider flex items-center gap-3">
           <Swords className="text-primary-red" size={32} /> LỊCH THI ĐẤU
         </h2>
-        <p className="font-mono text-xs text-tactical-gray mt-2">// Theo dõi các trận đấu Esports chuyên nghiệp và giải đấu nội bộ</p>
+        <p className="font-mono text-xs text-tactical-gray mt-2">// Theo dõi lịch thi đấu của các giải đấu trong hệ thống</p>
       </div>
 
       {/* View Mode Toggle */}
@@ -568,7 +565,7 @@ export default function MatchSchedule({ currentUser }) {
             viewMode === 'external' ? 'bg-primary-red border-primary-red text-off-white' : 'border-outline-variant text-tactical-gray hover:text-off-white hover:border-primary-red/40'
           }`}
         >
-          <Zap size={14} /> Trận Đấu Chuyên Nghiệp
+          <Zap size={14} /> Lịch Đấu Hệ Thống
         </TactileButton>
         <TactileButton
           onClick={() => setViewMode('bracket')}
@@ -635,7 +632,7 @@ export default function MatchSchedule({ currentUser }) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {externalMatches.map((match) => (
-                <ExternalMatchCard key={match.id} match={match} />
+                <InternalSystemMatchCard key={match.id} match={match} />
               ))}
             </div>
           )}
@@ -643,7 +640,7 @@ export default function MatchSchedule({ currentUser }) {
           {/* Auto-refresh indicator */}
           <div className="mt-6 text-center">
             <span className="font-mono text-[10px] text-tactical-gray/40">
-              // Tự động cập nhật mỗi 30 giây • Dữ liệu từ PandaScore API
+              // Tự động cập nhật mỗi 30 giây • Dữ liệu trực tiếp từ hệ thống
             </span>
           </div>
         </>
