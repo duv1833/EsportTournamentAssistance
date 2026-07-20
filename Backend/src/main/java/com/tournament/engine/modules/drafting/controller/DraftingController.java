@@ -1,6 +1,7 @@
 package com.tournament.engine.modules.drafting.controller;
 
 import com.tournament.engine.modules.drafting.dto.DraftActionRequest;
+import com.tournament.engine.modules.drafting.service.DraftingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -13,37 +14,30 @@ import org.springframework.stereotype.Controller;
 @RequiredArgsConstructor
 public class DraftingController {
 
-    // Công cụ dùng để "phát sóng" data ngược lại cho Frontend
     private final SimpMessagingTemplate messagingTemplate;
+    
+    // Inject Service vừa viết vào đây
+    private final DraftingService draftingService;
 
-    // TODO: Khai báo DraftingService ở đây (ta sẽ viết nó ở bước sau)
-    // private final DraftingService draftingService;
-
-    /**
-     * React sẽ gửi thông điệp vào địa chỉ: /app/draft/action
-     */
     @MessageMapping("/draft/action")
     public void handleDraftAction(@Payload DraftActionRequest request) {
-        log.info("🔴 [WebSocket] Nhận yêu cầu Ban/Pick: {}", request);
+        log.info("🔴 [WebSocket] Nhận yêu cầu từ UI: Đội {} muốn {} tướng {}", 
+                 request.getTeamId(), request.getActionType(), request.getAgentName());
+
+        String destination = "/topic/match/" + request.getMatchId();
 
         try {
-            // Bước 1: Gọi Service để xử lý logic (Kiểm tra lượt, lưu DB, tự động chuyển lượt...)
-            // DraftStateResponse response = draftingService.processAction(request);
+            // Bước 1: Gọi Database để check bảo mật và Lưu thông tin
+            String responseMessage = draftingService.processAction(request);
 
-            // TẠM THỜI GIẢ LẬP KẾT QUẢ ĐỂ TEST WEBSOCKET
-            String mockResponse = "Đội " + request.getTeamId() + " vừa " + request.getActionType() + " " + request.getAgentName();
-
-            // Bước 2: Phát sóng kết quả cho toàn bộ những người đang đăng ký kênh của ván đấu này
-            // React sẽ nghe ở kênh: /topic/match/102
-            String destination = "/topic/match/" + request.getMatchId();
-            messagingTemplate.convertAndSend(destination, mockResponse);
-            
-            log.info("🟢 [WebSocket] Đã phát sóng kết quả tới kênh: {}", destination);
+            // Bước 2: Nếu lưu DB thành công, phát sóng kết quả cho cả phòng cùng xem
+            messagingTemplate.convertAndSend(destination, responseMessage);
+            log.info("🟢 [WebSocket] Đã phát sóng: {}", responseMessage);
 
         } catch (Exception e) {
-            log.error("❌ Lỗi xử lý Ban/Pick: ", e);
-            // Nếu có lỗi (VD: Cấm trùng), gửi lỗi riêng cho User đó (hoặc gửi lên kênh chung tuỳ cậu)
-            // messagingTemplate.convertAndSend("/topic/match/" + request.getMatchId() + "/errors", e.getMessage());
+            log.error("❌ Lỗi Ban/Pick: {}", e.getMessage());
+            // Nếu có lỗi (VD: Cấm trùng, hoặc chưa tới lượt), báo lỗi đỏ lên màn hình
+            messagingTemplate.convertAndSend(destination, "LỖI: " + e.getMessage());
         }
     }
 }
