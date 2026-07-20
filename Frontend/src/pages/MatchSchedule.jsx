@@ -443,10 +443,6 @@ export default function MatchSchedule({ currentUser }) {
       setLoading(false);
     }
   }, [externalFilter]);
-    } finally {
-      setLoading(false);
-    }
-  }, [externalFilter]);
 
   // Fetch tournaments for bracket view
   const fetchTournaments = useCallback(async () => {
