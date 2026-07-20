@@ -22,5 +22,6 @@ public interface TournamentService {
     void approveTournament(Long tournamentId, Long adminUserId);
     void rejectTournament(Long tournamentId, Long adminUserId);
     void updateTournamentByAdmin(Long tournamentId, com.tournament.engine.modules.tournament.dto.TournamentCreateRequest request, Long adminUserId);
+    void updateTournament(Long tournamentId, com.tournament.engine.modules.tournament.dto.TournamentCreateRequest request, Long organizerUserId);
     void deleteTournamentByAdmin(Long tournamentId, Long adminUserId);
 }

@@ -61,6 +61,20 @@ public class TournamentController {
         }
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> updateTournament(
+            @PathVariable Long id,
+            @RequestBody TournamentCreateRequest request,
+            @RequestParam Long organizerUserId
+    ) {
+        try {
+            tournamentService.updateTournament(id, request, organizerUserId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Cập nhật giải đấu thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @GetMapping("/{id}/registrations")
     public ResponseEntity<ApiResponse<List<com.tournament.engine.modules.tournament.dto.TournamentRegistrationResponse>>> getTournamentRegistrations(
             @PathVariable Long id,

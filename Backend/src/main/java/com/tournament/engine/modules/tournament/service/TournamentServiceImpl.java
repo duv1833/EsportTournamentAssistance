@@ -138,6 +138,36 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional
+    public void updateTournament(Long tournamentId, TournamentCreateRequest request, Long organizerUserId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
+
+        if (!tournament.getCreator().getId().equals(organizerUserId)) {
+            User user = userRepository.findById(organizerUserId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
+            if (user.getGlobalRole() != User.GlobalRole.ADMIN) {
+                throw new RuntimeException("Bạn không có quyền chỉnh sửa giải đấu này!");
+            }
+        }
+
+        if (request.getName() != null && !request.getName().isBlank()) {
+            tournament.setName(request.getName());
+        }
+        if (request.getFormat() != null) {
+            tournament.setFormat(Tournament.MatchFormat.valueOf(request.getFormat()));
+        }
+        if (request.getMaxTeams() != null && request.getMaxTeams() > 0) {
+            tournament.setMaxTeams(request.getMaxTeams());
+        }
+        if (request.getRulesDescription() != null) {
+            tournament.setRulesDescription(request.getRulesDescription());
+        }
+
+        tournamentRepository.save(tournament);
+    }
+
+    @Override
+    @Transactional
     public void deleteTournamentByAdmin(Long tournamentId, Long adminUserId) {
         validateAdmin(adminUserId);
         Tournament tournament = tournamentRepository.findById(tournamentId)

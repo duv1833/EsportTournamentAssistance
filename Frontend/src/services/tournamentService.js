@@ -15,6 +15,11 @@ export const createTournament = async (name, maxTeams, rulesDescription, creator
   return response.data;
 };
 
+export const updateTournament = async (id, name, maxTeams, rulesDescription, organizerUserId) => {
+  const response = await api.put(`/tournaments/${id}`, { name, maxTeams, rulesDescription }, { params: { organizerUserId } });
+  return response.data;
+};
+
 export const registerForTournament = async (tournamentId, teamName, teamTag, userId, captainInGameName, logoUrl, captainPhoneNumber) => {
   const response = await api.post(`/tournaments/${tournamentId}/register`, { 
     teamName, 

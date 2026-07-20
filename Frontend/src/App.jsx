@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { login, register, logout, getCurrentUser } from './services/authService';
 import { getAllTournaments, getTournamentDetails, createTournament, registerForTournament } from './services/tournamentService';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import Teams from './pages/Teams';
 import ManageTeam from './pages/ManageTeam';
 import OrganizerDashboard from './pages/OrganizerDashboard';
@@ -31,13 +32,29 @@ import TournamentDetailsVLR from './pages/TournamentDetailsVLR';
 function App() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [activeTab, setActiveTabState] = useState(() => {
-    return localStorage.getItem('activeTab') || 'home';
-  });
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const getActiveTab = () => {
+    const path = location.pathname;
+    if (path.startsWith('/tournaments')) return 'tournaments';
+    if (path === '/lobby') return 'lobby';
+    if (path === '/matches') return 'matches';
+    if (path === '/manage_team') return 'manage_team';
+    if (path === '/news') return 'news';
+    if (path === '/profile') return 'profile';
+    if (path === '/admin_dashboard') return 'admin_dashboard';
+    if (path === '/login') return 'login';
+    if (path === '/register') return 'register';
+    return 'home';
+  };
+  
+  const activeTab = getActiveTab();
 
   const setActiveTab = (tab) => {
-    setActiveTabState(tab);
-    localStorage.setItem('activeTab', tab);
+    if (tab === 'home') navigate('/');
+    else navigate(`/${tab}`);
   };
 
   // Auth states
@@ -171,7 +188,7 @@ function App() {
         }
         await fetchTournaments();
         setTimeout(() => {
-          setTournamentViewMode('details');
+          navigate(`/tournaments/${selectedTournament.id}`);
           setTournamentSuccess('');
         }, 1500);
       } else {
@@ -185,17 +202,7 @@ function App() {
   };
 
   const handleViewTournamentDetails = async (id) => {
-    setTournamentError('');
-    setTournamentSuccess('');
-    try {
-      const res = await getTournamentDetails(id);
-      if (res.success) {
-        setSelectedTournament(res.data);
-        setTournamentViewMode('details');
-      }
-    } catch (err) {
-      console.error("Lỗi lấy chi tiết giải đấu:", err);
-    }
+    navigate(`/tournaments/${id}`);
   };
 
   const handleJoinTeamFromTournament = async (e) => {
@@ -349,38 +356,43 @@ function App() {
       />
 
       <main className="flex-grow pt-20">
-        {activeTab === 'home' && (
-          <Home setActiveTab={setActiveTab} />
-        )}
+        {/* Main Content Router */}
+        <Routes>
+          <Route path="/tournaments/:id/*" element={<TournamentDetailsVLR currentUser={currentUser} />} />
+          <Route path="/*" element={
+            <>
+              {activeTab === 'home' && (
+                <Home setActiveTab={setActiveTab} />
+              )}
 
-        {/* Lobby / Draft Screen */}
-        {activeTab === 'lobby' && (
-          <div className="container mx-auto max-w-7xl px-6 md:px-12 py-12">
-            <div className="bg-surface-charcoal border border-outline-variant p-8 clip-corner-top">
-              <h2 className="font-display text-3xl text-off-white uppercase mb-2">Match Lobby</h2>
-              <p className="font-mono text-sm text-tactical-gray uppercase mb-6">// Real-time Map & Agent drafting interface.</p>
+              {/* Lobby / Draft Screen */}
+              {activeTab === 'lobby' && (
+                <div className="container mx-auto max-w-7xl px-6 md:px-12 py-12">
+                  <div className="bg-surface-charcoal border border-outline-variant p-8 clip-corner-top">
+                    <h2 className="font-display text-3xl text-off-white uppercase mb-2">Match Lobby</h2>
+                    <p className="font-mono text-sm text-tactical-gray uppercase mb-6">// Real-time Map & Agent drafting interface.</p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-background border-l-4 border-success-cyan p-6">
-                  <h3 className="font-display text-lg text-off-white mb-4">TEAM BLUE</h3>
-                  <div className="flex flex-wrap gap-3">
-                    <span className="px-3 py-1.5 bg-surface-charcoal border border-success-cyan text-success-cyan font-mono text-xs">PICK: JETT</span>
-                    <span className="px-3 py-1.5 bg-surface-charcoal border border-outline-variant text-off-white/60 font-mono text-xs">PICK: SOVA</span>
-                    <span className="px-3 py-1.5 bg-surface-charcoal border border-primary-red text-primary-red font-mono text-xs">BAN: REYNA</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="bg-background border-l-4 border-success-cyan p-6">
+                        <h3 className="font-display text-lg text-off-white mb-4">TEAM BLUE</h3>
+                        <div className="flex flex-wrap gap-3">
+                          <span className="px-3 py-1.5 bg-surface-charcoal border border-success-cyan text-success-cyan font-mono text-xs">PICK: JETT</span>
+                          <span className="px-3 py-1.5 bg-surface-charcoal border border-outline-variant text-off-white/60 font-mono text-xs">PICK: SOVA</span>
+                          <span className="px-3 py-1.5 bg-surface-charcoal border border-primary-red text-primary-red font-mono text-xs">BAN: REYNA</span>
+                        </div>
+                      </div>
+                      <div className="bg-background border-l-4 border-primary-red p-6">
+                        <h3 className="font-display text-lg text-off-white mb-4">TEAM RED</h3>
+                        <div className="flex flex-wrap gap-3">
+                          <span className="px-3 py-1.5 bg-surface-charcoal border border-primary-red text-primary-red font-mono text-xs">PICK: OMEN</span>
+                          <span className="px-3 py-1.5 bg-surface-charcoal border border-outline-variant text-off-white/60 font-mono text-xs">PICK: CYPHER</span>
+                          <span className="px-3 py-1.5 bg-surface-charcoal border border-primary-red text-primary-red font-mono text-xs">BAN: RAZE</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-background border-l-4 border-primary-red p-6">
-                  <h3 className="font-display text-lg text-off-white mb-4">TEAM RED</h3>
-                  <div className="flex flex-wrap gap-3">
-                    <span className="px-3 py-1.5 bg-surface-charcoal border border-primary-red text-primary-red font-mono text-xs">PICK: OMEN</span>
-                    <span className="px-3 py-1.5 bg-surface-charcoal border border-outline-variant text-off-white/60 font-mono text-xs">PICK: CYPHER</span>
-                    <span className="px-3 py-1.5 bg-surface-charcoal border border-primary-red text-primary-red font-mono text-xs">BAN: RAZE</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+              )}
 
 
         {/* Tab Tournaments */}
@@ -760,18 +772,21 @@ function App() {
           />
         )}
 
-        {/* Auth: Register */}
-        {activeTab === 'register' && (
-          <RegisterForm
-            registerForm={registerForm}
-            setRegisterForm={setRegisterForm}
-            onSubmit={handleRegisterSubmit}
-            isLoading={isLoading}
-            authError={authError}
-            authSuccess={authSuccess}
-            onSwitchToLogin={() => handleAuthNav('login')}
-          />
-        )}
+              {/* Auth: Register */}
+              {activeTab === 'register' && (
+                <RegisterForm
+                  registerForm={registerForm}
+                  setRegisterForm={setRegisterForm}
+                  onSubmit={handleRegisterSubmit}
+                  isLoading={isLoading}
+                  authError={authError}
+                  authSuccess={authSuccess}
+                  onSwitchToLogin={() => handleAuthNav('login')}
+                />
+              )}
+            </>
+          } />
+        </Routes>
       </main>
 
       <JoinTeamModal 
