@@ -28,8 +28,13 @@ public class Tournament {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = true)
-    private MatchFormat format; // BO1, BO3, BO5
+    @Column(nullable = false)
+    private MatchFormat format;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "structure")
+    @Builder.Default
+    private TournamentStructure structure = TournamentStructure.SINGLE_ELIMINATION;
 
     @Column(name = "max_teams", nullable = false)
     private Integer maxTeams; // 8, 16, 32
@@ -73,6 +78,10 @@ public class Tournament {
 
     public enum MatchFormat {
         BO1, BO3, BO5
+    }
+
+    public enum TournamentStructure {
+        SINGLE_ELIMINATION, GROUP_KNOCKOUT
     }
 
     public enum RegistrationStatus {

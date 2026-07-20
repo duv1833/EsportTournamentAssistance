@@ -77,7 +77,18 @@ public class Match {
     @Column(name = "format")
     private Tournament.MatchFormat format; // Inherit enum from Tournament
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stage")
+    private MatchStage stage;
+
+    @Column(name = "group_name")
+    private String groupName;
+
     public enum MatchStatus {
         PENDING, DRAFTING, LIVE, COMPLETED, CANCELLED
+    }
+
+    public enum MatchStage {
+        GROUP, KNOCKOUT
     }
 }

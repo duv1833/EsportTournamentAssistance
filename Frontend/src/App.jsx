@@ -69,7 +69,7 @@ function App() {
   const [tournaments, setTournaments] = useState([]);
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [tournamentViewMode, setTournamentViewMode] = useState('list'); // list, create, details, register
-  const [createForm, setCreateForm] = useState({ name: '', maxTeams: 16, rulesDescription: '', startDate: '', endDate: '', prizePool: '', location: '' });
+  const [createForm, setCreateForm] = useState({ name: '', maxTeams: 16, rulesDescription: '', startDate: '', endDate: '', prizePool: '', location: '', structure: 'SINGLE_ELIMINATION' });
   const [registerFormTeam, setRegisterFormTeam] = useState({ teamName: '', teamTag: '', captainInGameName: '' });
   const [joinTeamModal, setJoinTeamModal] = useState({ isOpen: false, teamId: null, inGameName: '' });
   const [tournamentError, setTournamentError] = useState('');
@@ -119,11 +119,12 @@ function App() {
         createForm.endDate,
         createForm.prizePool,
         createForm.location,
+        createForm.structure,
         currentUser.id
       );
       if (res.success) {
         setTournamentSuccess('Tạo giải đấu thành công! Giải đấu của bạn đang chờ Admin phê duyệt trước khi được xuất bản công khai.');
-        setCreateForm({ name: '', maxTeams: 16, rulesDescription: '', startDate: '', endDate: '', prizePool: '', location: '' });
+        setCreateForm({ name: '', maxTeams: 16, rulesDescription: '', startDate: '', endDate: '', prizePool: '', location: '', structure: 'SINGLE_ELIMINATION' });
         await fetchTournaments();
         setTimeout(() => {
           setTournamentViewMode('list');
@@ -523,17 +524,31 @@ function App() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Số lượng đội tối đa</label>
-                    <select
-                      className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
-                      value={createForm.maxTeams}
-                      onChange={(e) => setCreateForm({ ...createForm, maxTeams: parseInt(e.target.value) })}
-                    >
-                      <option value={8}>8 Đội tuyển</option>
-                      <option value={16}>16 Đội tuyển</option>
-                      <option value={32}>32 Đội tuyển</option>
-                    </select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Số lượng đội</label>
+                      <select
+                        className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
+                        value={createForm.maxTeams}
+                        onChange={(e) => setCreateForm({ ...createForm, maxTeams: parseInt(e.target.value) })}
+                      >
+                        <option value="4">4 Đội</option>
+                        <option value="8">8 Đội</option>
+                        <option value="16">16 Đội</option>
+                        <option value="32">32 Đội</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Thể thức thi đấu</label>
+                      <select
+                        className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
+                        value={createForm.structure}
+                        onChange={(e) => setCreateForm({ ...createForm, structure: e.target.value })}
+                      >
+                        <option value="SINGLE_ELIMINATION">Loại Trực Tiếp (Single Elimination)</option>
+                        <option value="GROUP_KNOCKOUT">Vòng Bảng + Nhánh Đấu (Group Stage & Knockout)</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div>

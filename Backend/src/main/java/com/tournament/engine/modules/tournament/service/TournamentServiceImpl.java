@@ -65,12 +65,20 @@ public class TournamentServiceImpl implements TournamentService {
                 matchFormat = Tournament.MatchFormat.valueOf(request.getFormat());
             } catch (IllegalArgumentException ignored) {}
         }
+        
+        Tournament.TournamentStructure tStructure = Tournament.TournamentStructure.SINGLE_ELIMINATION;
+        if (request.getStructure() != null && !request.getStructure().isBlank()) {
+            try {
+                tStructure = Tournament.TournamentStructure.valueOf(request.getStructure());
+            } catch (IllegalArgumentException ignored) {}
+        }
 
         Tournament tournament = Tournament.builder()
                 .name(request.getName())
                 .format(matchFormat)
                 .maxTeams(request.getMaxTeams())
                 .rulesDescription(request.getRulesDescription())
+                .structure(tStructure)
                 .prizePool(request.getPrizePool())
                 .location(request.getLocation())
                 .registrationStatus(Tournament.RegistrationStatus.LOCKED)
@@ -477,6 +485,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .id(tournament.getId())
                 .name(tournament.getName())
                 .format(tournament.getFormat() != null ? tournament.getFormat().name() : null)
+                .structure(tournament.getStructure() != null ? tournament.getStructure().name() : "SINGLE_ELIMINATION")
                 .maxTeams(tournament.getMaxTeams())
                 .rulesDescription(tournament.getRulesDescription())
                 .registrationStatus(tournament.getRegistrationStatus().name())

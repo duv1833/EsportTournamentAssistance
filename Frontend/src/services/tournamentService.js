@@ -10,13 +10,13 @@ export const getTournamentDetails = async (id) => {
   return response.data;
 };
 
-export const createTournament = async (name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, creatorId) => {
-  const response = await api.post('/tournaments', { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, creatorId });
+export const createTournament = async (name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, creatorId) => {
+  const response = await api.post('/tournaments', { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, creatorId });
   return response.data;
 };
 
-export const updateTournament = async (id, name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, organizerUserId) => {
-  const response = await api.put(`/tournaments/${id}`, { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location }, { params: { organizerUserId } });
+export const updateTournament = async (id, name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, organizerUserId) => {
+  const response = await api.put(`/tournaments/${id}`, { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure }, { params: { organizerUserId } });
   return response.data;
 };
 
@@ -43,7 +43,17 @@ export const approveRegistration = async (tournamentId, teamId, organizerUserId)
 };
 
 export const rejectRegistration = async (tournamentId, teamId, organizerUserId) => {
-  const response = await api.put(`/tournaments/${tournamentId}/registrations/${teamId}/reject`, null, { params: { organizerUserId } });
+  const response = await api.put(`/tournaments/${tournamentId}/registrations/${teamId}/reject`, {}, { params: { organizerUserId } });
+  return response.data;
+};
+
+export const getGroupStandings = async (tournamentId) => {
+  const response = await api.get(`/matches/tournament/${tournamentId}/standings`);
+  return response.data;
+};
+
+export const advanceToKnockout = async (tournamentId, userId) => {
+  const response = await api.post(`/matches/tournament/${tournamentId}/advance-knockout`, {}, { headers: { 'user-id': userId } });
   return response.data;
 };
 

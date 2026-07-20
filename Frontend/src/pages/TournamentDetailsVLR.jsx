@@ -14,8 +14,9 @@ export default function TournamentDetailsVLR({ currentUser }) {
 
   const [tournament, setTournament] = useState(null);
   const [internalMatches, setInternalMatches] = useState([]);
+  const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeSubTab, setActiveSubTab] = useState('Group Stage');
+  const [activeSubTab, setActiveSubTab] = useState('Overview');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,7 +27,18 @@ export default function TournamentDetailsVLR({ currentUser }) {
           getMatchesByTournament(id)
         ]);
         
-        if (tourRes.success) setTournament(tourRes.data);
+        if (tourRes.success) {
+          setTournament(tourRes.data);
+          if (tourRes.data.structure === 'GROUP_KNOCKOUT') {
+            try {
+              const { getGroupStandings } = await import('../services/tournamentService');
+              const stRes = await getGroupStandings(id);
+              if (stRes.success) setStandings(stRes.data);
+            } catch (err) {
+              console.error("Error fetching standings", err);
+            }
+          }
+        }
         if (matchRes.success) setInternalMatches(matchRes.data || []);
       } catch (error) {
         console.error("Error fetching tournament details:", error);
@@ -217,6 +229,8 @@ export default function TournamentDetailsVLR({ currentUser }) {
               pastMatches={pastMatches}
               activeSubTab={activeSubTab}
               setActiveSubTab={setActiveSubTab}
+              tournament={tournament}
+              standings={standings}
             />
           } />
           <Route path="overview" element={
@@ -227,6 +241,8 @@ export default function TournamentDetailsVLR({ currentUser }) {
               pastMatches={pastMatches}
               activeSubTab={activeSubTab}
               setActiveSubTab={setActiveSubTab}
+              tournament={tournament}
+              standings={standings}
             />
           } />
           <Route path="matches" element={<TournamentMatches internalMatches={internalMatches} />} />

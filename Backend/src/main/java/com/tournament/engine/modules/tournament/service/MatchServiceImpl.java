@@ -24,6 +24,7 @@ public class MatchServiceImpl implements MatchService {
     private final TournamentOrganizerRepository organizerRepository;
     private final MatchAuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -52,44 +53,84 @@ public class MatchServiceImpl implements MatchService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
 
-        // Validate permissions: must be Admin, Owner, or Co-Organizer
         validateOrganizerOrAdmin(tournamentId, userId);
 
-        // Check if bracket already exists
         if (matchRepository.existsByTournamentId(tournamentId)) {
             throw new RuntimeException("Giải đấu này đã có sơ đồ thi đấu (bracket) rồi!");
         }
 
-        // Get approved teams
         List<TournamentRegistration> approvedRegs = registrationRepository.findByTournamentId(tournamentId)
                 .stream()
                 .filter(r -> r.getStatus() == TournamentRegistration.RegistrationStatus.APPROVED)
                 .collect(Collectors.toList());
 
-        if (approvedRegs.size() < 2) {
-            throw new RuntimeException("Cần ít nhất 2 đội tuyển đã được duyệt để tạo sơ đồ thi đấu!");
-        }
-
         List<Team> teams = approvedRegs.stream()
                 .map(TournamentRegistration::getTeam)
                 .collect(Collectors.toList());
 
-        // Shuffle teams for random seeding
         Collections.shuffle(teams);
+        LocalDateTime baseTime = LocalDateTime.now().plusDays(7);
 
-        int teamCount = teams.size();
-        // Calculate total rounds: ceil(log2(teamCount))
-        int totalRounds = (int) Math.ceil(Math.log(teamCount) / Math.log(2));
-        // Total slots in first round (power of 2)
+        if (tournament.getStructure() == Tournament.TournamentStructure.GROUP_KNOCKOUT) {
+            if (teams.size() < 8) {
+                throw new RuntimeException("Thể thức Vòng bảng cần ít nhất 8 đội để đánh Tứ kết!");
+            }
+            List<Team> groupA = teams.subList(0, teams.size() / 2);
+            List<Team> groupB = teams.subList(teams.size() / 2, teams.size());
+            
+            generateRoundRobinMatches(tournament, groupA, "A", baseTime, request);
+            generateRoundRobinMatches(tournament, groupB, "B", baseTime, request);
+            
+            // Generate empty knockout bracket for 8 teams (3 rounds: QF, SF, Final)
+            generateEmptyKnockoutBracket(tournament, 3, baseTime.plusDays(7), request, false, null);
+        } else {
+            if (teams.size() < 2) {
+                throw new RuntimeException("Cần ít nhất 2 đội tuyển đã được duyệt để tạo sơ đồ thi đấu!");
+            }
+            int teamCount = teams.size();
+            int totalRounds = (int) Math.ceil(Math.log(teamCount) / Math.log(2));
+            generateEmptyKnockoutBracket(tournament, totalRounds, baseTime, request, true, teams);
+        }
+
+        tournament.setRegistrationStatus(Tournament.RegistrationStatus.IN_PROGRESS);
+        tournamentRepository.save(tournament);
+    }
+
+    private void generateRoundRobinMatches(Tournament tournament, List<Team> teams, String groupName, LocalDateTime baseTime, com.tournament.engine.modules.tournament.dto.GenerateBracketRequest request) {
+        Tournament.MatchFormat roundFormat;
+        try {
+            roundFormat = Tournament.MatchFormat.valueOf(request.getEarlyRoundsFormat() != null ? request.getEarlyRoundsFormat() : "BO1");
+        } catch (IllegalArgumentException e) {
+            roundFormat = Tournament.MatchFormat.BO1;
+        }
+
+        int matchCount = 0;
+        for (int i = 0; i < teams.size(); i++) {
+            for (int j = i + 1; j < teams.size(); j++) {
+                Match match = Match.builder()
+                        .tournament(tournament)
+                        .roundNumber(0) // 0 for group stage
+                        .positionInRound(++matchCount)
+                        .status(Match.MatchStatus.PENDING)
+                        .scheduledTime(baseTime.plusHours(matchCount * 2))
+                        .scoreTeam1(0)
+                        .scoreTeam2(0)
+                        .isLocked(false)
+                        .format(roundFormat)
+                        .stage(Match.MatchStage.GROUP)
+                        .groupName(groupName)
+                        .team1(teams.get(i))
+                        .team2(teams.get(j))
+                        .build();
+                matchRepository.save(match);
+            }
+        }
+    }
+
+    private void generateEmptyKnockoutBracket(Tournament tournament, int totalRounds, LocalDateTime baseTime, com.tournament.engine.modules.tournament.dto.GenerateBracketRequest request, boolean assignTeams, List<Team> teams) {
         int bracketSize = (int) Math.pow(2, totalRounds);
-
-        // Build matches from Final back to Round 1
-        // Create all matches first, then link them
         List<List<Match>> roundMatches = new ArrayList<>();
 
-        LocalDateTime baseTime = LocalDateTime.now().plusDays(7); // Start 1 week from now
-
-        // Create matches for each round (from round 1 to final)
         for (int round = 1; round <= totalRounds; round++) {
             int matchesInRound = bracketSize / (int) Math.pow(2, round);
             List<Match> matches = new ArrayList<>();
@@ -113,23 +154,22 @@ public class MatchServiceImpl implements MatchService {
                         .roundNumber(round)
                         .positionInRound(pos)
                         .status(Match.MatchStatus.PENDING)
-                        .scheduledTime(baseTime.plusDays((round - 1) * 3).plusHours(pos)) // Spread scheduling
+                        .scheduledTime(baseTime.plusDays((round - 1) * 3).plusHours(pos))
                         .scoreTeam1(0)
                         .scoreTeam2(0)
                         .isLocked(false)
                         .format(roundFormat)
+                        .stage(Match.MatchStage.KNOCKOUT)
                         .build();
                 matches.add(match);
             }
             roundMatches.add(matches);
         }
 
-        // Save all matches first to get IDs
         for (List<Match> matches : roundMatches) {
             matchRepository.saveAll(matches);
         }
 
-        // Link nextMatch references: Round N match -> Round N+1 match
         for (int round = 0; round < totalRounds - 1; round++) {
             List<Match> currentRound = roundMatches.get(round);
             List<Match> nextRound = roundMatches.get(round + 1);
@@ -137,7 +177,7 @@ public class MatchServiceImpl implements MatchService {
             for (int i = 0; i < currentRound.size(); i++) {
                 Match current = currentRound.get(i);
                 int nextMatchIndex = i / 2;
-                int slot = (i % 2) + 1; // 1 or 2
+                int slot = (i % 2) + 1;
 
                 if (nextMatchIndex < nextRound.size()) {
                     current.setNextMatch(nextRound.get(nextMatchIndex));
@@ -147,24 +187,21 @@ public class MatchServiceImpl implements MatchService {
             matchRepository.saveAll(currentRound);
         }
 
-        // Assign teams to Round 1 matches
-        List<Match> round1Matches = roundMatches.get(0);
-        int teamIndex = 0;
-        for (Match match : round1Matches) {
-            if (teamIndex < teams.size()) {
-                match.setTeam1(teams.get(teamIndex));
-                teamIndex++;
+        if (assignTeams && teams != null) {
+            List<Match> round1Matches = roundMatches.get(0);
+            int teamIndex = 0;
+            for (Match match : round1Matches) {
+                if (teamIndex < teams.size()) {
+                    match.setTeam1(teams.get(teamIndex));
+                    teamIndex++;
+                }
+                if (teamIndex < teams.size()) {
+                    match.setTeam2(teams.get(teamIndex));
+                    teamIndex++;
+                }
             }
-            if (teamIndex < teams.size()) {
-                match.setTeam2(teams.get(teamIndex));
-                teamIndex++;
-            }
+            matchRepository.saveAll(round1Matches);
         }
-        matchRepository.saveAll(round1Matches);
-
-        // Update tournament status to IN_PROGRESS
-        tournament.setRegistrationStatus(Tournament.RegistrationStatus.IN_PROGRESS);
-        tournamentRepository.save(tournament);
     }
 
     @Override
@@ -249,6 +286,127 @@ public class MatchServiceImpl implements MatchService {
         return mapToResponse(match, match.getTournament().getName());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.tournament.engine.modules.tournament.dto.TournamentGroupStanding> getGroupStandings(Long tournamentId) {
+        List<Match> groupMatches = matchRepository.findByTournamentIdOrderByRoundNumberAscPositionInRoundAsc(tournamentId)
+                .stream().filter(m -> m.getStage() == Match.MatchStage.GROUP).collect(Collectors.toList());
+
+        Map<String, Map<Long, com.tournament.engine.modules.tournament.dto.TournamentGroupStanding>> standingsMap = new HashMap<>();
+
+        for (Match m : groupMatches) {
+            String groupName = m.getGroupName();
+            standingsMap.putIfAbsent(groupName, new HashMap<>());
+            Map<Long, com.tournament.engine.modules.tournament.dto.TournamentGroupStanding> groupStandings = standingsMap.get(groupName);
+
+            if (m.getTeam1() != null) {
+                groupStandings.putIfAbsent(m.getTeam1().getId(), createStanding(m.getTeam1(), groupName));
+            }
+            if (m.getTeam2() != null) {
+                groupStandings.putIfAbsent(m.getTeam2().getId(), createStanding(m.getTeam2(), groupName));
+            }
+
+            if (m.getStatus() == Match.MatchStatus.COMPLETED) {
+                com.tournament.engine.modules.tournament.dto.TournamentGroupStanding st1 = groupStandings.get(m.getTeam1().getId());
+                com.tournament.engine.modules.tournament.dto.TournamentGroupStanding st2 = groupStandings.get(m.getTeam2().getId());
+
+                st1.setMatchesPlayed(st1.getMatchesPlayed() + 1);
+                st2.setMatchesPlayed(st2.getMatchesPlayed() + 1);
+                
+                int diff1 = m.getScoreTeam1() - m.getScoreTeam2();
+                int diff2 = m.getScoreTeam2() - m.getScoreTeam1();
+                
+                st1.setRoundDifference(st1.getRoundDifference() + diff1);
+                st2.setRoundDifference(st2.getRoundDifference() + diff2);
+
+                if (m.getWinner() != null) {
+                    if (m.getWinner().getId().equals(m.getTeam1().getId())) {
+                        st1.setWins(st1.getWins() + 1);
+                        st1.setPoints(st1.getPoints() + 1);
+                        st2.setLosses(st2.getLosses() + 1);
+                    } else {
+                        st2.setWins(st2.getWins() + 1);
+                        st2.setPoints(st2.getPoints() + 1);
+                        st1.setLosses(st1.getLosses() + 1);
+                    }
+                }
+            }
+        }
+
+        List<com.tournament.engine.modules.tournament.dto.TournamentGroupStanding> result = new ArrayList<>();
+        for (Map<Long, com.tournament.engine.modules.tournament.dto.TournamentGroupStanding> map : standingsMap.values()) {
+            List<com.tournament.engine.modules.tournament.dto.TournamentGroupStanding> groupList = new ArrayList<>(map.values());
+            groupList.sort((a, b) -> {
+                if (a.getPoints() != b.getPoints()) return b.getPoints() - a.getPoints();
+                return b.getRoundDifference() - a.getRoundDifference();
+            });
+            result.addAll(groupList);
+        }
+        return result;
+    }
+
+    private com.tournament.engine.modules.tournament.dto.TournamentGroupStanding createStanding(Team team, String groupName) {
+        return com.tournament.engine.modules.tournament.dto.TournamentGroupStanding.builder()
+                .groupName(groupName)
+                .teamId(team.getId())
+                .teamName(team.getName())
+                .teamTag(team.getTag())
+                .logoUrl(team.getLogoUrl())
+                .matchesPlayed(0)
+                .wins(0)
+                .losses(0)
+                .points(0)
+                .roundDifference(0)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void advanceToKnockout(Long tournamentId, Long userId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
+        validateOrganizerOrAdmin(tournamentId, userId);
+
+        if (tournament.getStructure() != Tournament.TournamentStructure.GROUP_KNOCKOUT) {
+            throw new RuntimeException("Chỉ giải đấu vòng bảng mới cần chốt kết quả vào Knockout!");
+        }
+
+        List<com.tournament.engine.modules.tournament.dto.TournamentGroupStanding> standings = getGroupStandings(tournamentId);
+        List<Team> groupATop4 = standings.stream().filter(s -> "A".equals(s.getGroupName())).limit(4)
+                .map(s -> teamRepository.findById(s.getTeamId()).orElse(null)).filter(Objects::nonNull).collect(Collectors.toList());
+        List<Team> groupBTop4 = standings.stream().filter(s -> "B".equals(s.getGroupName())).limit(4)
+                .map(s -> teamRepository.findById(s.getTeamId()).orElse(null)).filter(Objects::nonNull).collect(Collectors.toList());
+
+        if (groupATop4.size() < 4 || groupBTop4.size() < 4) {
+            throw new RuntimeException("Chưa đủ 4 đội mỗi bảng để chia nhánh đấu Tứ kết!");
+        }
+
+        List<Match> knockoutMatches = matchRepository.findByTournamentIdOrderByRoundNumberAscPositionInRoundAsc(tournamentId)
+                .stream().filter(m -> m.getStage() == Match.MatchStage.KNOCKOUT && m.getRoundNumber() == 1).collect(Collectors.toList());
+        
+        if (knockoutMatches.size() < 4) {
+            throw new RuntimeException("Lỗi cấu trúc giải đấu: Không tìm thấy 4 trận Tứ kết!");
+        }
+
+        Match qf1 = knockoutMatches.get(0);
+        qf1.setTeam1(groupATop4.get(0)); // 1A
+        qf1.setTeam2(groupBTop4.get(3)); // 4B
+
+        Match qf2 = knockoutMatches.get(1);
+        qf2.setTeam1(groupBTop4.get(1)); // 2B
+        qf2.setTeam2(groupATop4.get(2)); // 3A
+
+        Match qf3 = knockoutMatches.get(2);
+        qf3.setTeam1(groupBTop4.get(0)); // 1B
+        qf3.setTeam2(groupATop4.get(3)); // 4A
+
+        Match qf4 = knockoutMatches.get(3);
+        qf4.setTeam1(groupATop4.get(1)); // 2A
+        qf4.setTeam2(groupBTop4.get(2)); // 3B
+
+        matchRepository.saveAll(knockoutMatches);
+    }
+
     private void validateOrganizerOrAdmin(Long tournamentId, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
@@ -292,6 +450,8 @@ public class MatchServiceImpl implements MatchService {
                 .nextMatchId(match.getNextMatch() != null ? match.getNextMatch().getId() : null)
                 .nextMatchSlot(match.getNextMatchSlot())
                 .format(match.getFormat() != null ? match.getFormat().name() : null)
+                .stage(match.getStage() != null ? match.getStage().name() : null)
+                .groupName(match.getGroupName())
                 .build();
     }
 }

@@ -55,12 +55,18 @@ export default function TournamentOverview({
   upcomingMatches = [],
   pastMatches = [],
   activeSubTab,
-  setActiveSubTab
+  setActiveSubTab,
+  tournament,
+  standings = []
 }) {
-  const rounds = [...new Set(internalMatches.map(m => m.roundNumber))].sort((a, b) => a - b);
+  const isGroupKnockout = tournament?.structure === 'GROUP_KNOCKOUT';
+  const groupMatches = internalMatches.filter(m => m.stage === 'GROUP');
+  const bracketMatches = isGroupKnockout ? internalMatches.filter(m => m.stage === 'KNOCKOUT') : internalMatches;
+
+  const rounds = [...new Set(bracketMatches.map(m => m.roundNumber))].sort((a, b) => a - b);
   const totalRounds = rounds.length > 0 ? Math.max(...rounds) : 0;
   
-  const matchesByRound = internalMatches.reduce((acc, match) => {
+  const matchesByRound = bracketMatches.reduce((acc, match) => {
     if (!acc[match.roundNumber]) acc[match.roundNumber] = [];
     acc[match.roundNumber].push(match);
     return acc;
@@ -114,7 +120,44 @@ export default function TournamentOverview({
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Column (Groups / Bracket) */}
         <div className={`flex-1 ${internalMatches.length === 0 ? 'w-full' : ''}`}>
-          {internalMatches.length > 0 && (
+          
+          {isGroupKnockout && standings.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-primary-red text-xs font-bold uppercase tracking-wider mb-3">Vòng Bảng</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {['A', 'B'].map(groupName => (
+                  <div key={groupName} className="bg-[#222] border border-[#333]">
+                    <div className="bg-[#111] p-2 text-center text-xs font-bold text-white border-b border-[#333] uppercase">
+                      Bảng {groupName}
+                    </div>
+                    <div className="flex items-center p-2 border-b border-[#333]">
+                      <div className="w-8 text-[10px] font-bold text-[#a0a0a0] uppercase">#</div>
+                      <div className="flex-1 text-[10px] font-bold text-[#a0a0a0] uppercase">Đội</div>
+                      <div className="w-10 text-[10px] font-bold text-[#a0a0a0] uppercase text-center">Trận</div>
+                      <div className="w-10 text-[10px] font-bold text-[#a0a0a0] uppercase text-center">T - B</div>
+                      <div className="w-10 text-[10px] font-bold text-[#a0a0a0] uppercase text-center">HS</div>
+                      <div className="w-10 text-[10px] font-bold text-[#a0a0a0] uppercase text-center">Điểm</div>
+                    </div>
+                    {standings.filter(s => s.groupName === groupName).map((team, idx) => (
+                      <div key={team.teamId} className={`flex items-center p-2 border-b border-[#333] hover:bg-[#2a2a2a] transition-colors ${idx < 4 ? 'border-l-2 border-l-success-cyan' : ''}`}>
+                        <div className="w-8 text-xs font-semibold text-[#666] pl-2">{idx + 1}</div>
+                        <div className="flex-1 text-xs font-semibold text-white flex items-center gap-2">
+                          {team.logoUrl && <img src={team.logoUrl} className="w-4 h-4 object-contain" alt=""/>}
+                          {team.teamName}
+                        </div>
+                        <div className="w-10 text-xs text-[#a0a0a0] text-center">{team.matchesPlayed}</div>
+                        <div className="w-10 text-xs text-[#a0a0a0] text-center">{team.wins} - {team.losses}</div>
+                        <div className="w-10 text-xs text-[#a0a0a0] text-center">{team.roundDifference > 0 ? `+${team.roundDifference}` : team.roundDifference}</div>
+                        <div className="w-10 text-xs font-bold text-white text-center">{team.points}</div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {bracketMatches.length > 0 && (
             <>
               <h2 className="text-primary-red text-xs font-bold uppercase tracking-wider mb-3">Sơ Đồ Thi Đấu</h2>
               <div className="bg-[#222] border border-[#333] p-4 mb-8 overflow-x-auto">

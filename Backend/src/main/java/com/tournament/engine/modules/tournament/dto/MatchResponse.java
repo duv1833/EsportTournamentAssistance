@@ -40,4 +40,6 @@ public class MatchResponse {
     private Long nextMatchId;
     private Integer nextMatchSlot;
     private String format;
+    private String stage;
+    private String groupName;
 }

@@ -17,12 +17,14 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
     maxTeams: tournament?.maxTeams || 16,
     rulesDescription: tournament?.rulesDescription || '',
     format: tournament?.format || 'SINGLE_ELIMINATION',
+    structure: tournament?.structure || 'SINGLE_ELIMINATION',
     startDate: tournament?.startDate ? tournament.startDate.split('T')[0] : '',
     endDate: tournament?.endDate ? tournament.endDate.split('T')[0] : '',
     prizePool: tournament?.prizePool || '',
     location: tournament?.location || ''
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
 
   const fetchRegistrations = async () => {
     setIsLoading(true);
@@ -96,6 +98,7 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
         editForm.endDate,
         editForm.prizePool,
         editForm.location,
+        editForm.structure,
         currentUser.id
       );
       if (res.success) {
@@ -109,6 +112,25 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
       setError(err.response?.data?.message || 'Lỗi hệ thống khi cập nhật giải đấu.');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleAdvanceToKnockout = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn chốt kết quả Vòng Bảng và tạo sơ đồ Tứ kết không? Hành động này không thể hoàn tác.")) return;
+    setIsAdvancing(true);
+    try {
+      const { advanceToKnockout } = await import('../services/tournamentService');
+      const res = await advanceToKnockout(tournament.id, currentUser.id);
+      if (res.success) {
+        setSuccess('Đã chốt danh sách Vòng Bảng và tạo nhánh đấu Tứ kết!');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(res.message || 'Lỗi khi chia cặp.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Lỗi hệ thống khi chốt vòng bảng.');
+    } finally {
+      setIsAdvancing(false);
     }
   };
 
@@ -268,18 +290,31 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
             />
           </div>
 
-          <div>
-            <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Số lượng đội tối đa</label>
-            <select
-              className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
-              value={editForm.maxTeams}
-              onChange={(e) => setEditForm({ ...editForm, maxTeams: parseInt(e.target.value) })}
-            >
-              <option value={4}>4 Đội</option>
-              <option value={8}>8 Đội</option>
-              <option value={16}>16 Đội</option>
-              <option value={32}>32 Đội</option>
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Số lượng đội tối đa</label>
+              <select
+                className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
+                value={editForm.maxTeams}
+                onChange={(e) => setEditForm({ ...editForm, maxTeams: parseInt(e.target.value) })}
+              >
+                <option value={4}>4 Đội</option>
+                <option value={8}>8 Đội</option>
+                <option value={16}>16 Đội</option>
+                <option value={32}>32 Đội</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Thể thức thi đấu</label>
+              <select
+                className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
+                value={editForm.structure}
+                onChange={(e) => setEditForm({ ...editForm, structure: e.target.value })}
+              >
+                <option value="SINGLE_ELIMINATION">Loại Trực Tiếp (Single Elimination)</option>
+                <option value="GROUP_KNOCKOUT">Vòng Bảng + Nhánh Đấu (Group Stage & Knockout)</option>
+              </select>
+            </div>
           </div>
 
           <div>
@@ -337,7 +372,19 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-outline-variant flex justify-end">
+          <div className="pt-4 border-t border-outline-variant flex justify-between">
+            {tournament.structure === 'GROUP_KNOCKOUT' ? (
+              <TactileButton
+                type="button"
+                disabled={isAdvancing}
+                onClick={handleAdvanceToKnockout}
+                className="bg-warning-amber/10 text-warning-amber border border-warning-amber font-display text-sm py-3 px-6 uppercase font-bold hover:bg-warning-amber hover:text-background disabled:opacity-50"
+              >
+                {isAdvancing ? 'Đang xử lý...' : 'Chốt Vòng Bảng & Tạo Tứ Kết'}
+              </TactileButton>
+            ) : (
+              <div></div>
+            )}
             <TactileButton
               type="submit"
               disabled={isUpdating}

@@ -11,6 +11,7 @@ public class TournamentResponse {
     private Long id;
     private String name;
     private String format;
+    private String structure;
     private Integer maxTeams;
     private String rulesDescription;
     private String registrationStatus;
