@@ -15,6 +15,10 @@ public class TournamentResponse {
     private String rulesDescription;
     private String registrationStatus;
     private String approvalStatus;
+    private String startDate;
+    private String endDate;
+    private String prizePool;
+    private String location;
     private Long creatorId;
     private String creatorUsername;
     private List<RegisteredTeamDto> registeredTeams;

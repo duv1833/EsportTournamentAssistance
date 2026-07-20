@@ -69,7 +69,7 @@ function App() {
   const [tournaments, setTournaments] = useState([]);
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [tournamentViewMode, setTournamentViewMode] = useState('list'); // list, create, details, register
-  const [createForm, setCreateForm] = useState({ name: '', maxTeams: 16, rulesDescription: '' });
+  const [createForm, setCreateForm] = useState({ name: '', maxTeams: 16, rulesDescription: '', startDate: '', endDate: '', prizePool: '', location: '' });
   const [registerFormTeam, setRegisterFormTeam] = useState({ teamName: '', teamTag: '', captainInGameName: '' });
   const [joinTeamModal, setJoinTeamModal] = useState({ isOpen: false, teamId: null, inGameName: '' });
   const [tournamentError, setTournamentError] = useState('');
@@ -115,11 +115,15 @@ function App() {
         createForm.name,
         parseInt(createForm.maxTeams),
         createForm.rulesDescription,
+        createForm.startDate,
+        createForm.endDate,
+        createForm.prizePool,
+        createForm.location,
         currentUser.id
       );
       if (res.success) {
         setTournamentSuccess('Tạo giải đấu thành công! Giải đấu của bạn đang chờ Admin phê duyệt trước khi được xuất bản công khai.');
-        setCreateForm({ name: '', maxTeams: 16, rulesDescription: '' });
+        setCreateForm({ name: '', maxTeams: 16, rulesDescription: '', startDate: '', endDate: '', prizePool: '', location: '' });
         await fetchTournaments();
         setTimeout(() => {
           setTournamentViewMode('list');
@@ -540,6 +544,50 @@ function App() {
                       value={createForm.rulesDescription}
                       onChange={(e) => setCreateForm({ ...createForm, rulesDescription: e.target.value })}
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Ngày bắt đầu</label>
+                      <input
+                        type="date"
+                        className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red [color-scheme:dark]"
+                        value={createForm.startDate}
+                        onChange={(e) => setCreateForm({ ...createForm, startDate: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Ngày kết thúc</label>
+                      <input
+                        type="date"
+                        className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red [color-scheme:dark]"
+                        value={createForm.endDate}
+                        onChange={(e) => setCreateForm({ ...createForm, endDate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Giải thưởng (Prize Pool)</label>
+                      <input
+                        type="text"
+                        className="w-full bg-background border border-outline-variant p-3 text-off-white font-body text-sm focus:outline-none focus:border-primary-red"
+                        placeholder="VD: $250,000"
+                        value={createForm.prizePool}
+                        onChange={(e) => setCreateForm({ ...createForm, prizePool: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Địa điểm</label>
+                      <input
+                        type="text"
+                        className="w-full bg-background border border-outline-variant p-3 text-off-white font-body text-sm focus:outline-none focus:border-primary-red"
+                        placeholder="VD: BR São Paulo"
+                        value={createForm.location}
+                        onChange={(e) => setCreateForm({ ...createForm, location: e.target.value })}
+                      />
+                    </div>
                   </div>
 
                   <div className="flex gap-4 pt-2">

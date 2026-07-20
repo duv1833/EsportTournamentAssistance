@@ -52,6 +52,12 @@ public class Tournament {
     @Column(name = "end_date")
     private LocalDateTime endDate;
 
+    @Column(name = "prize_pool")
+    private String prizePool;
+
+    @Column(name = "location")
+    private String location;
+
     @Column(name = "banner_url")
     private String bannerUrl;
 

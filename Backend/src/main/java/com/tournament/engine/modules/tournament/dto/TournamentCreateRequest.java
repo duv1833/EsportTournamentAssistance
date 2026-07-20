@@ -8,5 +8,9 @@ public class TournamentCreateRequest {
     private String format; // BO1, BO3, BO5
     private Integer maxTeams; // 8, 16, 32
     private String rulesDescription;
+    private String startDate;
+    private String endDate;
+    private String prizePool;
+    private String location;
     private Long creatorId;
 }

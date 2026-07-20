@@ -131,16 +131,19 @@ export default function TournamentDetailsVLR({ currentUser }) {
             <div className="flex flex-wrap gap-x-12 gap-y-4 pt-2">
               <div>
                 <p className="text-[#a0a0a0] text-[10px] uppercase font-bold tracking-wider mb-1">Dates</p>
-                <p className="text-sm font-semibold text-white">Jul 17 – Sep 7, 2026</p>
+                <p className="text-sm font-semibold text-white">
+                  {tournament.startDate ? new Date(tournament.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD'} 
+                  {tournament.endDate ? ` – ${new Date(tournament.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+                </p>
               </div>
               <div>
                 <p className="text-[#a0a0a0] text-[10px] uppercase font-bold tracking-wider mb-1">Prize</p>
-                <p className="text-sm font-semibold text-white">$250,000</p>
+                <p className="text-sm font-semibold text-white">{tournament.prizePool || 'TBD'}</p>
               </div>
               <div>
                 <p className="text-[#a0a0a0] text-[10px] uppercase font-bold tracking-wider mb-1">Location</p>
                 <p className="text-sm font-semibold text-white flex items-center gap-2">
-                  <span>🇧🇷</span> São Paulo
+                  {tournament.location || 'TBD'}
                 </p>
               </div>
             </div>

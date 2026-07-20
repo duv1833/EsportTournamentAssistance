@@ -16,7 +16,11 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
     name: tournament?.name || '',
     maxTeams: tournament?.maxTeams || 16,
     rulesDescription: tournament?.rulesDescription || '',
-    format: tournament?.format || 'SINGLE_ELIMINATION'
+    format: tournament?.format || 'SINGLE_ELIMINATION',
+    startDate: tournament?.startDate ? tournament.startDate.split('T')[0] : '',
+    endDate: tournament?.endDate ? tournament.endDate.split('T')[0] : '',
+    prizePool: tournament?.prizePool || '',
+    location: tournament?.location || ''
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -88,6 +92,10 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
         editForm.name,
         editForm.maxTeams,
         editForm.rulesDescription,
+        editForm.startDate,
+        editForm.endDate,
+        editForm.prizePool,
+        editForm.location,
         currentUser.id
       );
       if (res.success) {
@@ -283,6 +291,50 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
               onChange={(e) => setEditForm({ ...editForm, rulesDescription: e.target.value })}
               placeholder="Nhập luật thi đấu và thông tin chi tiết..."
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Ngày bắt đầu</label>
+              <input
+                type="date"
+                className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red [color-scheme:dark]"
+                value={editForm.startDate}
+                onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Ngày kết thúc</label>
+              <input
+                type="date"
+                className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red [color-scheme:dark]"
+                value={editForm.endDate}
+                onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Giải thưởng</label>
+              <input
+                type="text"
+                className="w-full bg-background border border-outline-variant p-3 text-off-white font-body text-sm focus:outline-none focus:border-primary-red"
+                placeholder="VD: $250,000"
+                value={editForm.prizePool}
+                onChange={(e) => setEditForm({ ...editForm, prizePool: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Địa điểm</label>
+              <input
+                type="text"
+                className="w-full bg-background border border-outline-variant p-3 text-off-white font-body text-sm focus:outline-none focus:border-primary-red"
+                placeholder="VD: BR São Paulo"
+                value={editForm.location}
+                onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+              />
+            </div>
           </div>
 
           <div className="pt-4 border-t border-outline-variant flex justify-end">

@@ -22,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 
 @Service
 @RequiredArgsConstructor
@@ -68,10 +71,31 @@ public class TournamentServiceImpl implements TournamentService {
                 .format(matchFormat)
                 .maxTeams(request.getMaxTeams())
                 .rulesDescription(request.getRulesDescription())
+                .prizePool(request.getPrizePool())
+                .location(request.getLocation())
                 .registrationStatus(Tournament.RegistrationStatus.LOCKED)
                 .approvalStatus(Tournament.ApprovalStatus.PENDING)
                 .creator(creator)
                 .build();
+                
+        if (request.getStartDate() != null && !request.getStartDate().isBlank()) {
+            try {
+                tournament.setStartDate(LocalDate.parse(request.getStartDate()).atStartOfDay());
+            } catch (DateTimeParseException e) {
+                try {
+                    tournament.setStartDate(LocalDateTime.parse(request.getStartDate()));
+                } catch (DateTimeParseException ignored) {}
+            }
+        }
+        if (request.getEndDate() != null && !request.getEndDate().isBlank()) {
+            try {
+                tournament.setEndDate(LocalDate.parse(request.getEndDate()).atStartOfDay());
+            } catch (DateTimeParseException e) {
+                try {
+                    tournament.setEndDate(LocalDateTime.parse(request.getEndDate()));
+                } catch (DateTimeParseException ignored) {}
+            }
+        }
 
         tournament = tournamentRepository.save(tournament);
 
@@ -132,6 +156,30 @@ public class TournamentServiceImpl implements TournamentService {
         if (request.getRulesDescription() != null) {
             tournament.setRulesDescription(request.getRulesDescription());
         }
+        if (request.getPrizePool() != null) {
+            tournament.setPrizePool(request.getPrizePool());
+        }
+        if (request.getLocation() != null) {
+            tournament.setLocation(request.getLocation());
+        }
+        if (request.getStartDate() != null && !request.getStartDate().isBlank()) {
+            try {
+                tournament.setStartDate(LocalDate.parse(request.getStartDate()).atStartOfDay());
+            } catch (DateTimeParseException e) {
+                try {
+                    tournament.setStartDate(LocalDateTime.parse(request.getStartDate()));
+                } catch (DateTimeParseException ignored) {}
+            }
+        }
+        if (request.getEndDate() != null && !request.getEndDate().isBlank()) {
+            try {
+                tournament.setEndDate(LocalDate.parse(request.getEndDate()).atStartOfDay());
+            } catch (DateTimeParseException e) {
+                try {
+                    tournament.setEndDate(LocalDateTime.parse(request.getEndDate()));
+                } catch (DateTimeParseException ignored) {}
+            }
+        }
 
         tournamentRepository.save(tournament);
     }
@@ -161,6 +209,30 @@ public class TournamentServiceImpl implements TournamentService {
         }
         if (request.getRulesDescription() != null) {
             tournament.setRulesDescription(request.getRulesDescription());
+        }
+        if (request.getPrizePool() != null) {
+            tournament.setPrizePool(request.getPrizePool());
+        }
+        if (request.getLocation() != null) {
+            tournament.setLocation(request.getLocation());
+        }
+        if (request.getStartDate() != null && !request.getStartDate().isBlank()) {
+            try {
+                tournament.setStartDate(LocalDate.parse(request.getStartDate()).atStartOfDay());
+            } catch (DateTimeParseException e) {
+                try {
+                    tournament.setStartDate(LocalDateTime.parse(request.getStartDate()));
+                } catch (DateTimeParseException ignored) {}
+            }
+        }
+        if (request.getEndDate() != null && !request.getEndDate().isBlank()) {
+            try {
+                tournament.setEndDate(LocalDate.parse(request.getEndDate()).atStartOfDay());
+            } catch (DateTimeParseException e) {
+                try {
+                    tournament.setEndDate(LocalDateTime.parse(request.getEndDate()));
+                } catch (DateTimeParseException ignored) {}
+            }
         }
 
         tournamentRepository.save(tournament);
@@ -409,6 +481,10 @@ public class TournamentServiceImpl implements TournamentService {
                 .rulesDescription(tournament.getRulesDescription())
                 .registrationStatus(tournament.getRegistrationStatus().name())
                 .approvalStatus(tournament.getApprovalStatus() != null ? tournament.getApprovalStatus().name() : "PENDING")
+                .startDate(tournament.getStartDate() != null ? tournament.getStartDate().toString() : null)
+                .endDate(tournament.getEndDate() != null ? tournament.getEndDate().toString() : null)
+                .prizePool(tournament.getPrizePool())
+                .location(tournament.getLocation())
                 .creatorId(tournament.getCreator().getId())
                 .creatorUsername(tournament.getCreator().getDisplayName())
                 .registeredTeams(registeredTeams)

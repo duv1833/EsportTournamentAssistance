@@ -10,13 +10,13 @@ export const getTournamentDetails = async (id) => {
   return response.data;
 };
 
-export const createTournament = async (name, maxTeams, rulesDescription, creatorId) => {
-  const response = await api.post('/tournaments', { name, maxTeams, rulesDescription, creatorId });
+export const createTournament = async (name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, creatorId) => {
+  const response = await api.post('/tournaments', { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, creatorId });
   return response.data;
 };
 
-export const updateTournament = async (id, name, maxTeams, rulesDescription, organizerUserId) => {
-  const response = await api.put(`/tournaments/${id}`, { name, maxTeams, rulesDescription }, { params: { organizerUserId } });
+export const updateTournament = async (id, name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, organizerUserId) => {
+  const response = await api.put(`/tournaments/${id}`, { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location }, { params: { organizerUserId } });
   return response.data;
 };
 

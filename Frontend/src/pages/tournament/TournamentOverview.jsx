@@ -66,11 +66,29 @@ export default function TournamentOverview({
     return acc;
   }, {});
 
-  const subTabs = [
-    { name: 'Quarterfinals', date: 'Jul 17' },
-    { name: 'Semifinals', date: 'Jul 18' },
-    { name: 'Grand Final', date: 'Jul 19' },
-  ];
+  const subTabs = rounds.length > 0 
+    ? rounds.map(roundNum => {
+        const matchesInRound = matchesByRound[roundNum] || [];
+        const earliestDate = matchesInRound.reduce((earliest, match) => {
+          if (!match.scheduledTime) return earliest;
+          const matchDate = new Date(match.scheduledTime);
+          return !earliest || matchDate < earliest ? matchDate : earliest;
+        }, null);
+
+        const dateStr = earliestDate 
+          ? earliestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : 'TBD';
+
+        return {
+          name: getRoundLabel(roundNum, totalRounds),
+          date: dateStr
+        };
+      })
+    : [
+        { name: 'Quarterfinals', date: 'TBD' },
+        { name: 'Semifinals', date: 'TBD' },
+        { name: 'Grand Final', date: 'TBD' },
+      ];
 
   return (
     <div>
