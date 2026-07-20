@@ -2,9 +2,9 @@ spring:
   application:
     name: engine
   datasource:
-    url: jdbc:sqlserver://localhost\SQLEXPRESS;databaseName=EsportsTournamentDB;encrypt=true;trustServerCertificate=true
+    url: jdbc:sqlserver://localhost;databaseName=EsportsTournamentDB;encrypt=true;trustServerCertificate=true
     username: sa
-    password: 123
+    password: sa
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
   jpa:
     hibernate:

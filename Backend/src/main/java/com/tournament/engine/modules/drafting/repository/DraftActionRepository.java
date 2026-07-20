@@ -13,4 +13,5 @@ public interface DraftActionRepository extends JpaRepository<DraftAction, Long> 
 
     // Kiểm tra xem một Tướng (Agent) đã bị cấm hoặc chọn trong trận này chưa
     boolean existsByMatchIdAndAgentId(Long matchId, Long agentId);
+    boolean existsByMatchIdAndMapId(Long matchId, Long mapId);
 }

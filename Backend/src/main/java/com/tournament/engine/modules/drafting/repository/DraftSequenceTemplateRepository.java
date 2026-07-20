@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface DraftSequenceTemplateRepository extends JpaRepository<DraftSequenceTemplate, Long> {
     List<DraftSequenceTemplate> findByFormatOrderByStepNumberAsc(String format);
+    java.util.Optional<DraftSequenceTemplate> findByFormatAndStepNumber(String format, Integer stepNumber);
 }

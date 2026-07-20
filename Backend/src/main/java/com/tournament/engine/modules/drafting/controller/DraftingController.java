@@ -8,6 +8,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import java.util.Map;
 
 @Slf4j
 @Controller
@@ -15,29 +16,28 @@ import org.springframework.stereotype.Controller;
 public class DraftingController {
 
     private final SimpMessagingTemplate messagingTemplate;
-    
-    // Inject Service vừa viết vào đây
     private final DraftingService draftingService;
 
     @MessageMapping("/draft/action")
     public void handleDraftAction(@Payload DraftActionRequest request) {
-        log.info("🔴 [WebSocket] Nhận yêu cầu từ UI: Đội {} muốn {} tướng {}", 
-                 request.getTeamId(), request.getActionType(), request.getAgentName());
+        String targetName = "MAP".equals(request.getPhase()) ? request.getMapName() : request.getAgentName();
+        log.info("🔴 [WebSocket] Nhận yêu cầu: Đội {} -> {} {} [{}]",
+                request.getTeamId(), request.getActionType(), request.getPhase(), targetName);
 
-        String destination = "/topic/match/" + request.getMatchId();
+        String destination = "/topic/draft/" + request.getMatchId();
 
         try {
-            // Bước 1: Gọi Database để check bảo mật và Lưu thông tin
-            String responseMessage = draftingService.processAction(request);
-
-            // Bước 2: Nếu lưu DB thành công, phát sóng kết quả cho cả phòng cùng xem
-            messagingTemplate.convertAndSend(destination, responseMessage);
-            log.info("🟢 [WebSocket] Đã phát sóng: {}", responseMessage);
+            // Hàm xử lý bên trong Service đã tự tích hợp phát sóng trạng thái sang WebSocket
+            draftingService.processAction(request);
+            log.info("🟢 [WebSocket] Xử lý hành động thành công cho trận đấu {}", request.getMatchId());
 
         } catch (Exception e) {
-            log.error("❌ Lỗi Ban/Pick: {}", e.getMessage());
-            // Nếu có lỗi (VD: Cấm trùng, hoặc chưa tới lượt), báo lỗi đỏ lên màn hình
-            messagingTemplate.convertAndSend(destination, "LỖI: " + e.getMessage());
+            log.error("❌ Lỗi nghiệp vụ Ban/Pick: {}", e.getMessage());
+            // Trả về dữ liệu báo lỗi chuẩn cho UI
+            messagingTemplate.convertAndSend(destination, Map.of(
+                    "error", true,
+                    "message", e.getMessage()
+            ));
         }
     }
 }

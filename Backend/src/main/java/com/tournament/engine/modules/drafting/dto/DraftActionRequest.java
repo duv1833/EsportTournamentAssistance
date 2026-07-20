@@ -10,4 +10,5 @@ public class DraftActionRequest {
     private String phase;
     private String actionType;
     private String agentName;
+    private String mapName;
 }
