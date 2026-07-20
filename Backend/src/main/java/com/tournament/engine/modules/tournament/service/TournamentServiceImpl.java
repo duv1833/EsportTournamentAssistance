@@ -499,4 +499,87 @@ public class TournamentServiceImpl implements TournamentService {
                 .registeredTeams(registeredTeams)
                 .build();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.tournament.engine.modules.tournament.dto.TournamentOrganizerResponse> getTournamentOrganizers(Long tournamentId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu"));
+
+        List<TournamentOrganizer> organizers = tournamentOrganizerRepository.findByTournamentId(tournamentId);
+        return organizers.stream().map(o -> com.tournament.engine.modules.tournament.dto.TournamentOrganizerResponse.builder()
+                .id(o.getId())
+                .userId(o.getUser().getId())
+                .username(o.getUser().getUsername())
+                .email(o.getUser().getEmail())
+                .displayName(o.getUser().getDisplayName())
+                .avatarUrl(o.getUser().getAvatarUrl())
+                .role(o.getRole().name())
+                .assignedById(o.getAssignedBy() != null ? o.getAssignedBy().getId() : null)
+                .assignedByUsername(o.getAssignedBy() != null ? o.getAssignedBy().getDisplayName() : null)
+                .createdAt(o.getCreatedAt())
+                .build()
+        ).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void addTournamentOrganizer(Long tournamentId, com.tournament.engine.modules.tournament.dto.AddOrganizerRequest request, Long assignerUserId) {
+        validateOrganizer(tournamentId, assignerUserId);
+
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu"));
+
+        User assigner = userRepository.findById(assignerUserId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin người phân công"));
+
+        String query = request.getUsernameOrEmail() != null ? request.getUsernameOrEmail().trim() : "";
+        if (query.isBlank()) {
+            throw new RuntimeException("Vui lòng nhập Username hoặc Email của Trọng tài");
+        }
+
+        User targetUser = userRepository.findByUsername(query)
+                .orElseGet(() -> userRepository.findByEmail(query)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng có Username/Email: " + query)));
+
+        if (tournamentOrganizerRepository.existsByTournamentIdAndUserId(tournamentId, targetUser.getId())) {
+            throw new RuntimeException("Người dùng " + targetUser.getDisplayName() + " đã nằm trong Ban trọng tài / BTC giải đấu này rồi");
+        }
+
+        TournamentOrganizer.OrganizerRole role = TournamentOrganizer.OrganizerRole.REFEREE;
+        if (request.getRole() != null && !request.getRole().isBlank()) {
+            try {
+                role = TournamentOrganizer.OrganizerRole.valueOf(request.getRole().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                role = TournamentOrganizer.OrganizerRole.REFEREE;
+            }
+        }
+
+        TournamentOrganizer newOrganizer = TournamentOrganizer.builder()
+                .tournament(tournament)
+                .user(targetUser)
+                .role(role)
+                .assignedBy(assigner)
+                .build();
+
+        tournamentOrganizerRepository.save(newOrganizer);
+    }
+
+    @Override
+    @Transactional
+    public void removeTournamentOrganizer(Long tournamentId, Long targetUserId, Long assignerUserId) {
+        validateOrganizer(tournamentId, assignerUserId);
+
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu"));
+
+        if (tournament.getCreator().getId().equals(targetUserId)) {
+            throw new RuntimeException("Không thể gỡ quyền Chủ giải (Creator) của giải đấu này!");
+        }
+
+        TournamentOrganizer organizer = tournamentOrganizerRepository.findByTournamentIdAndUserId(tournamentId, targetUserId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không nằm trong danh sách Trọng tài/BTC của giải đấu này"));
+
+        tournamentOrganizerRepository.delete(organizer);
+    }
 }

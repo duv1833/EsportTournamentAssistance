@@ -1,16 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { getTournamentRegistrations, approveRegistration, rejectRegistration, updateTournament } from '../services/tournamentService';
+import { 
+  getTournamentRegistrations, 
+  approveRegistration, 
+  rejectRegistration, 
+  updateTournament,
+  getTournamentOrganizers,
+  addTournamentOrganizer,
+  removeTournamentOrganizer
+} from '../services/tournamentService';
 import TactileButton from '../components/common/TactileButton';
 import EmptyState from '../components/common/EmptyState';
-import { Users, Mail, Phone, Gamepad2, ArrowLeft, Check, X, Settings } from 'lucide-react';
+import { Users, Mail, Phone, Gamepad2, ArrowLeft, Check, X, Settings, ShieldCheck, UserPlus, Trash2 } from 'lucide-react';
 
 const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
   const [registrations, setRegistrations] = useState([]);
+  const [organizers, setOrganizers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isOrgLoading, setIsOrgLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [activeTab, setActiveTab] = useState('registrations'); // 'registrations' or 'edit'
+  const [activeTab, setActiveTab] = useState('registrations'); // 'registrations', 'edit', 'organizers'
   
+  // Add Organizer form state
+  const [addOrgQuery, setAddOrgQuery] = useState('');
+  const [addOrgRole, setAddOrgRole] = useState('REFEREE');
+  const [isAddingOrg, setIsAddingOrg] = useState(false);
+
   // Edit form state
   const [editForm, setEditForm] = useState({
     name: tournament?.name || '',
@@ -43,11 +58,70 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
     }
   };
 
+  const fetchOrganizers = async () => {
+    setIsOrgLoading(true);
+    try {
+      const res = await getTournamentOrganizers(tournament.id);
+      if (res.success) {
+        setOrganizers(res.data);
+      }
+    } catch (err) {
+      console.error('Lỗi lấy danh sách trọng tài/BTC:', err);
+    } finally {
+      setIsOrgLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (tournament && currentUser) {
       fetchRegistrations();
+      fetchOrganizers();
     }
   }, [tournament, currentUser]);
+
+  const handleAddOrganizerSubmit = async (e) => {
+    e.preventDefault();
+    if (!addOrgQuery.trim()) {
+      setError('Vui lòng nhập Username hoặc Email của người dùng!');
+      return;
+    }
+    setIsAddingOrg(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await addTournamentOrganizer(tournament.id, addOrgQuery.trim(), addOrgRole, currentUser.id);
+      if (res.success) {
+        setSuccess('Đã thêm Trọng tài / BTC thành công!');
+        setAddOrgQuery('');
+        fetchOrganizers();
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(res.message || 'Thêm thất bại!');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Lỗi hệ thống khi thêm Trọng tài/BTC.');
+    } finally {
+      setIsAddingOrg(false);
+    }
+  };
+
+  const handleRemoveOrganizerClick = async (targetUserId, targetDisplayName) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn gỡ quyền Trọng tài / BTC của ${targetDisplayName}?`)) return;
+    setError('');
+    setSuccess('');
+    try {
+      const res = await removeTournamentOrganizer(tournament.id, targetUserId, currentUser.id);
+      if (res.success) {
+        setSuccess('Đã gỡ quyền thành công!');
+        fetchOrganizers();
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(res.message || 'Gỡ quyền thất bại!');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Lỗi hệ thống khi gỡ quyền.');
+    }
+  };
 
   const handleApprove = async (teamId) => {
     try {
@@ -156,7 +230,13 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
           onClick={() => setActiveTab('registrations')}
           className={`pb-2 px-2 font-display text-sm uppercase tracking-wider ${activeTab === 'registrations' ? 'text-primary-red border-b-2 border-primary-red' : 'text-off-white/60 hover:text-off-white'}`}
         >
-          Quản lý Đội
+          Quản lý Đội ({registrations.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('organizers')}
+          className={`pb-2 px-2 font-display text-sm uppercase tracking-wider ${activeTab === 'organizers' ? 'text-primary-red border-b-2 border-primary-red' : 'text-off-white/60 hover:text-off-white'}`}
+        >
+          Ban Trọng Tài & BTC ({organizers.length})
         </button>
         <button
           onClick={() => setActiveTab('edit')}
@@ -165,6 +245,7 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
           Chỉnh sửa thông tin
         </button>
       </div>
+
 
       {error && (
         <div className="bg-primary-red/10 border border-primary-red text-primary-red p-3 mb-6 text-sm font-mono uppercase">
@@ -275,6 +356,98 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
             </div>
           )}
         </>
+      )}
+
+      {activeTab === 'organizers' && (
+        <div className="space-y-8">
+          {/* Form Phân quyền Trọng tài */}
+          <div className="bg-background border border-outline-variant p-6 rounded-sm">
+            <h4 className="font-display text-lg text-off-white uppercase mb-2 flex items-center gap-2">
+              <UserPlus size={20} className="text-primary-red" /> Phân Quyền Trọng Tài / Đồng Ban Tổ Chức
+            </h4>
+            <p className="font-mono text-xs text-tactical-gray mb-4">
+              Nhập Username hoặc Email của người dùng đã đăng ký tài khoản để gán vai trò Trọng tài phụ trách giải đấu này.
+            </p>
+            <form onSubmit={handleAddOrganizerSubmit} className="flex flex-col sm:flex-row gap-4">
+              <input
+                type="text"
+                value={addOrgQuery}
+                onChange={(e) => setAddOrgQuery(e.target.value)}
+                placeholder="Nhập Username hoặc Email (VD: referee1 hoặc referee@gmail.com)"
+                className="flex-1 bg-surface-charcoal border border-outline-variant p-3 text-off-white font-body text-sm focus:outline-none focus:border-primary-red"
+                required
+              />
+              <select
+                value={addOrgRole}
+                onChange={(e) => setAddOrgRole(e.target.value)}
+                className="bg-surface-charcoal border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
+              >
+                <option value="REFEREE">TRỌNG TÀI (REFEREE)</option>
+                <option value="CO_ORGANIZER">ĐỒNG BTC (CO-ORGANIZER)</option>
+              </select>
+              <TactileButton
+                type="submit"
+                disabled={isAddingOrg}
+                className="bg-primary-red hover:bg-primary-red/90 text-off-white font-mono text-xs py-3 px-6 uppercase font-bold tracking-wider disabled:opacity-50"
+              >
+                {isAddingOrg ? 'Đang thêm...' : 'Gán quyền'}
+              </TactileButton>
+            </form>
+          </div>
+
+          {/* Danh sách Trọng tài & BTC */}
+          <div>
+            <h4 className="font-display text-lg text-off-white uppercase mb-4 flex items-center gap-2">
+              <ShieldCheck size={20} className="text-success-cyan" /> Danh Sách Ban Trọng Tài & BTC Hiện Tại ({organizers.length})
+            </h4>
+            
+            {isOrgLoading ? (
+              <div className="text-center py-8 font-mono text-tactical-gray uppercase animate-pulse">Đang tải danh sách...</div>
+            ) : organizers.length === 0 ? (
+              <div className="bg-background border border-outline-variant p-6 text-center text-sm font-mono text-tactical-gray">
+                Chưa có Trọng tài nào được gán cho giải đấu này.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {organizers.map(org => {
+                  const isOwner = org.role === 'OWNER' || org.userId === tournament.creatorId;
+                  return (
+                    <div key={org.id} className="bg-background border border-outline-variant p-4 flex flex-col justify-between rounded-sm">
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                          <div className="font-body text-sm font-bold text-white flex items-center gap-2">
+                            {org.displayName}
+                            <span className="text-[11px] font-mono text-[#a0a0a0]">(@{org.username})</span>
+                          </div>
+                          <div className="font-mono text-xs text-tactical-gray mt-0.5">{org.email}</div>
+                        </div>
+                        <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                          org.role === 'OWNER' ? 'bg-primary-red/20 text-primary-red border border-primary-red/30' :
+                          org.role === 'REFEREE' ? 'bg-success-cyan/20 text-success-cyan border border-success-cyan/30' :
+                          'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        }`}>
+                          {org.role === 'OWNER' ? '👑 OWNER' : org.role === 'REFEREE' ? '⚖️ REFEREE' : '🛡️ CO-ORGANIZER'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-outline-variant/50 pt-3 mt-2 text-[11px] text-tactical-gray">
+                        <span>Gán bởi: {org.assignedByUsername || 'Chủ giải'}</span>
+                        {!isOwner && currentUser && (
+                          <button
+                            onClick={() => handleRemoveOrganizerClick(org.userId, org.displayName)}
+                            className="text-primary-red hover:text-red-400 font-mono text-xs flex items-center gap-1 font-bold uppercase transition-colors"
+                          >
+                            <Trash2 size={12} /> Gỡ quyền
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {activeTab === 'edit' && (

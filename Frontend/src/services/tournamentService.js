@@ -83,3 +83,19 @@ export const deleteTournamentByAdmin = async (tournamentId, adminUserId) => {
   return response.data;
 };
 
+// Organizer & Referee management
+export const getTournamentOrganizers = async (tournamentId) => {
+  const response = await api.get(`/tournaments/${tournamentId}/organizers`);
+  return response.data;
+};
+
+export const addTournamentOrganizer = async (tournamentId, usernameOrEmail, role, assignerUserId) => {
+  const response = await api.post(`/tournaments/${tournamentId}/organizers`, { usernameOrEmail, role }, { params: { assignerUserId } });
+  return response.data;
+};
+
+export const removeTournamentOrganizer = async (tournamentId, targetUserId, assignerUserId) => {
+  const response = await api.delete(`/tournaments/${tournamentId}/organizers/${targetUserId}`, { params: { assignerUserId } });
+  return response.data;
+};
+

@@ -179,4 +179,43 @@ public class TournamentController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    // Organizer & Referee Management endpoints
+    @GetMapping("/{id}/organizers")
+    public ResponseEntity<ApiResponse<List<com.tournament.engine.modules.tournament.dto.TournamentOrganizerResponse>>> getTournamentOrganizers(@PathVariable Long id) {
+        try {
+            List<com.tournament.engine.modules.tournament.dto.TournamentOrganizerResponse> response = tournamentService.getTournamentOrganizers(id);
+            return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách Trọng tài & Ban tổ chức thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/organizers")
+    public ResponseEntity<ApiResponse<Void>> addTournamentOrganizer(
+            @PathVariable Long id,
+            @RequestBody com.tournament.engine.modules.tournament.dto.AddOrganizerRequest request,
+            @RequestParam Long assignerUserId
+    ) {
+        try {
+            tournamentService.addTournamentOrganizer(id, request, assignerUserId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Phân quyền Trọng tài / BTC thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}/organizers/{userId}")
+    public ResponseEntity<ApiResponse<Void>> removeTournamentOrganizer(
+            @PathVariable Long id,
+            @PathVariable Long userId,
+            @RequestParam Long assignerUserId
+    ) {
+        try {
+            tournamentService.removeTournamentOrganizer(id, userId, assignerUserId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Gỡ quyền Trọng tài / BTC thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }
