@@ -73,6 +73,10 @@ public class Match {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "format")
+    private Tournament.MatchFormat format; // Inherit enum from Tournament
+
     public enum MatchStatus {
         PENDING, DRAFTING, LIVE, COMPLETED, CANCELLED
     }

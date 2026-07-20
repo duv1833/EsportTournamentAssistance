@@ -56,9 +56,16 @@ public class TournamentServiceImpl implements TournamentService {
         User creator = userRepository.findById(request.getCreatorId())
                 .orElseThrow(() -> new RuntimeException("Người tạo không tồn tại!"));
 
+        Tournament.MatchFormat matchFormat = null;
+        if (request.getFormat() != null && !request.getFormat().isBlank()) {
+            try {
+                matchFormat = Tournament.MatchFormat.valueOf(request.getFormat());
+            } catch (IllegalArgumentException ignored) {}
+        }
+
         Tournament tournament = Tournament.builder()
                 .name(request.getName())
-                .format(Tournament.MatchFormat.valueOf(request.getFormat()))
+                .format(matchFormat)
                 .maxTeams(request.getMaxTeams())
                 .rulesDescription(request.getRulesDescription())
                 .registrationStatus(Tournament.RegistrationStatus.LOCKED)
@@ -367,7 +374,7 @@ public class TournamentServiceImpl implements TournamentService {
         return TournamentResponse.builder()
                 .id(tournament.getId())
                 .name(tournament.getName())
-                .format(tournament.getFormat().name())
+                .format(tournament.getFormat() != null ? tournament.getFormat().name() : null)
                 .maxTeams(tournament.getMaxTeams())
                 .rulesDescription(tournament.getRulesDescription())
                 .registrationStatus(tournament.getRegistrationStatus().name())

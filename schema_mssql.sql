@@ -84,8 +84,8 @@ CREATE TABLE tournaments (
     id                    BIGINT IDENTITY(1,1) PRIMARY KEY,
     name                  NVARCHAR(150) NOT NULL,
     description           NVARCHAR(MAX) NULL,
-    format                NVARCHAR(5) NOT NULL
-                          CONSTRAINT CK_tournaments_format CHECK (format IN ('BO1','BO3','BO5')),
+    format                NVARCHAR(5) NULL
+                          CONSTRAINT CK_tournaments_format CHECK (format IS NULL OR format IN ('BO1','BO3','BO5')),
     max_teams             TINYINT NOT NULL
                           CONSTRAINT CK_tournaments_max_teams CHECK (max_teams IN (8,16,32)),
     rules_description     NVARCHAR(MAX) NULL,
@@ -146,6 +146,7 @@ CREATE TABLE matches (
     score_team1         INT NOT NULL DEFAULT 0,
     score_team2         INT NOT NULL DEFAULT 0,
     is_locked           BIT NOT NULL DEFAULT 0,
+    format              VARCHAR(255) NULL,
     created_at          DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     updated_at          DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     CONSTRAINT FK_matches_tournament FOREIGN KEY (tournament_id) REFERENCES tournaments(id),

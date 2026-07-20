@@ -10,8 +10,8 @@ export const getTournamentDetails = async (id) => {
   return response.data;
 };
 
-export const createTournament = async (name, format, maxTeams, rulesDescription, creatorId) => {
-  const response = await api.post('/tournaments', { name, format, maxTeams, rulesDescription, creatorId });
+export const createTournament = async (name, maxTeams, rulesDescription, creatorId) => {
+  const response = await api.post('/tournaments', { name, maxTeams, rulesDescription, creatorId });
   return response.data;
 };
 

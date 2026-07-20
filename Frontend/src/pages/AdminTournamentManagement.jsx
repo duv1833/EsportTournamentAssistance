@@ -13,12 +13,10 @@ export default function AdminTournamentManagement({ currentUser }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Edit Modal State
   const [editModal, setEditModal] = useState({
     isOpen: false,
     tournament: null,
     name: '',
-    format: 'BO3',
     maxTeams: 16,
     rulesDescription: ''
   });
@@ -114,7 +112,6 @@ export default function AdminTournamentManagement({ currentUser }) {
       isOpen: true,
       tournament,
       name: tournament.name || '',
-      format: tournament.format || 'BO3',
       maxTeams: tournament.maxTeams || 16,
       rulesDescription: tournament.rulesDescription || ''
     });
@@ -132,7 +129,6 @@ export default function AdminTournamentManagement({ currentUser }) {
         editModal.tournament.id,
         {
           name: editModal.name,
-          format: editModal.format,
           maxTeams: editModal.maxTeams,
           rulesDescription: editModal.rulesDescription
         },
@@ -301,7 +297,7 @@ export default function AdminTournamentManagement({ currentUser }) {
                   </div>
                   <div>
                     <span className="text-tactical-gray block text-[10px]">THỂ THỨC:</span>
-                    <span className="text-off-white font-bold">{t.format}</span>
+                    <span className="text-off-white font-bold">{t.format || 'Chưa thiết lập'}</span>
                   </div>
                   <div>
                     <span className="text-tactical-gray block text-[10px]">SỐ ĐỘI TỐI ĐA:</span>
@@ -392,20 +388,7 @@ export default function AdminTournamentManagement({ currentUser }) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-mono text-xs uppercase text-tactical-gray mb-1">Thể thức</label>
-                  <select
-                    value={editModal.format}
-                    onChange={(e) => setEditModal({ ...editModal, format: e.target.value })}
-                    className="w-full bg-background border border-outline-variant p-2.5 text-off-white font-mono text-xs focus:outline-none focus:border-primary-red"
-                  >
-                    <option value="BO1">BO1</option>
-                    <option value="BO3">BO3</option>
-                    <option value="BO5">BO5</option>
-                  </select>
-                </div>
-
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="block font-mono text-xs uppercase text-tactical-gray mb-1">Số đội tối đa</label>
                   <select

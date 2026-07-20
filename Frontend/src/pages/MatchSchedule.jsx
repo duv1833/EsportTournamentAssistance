@@ -282,6 +282,61 @@ function ScoreModal({ match, onClose, onSubmit, loading }) {
   );
 }
 
+function GenerateBracketModal({ onClose, onSubmit, loading }) {
+  const [earlyRoundsFormat, setEarlyRoundsFormat] = useState('BO1');
+  const [semiFinalsFormat, setSemiFinalsFormat] = useState('BO3');
+  const [finalsFormat, setFinalsFormat] = useState('BO5');
+
+  const renderFormatSelector = (label, currentValue, setValue) => (
+    <div className="mb-4">
+      <label className="block font-mono text-[11px] uppercase text-tactical-gray mb-1.5">{label}</label>
+      <div className="grid grid-cols-3 gap-2">
+        {['BO1', 'BO3', 'BO5'].map((fmt) => (
+          <div
+            key={fmt}
+            onClick={() => setValue(fmt)}
+            className={`p-2 text-center border cursor-pointer font-display text-xs uppercase transition-all ${
+              currentValue === fmt
+                ? 'border-warning-amber bg-warning-amber/15 text-warning-amber font-bold'
+                : 'border-outline-variant text-off-white hover:border-tactical-gray'
+            }`}
+          >
+            {fmt}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div className="bg-surface-charcoal border border-outline-variant w-full max-w-md p-6 clip-corner">
+        <h3 className="font-display text-lg text-off-white uppercase mb-1">Tạo Sơ Đồ Thi Đấu</h3>
+        <p className="font-mono text-[10px] text-tactical-gray mb-6">// Chọn thể thức thi đấu cho từng giai đoạn</p>
+
+        <div className="space-y-2">
+          {renderFormatSelector('Vòng ngoài (Loại trực tiếp)', earlyRoundsFormat, setEarlyRoundsFormat)}
+          {renderFormatSelector('Bán Kết', semiFinalsFormat, setSemiFinalsFormat)}
+          {renderFormatSelector('Chung Kết', finalsFormat, setFinalsFormat)}
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6">
+          <TactileButton onClick={onClose} disabled={loading} className="px-4 py-2 border border-outline-variant text-tactical-gray font-mono text-xs hover:text-off-white">
+            Hủy
+          </TactileButton>
+          <TactileButton 
+            onClick={() => onSubmit({ earlyRoundsFormat, semiFinalsFormat, finalsFormat })} 
+            disabled={loading} 
+            className="px-4 py-2 bg-warning-amber text-background font-display text-xs uppercase font-bold hover:bg-warning-amber/90"
+          >
+            {loading ? 'Đang tạo...' : 'Xác Nhận Tạo Bracket'}
+          </TactileButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const MOCK_EXTERNAL_MATCHES = {
   running: [
     {
@@ -363,6 +418,7 @@ export default function MatchSchedule({ currentUser }) {
   const [error, setError] = useState('');
   const [scoreModal, setScoreModal] = useState({ open: false, match: null });
   const [scoreLoading, setScoreLoading] = useState(false);
+  const [generateModal, setGenerateModal] = useState({ open: false });
 
   // Fetch external matches
   const fetchExternalMatches = useCallback(async () => {
@@ -438,13 +494,14 @@ export default function MatchSchedule({ currentUser }) {
     return () => clearInterval(interval);
   }, [viewMode, fetchExternalMatches]);
 
-  const handleGenerateBracket = async () => {
+  const handleGenerateBracket = async (payload) => {
     if (!selectedTournamentId || !currentUser) return;
     setLoading(true);
     setError('');
     try {
-      const res = await generateBracket(selectedTournamentId, currentUser.id);
+      const res = await generateBracket(selectedTournamentId, currentUser.id, payload);
       if (res.success) {
+        setGenerateModal({ open: false });
         await fetchBracket(selectedTournamentId);
       }
     } catch (err) {
@@ -614,7 +671,7 @@ export default function MatchSchedule({ currentUser }) {
             {/* Generate Bracket Button (Organizer only) */}
             {isOrganizer && selectedTournamentId && internalMatches.length === 0 && (
               <TactileButton
-                onClick={handleGenerateBracket}
+                onClick={() => setGenerateModal({ open: true })}
                 disabled={loading}
                 className="flex items-center gap-2 px-4 py-2 bg-warning-amber text-background font-display text-xs uppercase font-bold hover:bg-warning-amber/90 disabled:opacity-50"
               >
@@ -690,6 +747,15 @@ export default function MatchSchedule({ currentUser }) {
           onClose={() => setScoreModal({ open: false, match: null })}
           onSubmit={handleScoreSubmit}
           loading={scoreLoading}
+        />
+      )}
+
+      {/* Generate Bracket Modal */}
+      {generateModal.open && (
+        <GenerateBracketModal
+          onClose={() => setGenerateModal({ open: false })}
+          onSubmit={(payload) => handleGenerateBracket(payload)}
+          loading={loading}
         />
       )}
     </div>

@@ -39,4 +39,5 @@ public class MatchResponse {
     private LocalDateTime scheduledTime;
     private Long nextMatchId;
     private Integer nextMatchSlot;
+    private String format;
 }

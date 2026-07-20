@@ -28,7 +28,7 @@ public class Tournament {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private MatchFormat format; // BO1, BO3, BO5
 
     @Column(name = "max_teams", nullable = false)

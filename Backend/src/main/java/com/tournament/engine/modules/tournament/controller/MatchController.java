@@ -41,9 +41,10 @@ public class MatchController {
     @PostMapping("/tournament/{tournamentId}/generate")
     public ResponseEntity<ApiResponse<Void>> generateBracket(
             @PathVariable Long tournamentId,
-            @RequestParam Long userId) {
+            @RequestParam Long userId,
+            @RequestBody com.tournament.engine.modules.tournament.dto.GenerateBracketRequest request) {
         try {
-            matchService.generateBracket(tournamentId, userId);
+            matchService.generateBracket(tournamentId, userId, request);
             return ResponseEntity.ok(ApiResponse.success(null, "Tạo sơ đồ thi đấu thành công!"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

@@ -48,7 +48,7 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
-    public void generateBracket(Long tournamentId, Long userId) {
+    public void generateBracket(Long tournamentId, Long userId, com.tournament.engine.modules.tournament.dto.GenerateBracketRequest request) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
 
@@ -94,6 +94,19 @@ public class MatchServiceImpl implements MatchService {
             int matchesInRound = bracketSize / (int) Math.pow(2, round);
             List<Match> matches = new ArrayList<>();
 
+            Tournament.MatchFormat roundFormat;
+            try {
+                if (round == totalRounds) {
+                    roundFormat = Tournament.MatchFormat.valueOf(request.getFinalsFormat() != null ? request.getFinalsFormat() : "BO3");
+                } else if (round == totalRounds - 1 && totalRounds > 1) {
+                    roundFormat = Tournament.MatchFormat.valueOf(request.getSemiFinalsFormat() != null ? request.getSemiFinalsFormat() : "BO3");
+                } else {
+                    roundFormat = Tournament.MatchFormat.valueOf(request.getEarlyRoundsFormat() != null ? request.getEarlyRoundsFormat() : "BO3");
+                }
+            } catch (IllegalArgumentException e) {
+                roundFormat = Tournament.MatchFormat.BO3;
+            }
+
             for (int pos = 1; pos <= matchesInRound; pos++) {
                 Match match = Match.builder()
                         .tournament(tournament)
@@ -104,6 +117,7 @@ public class MatchServiceImpl implements MatchService {
                         .scoreTeam1(0)
                         .scoreTeam2(0)
                         .isLocked(false)
+                        .format(roundFormat)
                         .build();
                 matches.add(match);
             }
@@ -277,6 +291,7 @@ public class MatchServiceImpl implements MatchService {
                 .scheduledTime(match.getScheduledTime())
                 .nextMatchId(match.getNextMatch() != null ? match.getNextMatch().getId() : null)
                 .nextMatchSlot(match.getNextMatchSlot())
+                .format(match.getFormat() != null ? match.getFormat().name() : null)
                 .build();
     }
 }

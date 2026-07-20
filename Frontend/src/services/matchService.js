@@ -12,8 +12,8 @@ export const getMatchesByTournament = async (tournamentId) => {
   return response.data;
 };
 
-export const generateBracket = async (tournamentId, userId) => {
-  const response = await api.post(`/matches/tournament/${tournamentId}/generate`, null, {
+export const generateBracket = async (tournamentId, userId, payload) => {
+  const response = await api.post(`/matches/tournament/${tournamentId}/generate`, payload, {
     params: { userId }
   });
   return response.data;
