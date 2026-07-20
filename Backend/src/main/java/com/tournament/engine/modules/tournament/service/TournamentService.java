@@ -24,7 +24,6 @@ public interface TournamentService {
     void updateTournamentByAdmin(Long tournamentId, com.tournament.engine.modules.tournament.dto.TournamentCreateRequest request, Long adminUserId);
     void updateTournament(Long tournamentId, com.tournament.engine.modules.tournament.dto.TournamentCreateRequest request, Long organizerUserId);
     void deleteTournamentByAdmin(Long tournamentId, Long adminUserId);
-
     // Organizer & Referee management
     List<com.tournament.engine.modules.tournament.dto.TournamentOrganizerResponse> getTournamentOrganizers(Long tournamentId);
     void addTournamentOrganizer(Long tournamentId, com.tournament.engine.modules.tournament.dto.AddOrganizerRequest request, Long assignerUserId);

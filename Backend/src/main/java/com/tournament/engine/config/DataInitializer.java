@@ -59,6 +59,16 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Đã khởi tạo tài khoản Admin mặc định (username: admin, password: 123)");
         }
 
+        // Helper method logic để tạo các tài khoản demo
+        createDemoUserIfNotExist("organizer", "organizer@tacticaledge.com", "Ban Tổ Chức Giải", User.GlobalRole.ORGANIZER);
+        createDemoUserIfNotExist("referee1", "referee1@tacticaledge.com", "Trọng Tài 01", User.GlobalRole.REFEREE);
+        createDemoUserIfNotExist("sgp_captain", "sgp@tacticaledge.com", "SGP Leader (Saigon Phantom)", User.GlobalRole.USER);
+        createDemoUserIfNotExist("prx_captain", "prx@tacticaledge.com", "PRX Leader (Paper Rex)", User.GlobalRole.USER);
+        createDemoUserIfNotExist("ts_captain", "ts@tacticaledge.com", "TS Leader (Team Secret)", User.GlobalRole.USER);
+        createDemoUserIfNotExist("t1_captain", "t1@tacticaledge.com", "T1 Leader (T1 Esports)", User.GlobalRole.USER);
+        createDemoUserIfNotExist("user1", "user1@tacticaledge.com", "Player One", User.GlobalRole.USER);
+        createDemoUserIfNotExist("user2", "user2@tacticaledge.com", "Player Two", User.GlobalRole.USER);
+
         // 2. Đồng bộ role cho tất cả người dùng hiện có trong database nếu roles trống hoặc globalRole null
         List<User> allUsers = userRepository.findAll();
         for (User user : allUsers) {
@@ -80,6 +90,22 @@ public class DataInitializer implements CommandLineRunner {
                 userRepository.save(user);
                 log.info("Cập nhật vai trò thành công cho user: {}", user.getUsername());
             }
+        }
+    }
+
+    private void createDemoUserIfNotExist(String username, String email, String fullName, User.GlobalRole role) {
+        if (!userRepository.existsByUsername(username)) {
+            User user = User.builder()
+                    .username(username)
+                    .email(email)
+                    .password(passwordEncoder.encode("123"))
+                    .fullName(fullName)
+                    .globalRole(role)
+                    .roles(Set.of(role))
+                    .isActive(true)
+                    .build();
+            userRepository.save(user);
+            log.info("Đã tạo tài khoản demo: {} ({}) với mật khẩu '123'", username, role);
         }
     }
 }

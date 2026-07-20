@@ -25,7 +25,6 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
   const [addOrgQuery, setAddOrgQuery] = useState('');
   const [addOrgRole, setAddOrgRole] = useState('REFEREE');
   const [isAddingOrg, setIsAddingOrg] = useState(false);
-
   // Edit form state
   const [editForm, setEditForm] = useState({
     name: tournament?.name || '',
@@ -122,7 +121,6 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
       setError(err.response?.data?.message || 'Lỗi hệ thống khi gỡ quyền.');
     }
   };
-
   const handleApprove = async (teamId) => {
     try {
       const res = await approveRegistration(tournament.id, teamId, currentUser.id);
@@ -449,7 +447,6 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
           </div>
         </div>
       )}
-
       {activeTab === 'edit' && (
         <form onSubmit={handleUpdateTournament} className="space-y-6 max-w-2xl">
           <div>

@@ -22,6 +22,7 @@ public class TournamentResponse {
     private String location;
     private Long creatorId;
     private String creatorUsername;
+    private List<Long> organizerIds;
     private List<RegisteredTeamDto> registeredTeams;
 
     @Data

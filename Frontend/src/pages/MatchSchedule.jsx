@@ -443,6 +443,10 @@ export default function MatchSchedule({ currentUser }) {
       setLoading(false);
     }
   }, [externalFilter]);
+    } finally {
+      setLoading(false);
+    }
+  }, [externalFilter]);
 
   // Fetch tournaments for bracket view
   const fetchTournaments = useCallback(async () => {
@@ -546,7 +550,8 @@ export default function MatchSchedule({ currentUser }) {
 
   const isOrganizer = currentUser && (
     currentUser.globalRole === 'ADMIN' ||
-    tournaments.find(t => t.id === selectedTournamentId)?.creatorId === currentUser.id
+    tournaments.find(t => t.id === selectedTournamentId)?.creatorId === currentUser.id ||
+    tournaments.find(t => t.id === selectedTournamentId)?.organizerIds?.includes(currentUser.id)
   );
 
   return (

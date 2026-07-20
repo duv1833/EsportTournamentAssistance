@@ -13,7 +13,7 @@ function TactileButton({ children, className = '', ...props }) {
   );
 }
 
-export default function Teams({ currentUser }) {
+export default function Teams({ currentUser, onJoinTeam }) {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,17 +39,26 @@ export default function Teams({ currentUser }) {
     fetchTeams();
   }, []);
 
-  const handleJoinTeam = async (teamId) => {
+  const handleJoinClick = (teamId) => {
     if (!currentUser) {
       setError('Bạn cần đăng nhập để xin gia nhập đội!');
       return;
     }
+    if (onJoinTeam) {
+      onJoinTeam(teamId);
+    } else {
+      handleJoinTeamDirect(teamId);
+    }
+  };
+
+  const handleJoinTeamDirect = async (teamId) => {
     setError('');
     setSuccess('');
     try {
       const res = await teamService.joinTeam(teamId, currentUser.id);
       if (res.success) {
         setSuccess('Đã gửi yêu cầu tham gia đội tuyển!');
+        fetchTeams();
       } else {
         setError(res.message);
       }
@@ -117,16 +126,16 @@ export default function Teams({ currentUser }) {
                     <Check size={14} /> BẠN LÀ ĐỘI TRƯỞNG
                   </span>
                 ) : isMember ? (
-                  hasRequested ? (
-                    <span className="font-mono text-xs text-warning-amber uppercase">ĐANG CHỜ DUYỆT</span>
-                  ) : (
-                    <span className="font-mono text-xs text-success-cyan uppercase flex items-center gap-2">
-                      <Check size={14} /> ĐÃ THAM GIA
-                    </span>
-                  )
+                  <span className="font-mono text-xs text-success-cyan uppercase flex items-center gap-2">
+                    <Check size={14} /> ĐÃ THAM GIA
+                  </span>
+                ) : hasRequested ? (
+                  <span className="font-mono text-xs text-warning-amber uppercase flex items-center gap-2">
+                    ⏳ ĐANG CHỜ DUYỆT
+                  </span>
                 ) : (
                   <TactileButton
-                    onClick={() => handleJoinTeam(team.id)}
+                    onClick={() => handleJoinClick(team.id)}
                     className="w-full bg-primary-red hover:bg-primary-red/90 text-off-white font-mono text-sm py-2.5 uppercase flex justify-center items-center gap-2"
                   >
                     XIN GIA NHẬP <ArrowRight size={14} />

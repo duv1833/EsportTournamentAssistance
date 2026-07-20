@@ -98,4 +98,3 @@ export const removeTournamentOrganizer = async (tournamentId, targetUserId, assi
   const response = await api.delete(`/tournaments/${tournamentId}/organizers/${targetUserId}`, { params: { assignerUserId } });
   return response.data;
 };
-

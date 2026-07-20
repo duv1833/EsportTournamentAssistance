@@ -179,7 +179,6 @@ public class TournamentController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
-
     // Organizer & Referee Management endpoints
     @GetMapping("/{id}/organizers")
     public ResponseEntity<ApiResponse<List<com.tournament.engine.modules.tournament.dto.TournamentOrganizerResponse>>> getTournamentOrganizers(@PathVariable Long id) {

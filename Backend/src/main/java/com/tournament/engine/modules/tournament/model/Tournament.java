@@ -29,7 +29,7 @@ public class Tournament {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private MatchFormat format;
+    private MatchFormat format; // BO1, BO3, BO5
 
     @Enumerated(EnumType.STRING)
     @Column(name = "structure")

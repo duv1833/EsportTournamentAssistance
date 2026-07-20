@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Routes, Route, Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getMatchesByTournament } from '../services/matchService';
-import { getTournamentDetails } from '../services/tournamentService';
+import { getTournamentDetails, registerForTournament } from '../services/tournamentService';
 import TournamentOverview from './tournament/TournamentOverview';
 import TournamentMatches from './tournament/TournamentMatches';
 import OrganizerDashboard from './OrganizerDashboard';
 
-export default function TournamentDetailsVLR({ currentUser }) {
+export default function TournamentDetailsVLR({ currentUser, onJoinTeam }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -176,7 +176,7 @@ export default function TournamentDetailsVLR({ currentUser }) {
               </button>
             )}
             
-            {currentUser && (currentUser.username === tournament.creatorUsername || currentUser.globalRole === 'ADMIN') && (
+            {currentUser && (currentUser.id === tournament.creatorId || (tournament.organizerIds && tournament.organizerIds.includes(currentUser.id)) || currentUser.globalRole === 'ADMIN') && (
               <button 
                 onClick={handleManage}
                 className="bg-success-cyan hover:bg-cyan-600 text-[#111] text-xs font-bold px-4 py-2 transition-colors uppercase mt-2"
@@ -231,6 +231,8 @@ export default function TournamentDetailsVLR({ currentUser }) {
               setActiveSubTab={setActiveSubTab}
               tournament={tournament}
               standings={standings}
+              currentUser={currentUser}
+              onJoinTeam={onJoinTeam}
             />
           } />
           <Route path="overview" element={
@@ -243,9 +245,23 @@ export default function TournamentDetailsVLR({ currentUser }) {
               setActiveSubTab={setActiveSubTab}
               tournament={tournament}
               standings={standings}
+              currentUser={currentUser}
+              onJoinTeam={onJoinTeam}
             />
           } />
           <Route path="matches" element={<TournamentMatches internalMatches={internalMatches} />} />
+          <Route path="register" element={
+            <TournamentRegisterForm 
+              tournament={tournament} 
+              currentUser={currentUser} 
+              onCancel={() => navigate(`/tournaments/${id}`)} 
+              onSuccess={async () => { 
+                const tourRes = await getTournamentDetails(id); 
+                if (tourRes.success) setTournament(tourRes.data); 
+                navigate(`/tournaments/${id}`); 
+              }} 
+            />
+          } />
           <Route path="manage" element={
             <OrganizerDashboard 
               tournament={tournament} 
@@ -259,3 +275,156 @@ export default function TournamentDetailsVLR({ currentUser }) {
     </div>
   );
 }
+
+function TournamentRegisterForm({ tournament, currentUser, onCancel, onSuccess }) {
+  const [formData, setFormData] = useState({
+    teamName: '',
+    teamTag: '',
+    captainInGameName: '',
+    captainPhoneNumber: '',
+    logoUrl: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!currentUser) {
+      setError('Vui lòng đăng nhập để đăng ký!');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await registerForTournament(
+        tournament.id,
+        formData.teamName,
+        formData.teamTag,
+        currentUser.id,
+        formData.captainInGameName,
+        formData.logoUrl,
+        formData.captainPhoneNumber
+      );
+      if (res.success) {
+        setSuccess('Đăng ký tham gia giải đấu thành công! Đang chờ BTC duyệt.');
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+        }, 1500);
+      } else {
+        setError(res.message || 'Đăng ký thất bại!');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Lỗi hệ thống khi đăng ký!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-lg mx-auto bg-[#222] border border-[#333] p-8 text-off-white shadow-2xl relative my-8">
+      <button onClick={onCancel} className="absolute top-4 right-4 text-[#888] hover:text-white">
+        <X size={20} />
+      </button>
+
+      <h2 className="font-display text-2xl font-bold uppercase mb-1 text-white">Đăng Ký Tham Gia Giải Đấu</h2>
+      <p className="font-mono text-xs text-primary-red mb-6">// Giải đấu: {tournament.name}</p>
+
+      {error && (
+        <div className="bg-red-950/60 border border-red-500 text-red-200 p-3 mb-4 text-xs font-mono flex items-center gap-2">
+          <AlertCircle size={16} className="shrink-0 text-red-500" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-emerald-950/60 border border-emerald-500 text-emerald-200 p-3 mb-4 text-xs font-mono flex items-center gap-2">
+          <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
+          <span>{success}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-xs uppercase font-bold text-[#aaa] mb-1">Tên đội tuyển <span className="text-primary-red">*</span></label>
+          <input
+            type="text"
+            required
+            placeholder="VD: Saigon Phantom"
+            value={formData.teamName}
+            onChange={(e) => setFormData({ ...formData, teamName: e.target.value })}
+            className="w-full bg-[#111] border border-[#444] p-2.5 text-sm text-white focus:outline-none focus:border-primary-red"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase font-bold text-[#aaa] mb-1">Tag đội (2-5 ký tự) <span className="text-primary-red">*</span></label>
+          <input
+            type="text"
+            required
+            maxLength={5}
+            placeholder="VD: SGP"
+            value={formData.teamTag}
+            onChange={(e) => setFormData({ ...formData, teamTag: e.target.value.toUpperCase() })}
+            className="w-full bg-[#111] border border-[#444] p-2.5 text-sm text-white focus:outline-none focus:border-primary-red"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase font-bold text-[#aaa] mb-1">In-Game Name Đội trưởng <span className="text-primary-red">*</span></label>
+          <input
+            type="text"
+            required
+            placeholder="VD: SGP.Bâng#123"
+            value={formData.captainInGameName}
+            onChange={(e) => setFormData({ ...formData, captainInGameName: e.target.value })}
+            className="w-full bg-[#111] border border-[#444] p-2.5 text-sm text-white focus:outline-none focus:border-primary-red"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase font-bold text-[#aaa] mb-1">Số điện thoại liên hệ <span className="text-primary-red">*</span></label>
+          <input
+            type="tel"
+            required
+            placeholder="VD: 0912345678"
+            value={formData.captainPhoneNumber}
+            onChange={(e) => setFormData({ ...formData, captainPhoneNumber: e.target.value })}
+            className="w-full bg-[#111] border border-[#444] p-2.5 text-sm text-white focus:outline-none focus:border-primary-red"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs uppercase font-bold text-[#aaa] mb-1">Link Logo Đội (Tùy chọn)</label>
+          <input
+            type="url"
+            placeholder="https://..."
+            value={formData.logoUrl}
+            onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+            className="w-full bg-[#111] border border-[#444] p-2.5 text-sm text-white focus:outline-none focus:border-primary-red"
+          />
+        </div>
+
+        <div className="pt-2 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 bg-[#333] hover:bg-[#444] text-xs font-bold text-white uppercase transition-colors"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2 bg-primary-red hover:bg-red-700 disabled:opacity-50 text-xs font-bold text-white uppercase transition-colors flex items-center gap-2"
+          >
+            {loading && <Loader2 size={14} className="animate-spin" />}
+            Xác Nhận Đăng Ký
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+

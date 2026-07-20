@@ -198,13 +198,7 @@ public class TournamentServiceImpl implements TournamentService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
 
-        if (!tournament.getCreator().getId().equals(organizerUserId)) {
-            User user = userRepository.findById(organizerUserId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
-            if (user.getGlobalRole() != User.GlobalRole.ADMIN) {
-                throw new RuntimeException("Bạn không có quyền chỉnh sửa giải đấu này!");
-            }
-        }
+        validateOrganizer(tournamentId, organizerUserId);
 
         if (request.getName() != null && !request.getName().isBlank()) {
             tournament.setName(request.getName());
@@ -481,6 +475,11 @@ public class TournamentServiceImpl implements TournamentService {
                 })
                 .collect(Collectors.toList());
 
+        List<Long> organizerIds = tournamentOrganizerRepository.findByTournamentId(tournament.getId())
+                .stream()
+                .map(org -> org.getUser().getId())
+                .collect(Collectors.toList());
+
         return TournamentResponse.builder()
                 .id(tournament.getId())
                 .name(tournament.getName())
@@ -496,6 +495,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .location(tournament.getLocation())
                 .creatorId(tournament.getCreator().getId())
                 .creatorUsername(tournament.getCreator().getDisplayName())
+                .organizerIds(organizerIds)
                 .registeredTeams(registeredTeams)
                 .build();
     }
