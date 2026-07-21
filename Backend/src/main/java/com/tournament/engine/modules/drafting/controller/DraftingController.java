@@ -40,4 +40,15 @@ public class DraftingController {
             ));
         }
     }
+
+    @org.springframework.web.bind.annotation.GetMapping("/api/v1/drafting/{matchId}/state")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public org.springframework.http.ResponseEntity<com.tournament.engine.shared.dto.ApiResponse<com.tournament.engine.modules.drafting.dto.DraftStateResponse>> getDraftState(@org.springframework.web.bind.annotation.PathVariable Long matchId) {
+        try {
+            com.tournament.engine.modules.drafting.dto.DraftStateResponse state = draftingService.getMatchDraftState(matchId);
+            return org.springframework.http.ResponseEntity.ok(com.tournament.engine.shared.dto.ApiResponse.success(state, "Lấy state draft thành công"));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(com.tournament.engine.shared.dto.ApiResponse.error(e.getMessage()));
+        }
+    }
 }

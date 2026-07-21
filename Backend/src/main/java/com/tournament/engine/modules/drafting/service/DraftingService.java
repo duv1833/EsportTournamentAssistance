@@ -1,11 +1,15 @@
 package com.tournament.engine.modules.drafting.service;
 
 import com.tournament.engine.modules.drafting.dto.DraftActionRequest;
+import com.tournament.engine.modules.drafting.dto.DraftActionDto;
+import com.tournament.engine.modules.drafting.dto.DraftStateResponse;
 import com.tournament.engine.modules.drafting.model.*;
 import com.tournament.engine.modules.drafting.repository.*;
 import com.tournament.engine.modules.identity.model.User;
 import com.tournament.engine.modules.identity.repository.UserRepository;
+import com.tournament.engine.modules.tournament.model.Match;
 import com.tournament.engine.modules.tournament.model.Team;
+import com.tournament.engine.modules.tournament.repository.MatchRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -30,11 +34,44 @@ public class DraftingService {
     private final AgentRepository agentRepository;
     private final UserRepository userRepository;
     private final GameMapRepository gameMapRepository;
+    private final MatchRepository matchRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final DraftSequenceTemplateRepository draftSequenceTemplateRepository;
 
     private static final int DEFAULT_TURN_SECONDS = 30;
     private final Random random = new Random();
+
+    @Transactional(readOnly = true)
+    public DraftStateResponse getMatchDraftState(Long matchId) {
+        MatchDraftState draftState = matchDraftStateRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy trạng thái Draft cho Ván " + matchId));
+
+        List<DraftAction> actions = draftActionRepository.findByMatchIdOrderByStepNumberAsc(matchId);
+
+        List<DraftActionDto> history = actions.stream().map(a -> DraftActionDto.builder()
+                .id(a.getId())
+                .stepNumber(a.getStepNumber())
+                .phase(a.getPhase().name())
+                .actionType(a.getActionType().name())
+                .teamId(a.getTeam().getId())
+                .teamName(a.getTeam().getName())
+                .userId(a.getUser().getId())
+                .username(a.getUser().getUsername())
+                .mapName(a.getMap() != null ? a.getMap().getName() : null)
+                .agentName(a.getAgent() != null ? a.getAgent().getName() : null)
+                .isAuto(a.getIsAuto())
+                .createdAt(a.getCreatedAt())
+                .build()).collect(Collectors.toList());
+
+        return DraftStateResponse.builder()
+                .matchId(matchId)
+                .draftStatus(draftState.getDraftStatus().name())
+                .currentStepNumber(draftState.getCurrentStepNumber())
+                .currentTurnTeamId(draftState.getCurrentTurnTeam() != null ? draftState.getCurrentTurnTeam().getId() : null)
+                .turnDeadlineAt(draftState.getTurnDeadlineAt())
+                .history(history)
+                .build();
+    }
 
     @Transactional
     public Map<String, Object> processAction(DraftActionRequest request) {
@@ -104,6 +141,12 @@ public class DraftingService {
             draftState.setDraftStatus(MatchDraftState.DraftStatus.COMPLETED);
             draftState.setCurrentTurnTeam(null);
             draftState.setTurnDeadlineAt(null);
+            
+            Match match = draftState.getMatch();
+            if (match != null && match.getStatus() != Match.MatchStatus.LIVE && match.getStatus() != Match.MatchStatus.COMPLETED) {
+                match.setStatus(Match.MatchStatus.LIVE);
+                matchRepository.save(match);
+            }
         } else {
             Team nextTeam = (nextTemplate.getTurnOrder() == 1) 
                     ? draftState.getMatch().getTeam1() 

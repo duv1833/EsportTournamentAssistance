@@ -39,8 +39,11 @@ const Lobby = () => {
   const [seriesData, setSeriesData] = useState(INITIAL_SERIES);
   const [activeGame, setActiveGame] = useState(null);
   
-  const [draftPhase, setDraftPhase] = useState('NONE'); 
-  const [mapDraftStep, setMapDraftStep] = useState(0);
+  const [draftPhase, setDraftPhase] = useState('MAP_VETO'); // MAP_VETO -> AGENT_DRAFT -> NONE
+  const [mapDraftStep, setMapDraftStep] = useState(0); 
+
+  const [scoreTeamA, setScoreTeamA] = useState(0);
+  const [scoreTeamB, setScoreTeamB] = useState(0);
   const [selectedHover, setSelectedHover] = useState(null); 
   const [timeLeft, setTimeLeft] = useState(30);
   
@@ -159,13 +162,82 @@ const Lobby = () => {
       const fetchMatchData = async () => {
         try {
           const response = await api.get(`/matches/${matchId}`);
-          const realMatch = response.data;
+          const realMatch = response.data.data;
           
           setSeriesData(prev => ({
             ...prev, id: realMatch.id, format: realMatch.format || 'BO3',
-            teamA: { ...prev.teamA, id: realMatch.team1_id, name: realMatch.team1_name || 'SAIGON PHANTOM', captainId: realMatch.team1_captain_id, short: 'SGP' },
-            teamB: { ...prev.teamB, id: realMatch.team2_id, name: realMatch.team2_name || 'PAPER REX', captainId: realMatch.team2_captain_id, short: 'PRX' }
+            teamA: { ...prev.teamA, id: realMatch.team1Id, name: realMatch.team1Name || 'SAIGON PHANTOM', captainId: null, short: realMatch.team1Tag || 'SGP' },
+            teamB: { ...prev.teamB, id: realMatch.team2Id, name: realMatch.team2Name || 'PAPER REX', captainId: null, short: realMatch.team2Tag || 'PRX' }
           }));
+
+          // Fetch state and rebuild history
+          try {
+             const stateRes = await api.get(`/drafting/${matchId}/state`);
+             const draftState = stateRes.data.data;
+             const history = draftState.history || [];
+
+             if (history.length > 0) {
+                 setSeriesData(prev => {
+                     const newGames = prev.games.map(g => ({ ...g }));
+                     const game1 = newGames.find(g => g.gameNumber === 1);
+                     if (!game1) return prev;
+
+                     history.forEach(action => {
+                         const { phase, actionType, teamId, mapName, agentName } = action;
+                         const isTeamA = teamId === prev.teamA.id;
+                         
+                         if (phase === 'MAP') {
+                             if (actionType === 'BAN') {
+                                 if (isTeamA) game1.mapBansA = [...(game1.mapBansA||[]), mapName];
+                                 else game1.mapBansB = [...(game1.mapBansB||[]), mapName];
+                             } else {
+                                 if (isTeamA) game1.mapPicksA = [...(game1.mapPicksA||[]), mapName];
+                                 else game1.mapPicksB = [...(game1.mapPicksB||[]), mapName];
+                                 
+                                 const totalPicks = (game1.mapPicksA?.length||0) + (game1.mapPicksB?.length||0);
+                                 const gameToUpdate = newGames.find(g => g.gameNumber === totalPicks);
+                                 if (gameToUpdate) gameToUpdate.map = mapName;
+                             }
+                             const sequenceMap = getMapDraftSequence(prev.format);
+                             const totalMapActions = (game1.mapBansA?.length||0) + (game1.mapBansB?.length||0) + (game1.mapPicksA?.length||0) + (game1.mapPicksB?.length||0);
+                             game1.currentTurnTeamId = totalMapActions < sequenceMap.length ? sequenceMap[totalMapActions].teamId : 1;
+                             
+                             if (totalMapActions >= sequenceMap.length) {
+                                 const usedMapsArray = [...(game1.mapBansA||[]), ...(game1.mapBansB||[]), ...(game1.mapPicksA||[]), ...(game1.mapPicksB||[])];
+                                 const availableMaps = MAP_POOL.filter(m => !usedMapsArray.includes(m));
+                                 const deciderMap = availableMaps[0] || 'DECIDER';
+                                 game1.mapDecider = deciderMap;
+                                 const finalGame = newGames.find(g => g.map === 'CHƯA CHỌN');
+                                 if (finalGame) finalGame.map = deciderMap;
+                             }
+                         } else {
+                             const targetGame = game1;
+                             if (actionType === 'BAN') {
+                                 if (isTeamA) targetGame.teamABans = [...(targetGame.teamABans||[]), agentName];
+                                 else targetGame.teamBBans = [...(targetGame.teamBBans||[]), agentName];
+                             } else {
+                                 if (isTeamA) targetGame.teamAPicks = [...(targetGame.teamAPicks||[]), agentName];
+                                 else targetGame.teamBPicks = [...(targetGame.teamBPicks||[]), agentName];
+                             }
+                             const sequenceAgent = getAgentDraftSequence();
+                             const newTotalAgents = (targetGame.teamABans?.length||0) + (targetGame.teamBBans?.length||0) + (targetGame.teamAPicks?.length||0) + (targetGame.teamBPicks?.length||0);
+                             targetGame.currentTurnTeamId = newTotalAgents < sequenceAgent.length ? sequenceAgent[newTotalAgents].teamId : 1;
+                         }
+                     });
+                     return { ...prev, games: newGames };
+                 });
+                 
+                 setStartCountdown(null);
+                 if (draftState.draftStatus === 'COMPLETED') {
+                     setDraftPhase('NONE');
+                 } else if (draftState.currentStepNumber > getMapDraftSequence('BO3').length) {
+                     setDraftPhase('AGENT_DRAFT');
+                 } else {
+                     setDraftPhase('MAP_VETO');
+                 }
+             }
+          } catch (e) { console.error('No history found'); }
+
         } catch (error) {
           setSeriesData(prev => ({ ...prev, teamA: { ...prev.teamA, name: 'SAIGON PHANTOM', short: 'SGP' }, teamB: { ...prev.teamB, name: 'PAPER REX', short: 'PRX' } }));
         }
@@ -249,6 +321,16 @@ const Lobby = () => {
       }
     }
   }, [startCountdown, activeGame, seriesData.bannedMaps]);
+
+  const handleUpdateScore = async () => {
+    try {
+      await api.put(`/matches/${matchId}/score`, { scoreTeam1: scoreTeamA, scoreTeam2: scoreTeamB }, { params: { userId: currentUser.id }});
+      alert('Đã cập nhật tỷ số và kết thúc trận đấu!');
+      navigate(-1);
+    } catch (e) {
+      alert('Lỗi cập nhật tỷ số: ' + (e.response?.data?.message || e.message));
+    }
+  };
 
   const handleLeaveRoom = () => {
     if (activeGame && !isAgentDraftComplete) {
@@ -591,7 +673,38 @@ const Lobby = () => {
         </div>
 
         {/* GIAO DIỆN HOÀN TẤT DÀNH CHO TRỌNG TÀI & NGƯỜI CHƠI */}
-        {isAgentDraftComplete ? (
+        {draftPhase === 'NONE' ? (
+          <div className="w-full max-w-[1000px] mt-10 bg-[#1a242d] p-12 rounded border-2 border-success-cyan/30 text-center shadow-[0_0_40px_rgba(0,255,209,0.1)] flex flex-col items-center justify-center">
+             <h3 className="text-3xl font-display font-bold text-success-cyan mb-4 uppercase tracking-[0.2em]">Đã hoàn tất Ban/Pick</h3>
+             <p className="text-gray-400 mb-10">Giai đoạn Cấm/Chọn của trận đấu đã kết thúc.</p>
+             
+             {(autoRole === 'ADMIN' || autoRole === 'ORGANIZER' || autoRole === 'REFEREE') ? (
+                <div className="bg-[#0f1923] p-8 rounded border border-gray-700 w-full max-w-md">
+                   <h4 className="text-white font-bold mb-4 uppercase">Nhập Tỷ Số Ván Đấu</h4>
+                   <div className="flex gap-4 items-center justify-center mb-6">
+                      <div className="flex flex-col">
+                        <label className="text-gray-400 text-xs mb-1">{seriesData.teamA.short}</label>
+                        <input type="number" value={scoreTeamA} onChange={e => setScoreTeamA(parseInt(e.target.value)||0)} className="w-20 text-center bg-black border border-gray-600 text-white p-2 rounded text-2xl font-bold" min="0" />
+                      </div>
+                      <span className="text-2xl text-gray-500 font-bold">-</span>
+                      <div className="flex flex-col">
+                        <label className="text-gray-400 text-xs mb-1">{seriesData.teamB.short}</label>
+                        <input type="number" value={scoreTeamB} onChange={e => setScoreTeamB(parseInt(e.target.value)||0)} className="w-20 text-center bg-black border border-gray-600 text-white p-2 rounded text-2xl font-bold" min="0" />
+                      </div>
+                   </div>
+                   <button onClick={handleUpdateScore} className="w-full bg-success-cyan text-background px-6 py-3 font-bold tracking-widest rounded uppercase transition hover:brightness-110 shadow-[0_0_20px_rgba(0,255,209,0.4)]">
+                     CẬP NHẬT & KẾT THÚC
+                   </button>
+                </div>
+             ) : (
+                <div className="border border-yellow-500/50 bg-yellow-900/20 px-10 py-5 rounded">
+                  <span className="text-yellow-400 font-bold uppercase flex items-center justify-center gap-3 animate-pulse tracking-widest">
+                    <span className="text-2xl">⏳</span> ĐANG CHỜ TRỌNG TÀI CẬP NHẬT KẾT QUẢ...
+                  </span>
+                </div>
+             )}
+          </div>
+        ) : isAgentDraftComplete ? (
           <div className="w-full max-w-[1000px] mt-10 bg-[#1a242d] p-12 rounded border-2 border-success-cyan/30 text-center shadow-[0_0_40px_rgba(0,255,209,0.1)] flex flex-col items-center justify-center">
              <h3 className="text-3xl font-display font-bold text-success-cyan mb-4 uppercase tracking-[0.2em]">Đã hoàn tất chọn đội hình</h3>
              <p className="text-gray-400 mb-10">Hai đội đã hoàn tất việc chọn tướng cho Ván {activeGameSafe.gameNumber}.</p>

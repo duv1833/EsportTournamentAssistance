@@ -15,4 +15,6 @@ public interface MatchService {
     void advanceToKnockout(Long tournamentId, Long userId);
     
     MatchResponse updateMatchResult(Long matchId, MatchUpdateRequest request, Long userId);
+    
+    MatchResponse getMatchById(Long matchId);
 }

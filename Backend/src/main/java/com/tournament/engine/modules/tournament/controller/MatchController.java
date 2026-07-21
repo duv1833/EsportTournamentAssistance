@@ -27,6 +27,15 @@ public class MatchController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+    @GetMapping("/{matchId}")
+    public ResponseEntity<ApiResponse<MatchResponse>> getMatchById(@PathVariable Long matchId) {
+        try {
+            MatchResponse response = matchService.getMatchById(matchId);
+            return ResponseEntity.ok(ApiResponse.success(response, "Lấy thông tin trận đấu thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 
     @GetMapping("/tournament/{tournamentId}")
     public ResponseEntity<ApiResponse<List<MatchResponse>>> getMatchesByTournament(@PathVariable Long tournamentId) {

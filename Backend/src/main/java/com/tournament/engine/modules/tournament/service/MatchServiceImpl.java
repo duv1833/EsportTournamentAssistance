@@ -28,6 +28,14 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional(readOnly = true)
+    public MatchResponse getMatchById(Long matchId) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy trận đấu!"));
+        return mapToResponse(match, match.getTournament().getName());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<MatchResponse> getMatchesByTournament(Long tournamentId) {
         List<Match> matches = matchRepository.findByTournamentIdOrderByRoundNumberAscPositionInRoundAsc(tournamentId);
         Tournament tournament = tournamentRepository.findById(tournamentId)
