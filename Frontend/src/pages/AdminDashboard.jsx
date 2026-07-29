@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Users, Trophy, LayoutDashboard, Flag, Activity } from 'lucide-react';
 import { getDashboardStats } from '../services/adminService';
+import { useAuth } from '../contexts/AuthContext';
 import AdminTournamentManagement from './AdminTournamentManagement';
 import AdminUserManagement from './AdminUserManagement';
 import AdminTeamManagement from './AdminTeamManagement';
 
-const AdminDashboard = ({ currentUser }) => {
+const AdminDashboard = ({ currentUser: propUser }) => {
+  const { currentUser: authUser } = useAuth();
+  const currentUser = propUser || authUser;
+
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');

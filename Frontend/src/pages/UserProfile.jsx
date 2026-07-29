@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { userService } from '../services/userService';
-import { User, Mail, Phone, BadgeCheck, Save, Sparkles, AlertCircle, Check } from 'lucide-react';
+import { User, Mail, Phone, Save, Sparkles, AlertCircle, Check } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import TactileButton from '../components/common/TactileButton';
 
-function TactileButton({ children, className = '', ...props }) {
-  return (
-    <button
-      className={`transition-all active:scale-[0.97] active:-translate-y-[0.5px] cursor-pointer ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
+export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
+  const { currentUser: authUser, updateUser } = useAuth();
+  const currentUser = propUser || authUser;
 
-export default function UserProfile({ currentUser, onUserUpdated }) {
   const [formData, setFormData] = useState({
     fullName: currentUser?.fullName || '',
     nickname: currentUser?.nickname || '',
@@ -47,7 +41,7 @@ export default function UserProfile({ currentUser, onUserUpdated }) {
       const res = await userService.updateUserProfile(currentUser.id, formData);
       if (res.success) {
         setSuccess('Cập nhật thông tin cá nhân thành công!');
-        const updatedUser = {
+        const updatedUserData = {
           ...currentUser,
           fullName: res.data.fullName,
           nickname: res.data.nickname,
@@ -55,9 +49,9 @@ export default function UserProfile({ currentUser, onUserUpdated }) {
           avatarUrl: res.data.avatarUrl,
           displayName: res.data.displayName
         };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        updateUser(updatedUserData);
         if (onUserUpdated) {
-          onUserUpdated(updatedUser);
+          onUserUpdated(updatedUserData);
         }
       } else {
         setError(res.message || 'Cập nhật hồ sơ thất bại');
@@ -75,23 +69,35 @@ export default function UserProfile({ currentUser, onUserUpdated }) {
     return currentUser?.username || 'Gamer';
   };
 
+  if (!currentUser) {
+    return (
+      <div className="container mx-auto max-w-4xl px-6 py-12 text-center animate-fade-in">
+        <div className="bg-surface-charcoal border border-outline-variant p-12 clip-corner">
+          <User size={48} className="text-tactical-gray mx-auto mb-4" />
+          <h2 className="font-display text-2xl text-off-white uppercase mb-2">VUI LÒNG ĐĂNG NHẬP</h2>
+          <p className="font-mono text-sm text-tactical-gray">Bạn cần đăng nhập để xem và cập nhật hồ sơ cá nhân.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto max-w-4xl px-6 py-12">
+    <div className="container mx-auto max-w-4xl px-6 py-12 animate-fade-in">
       <div className="mb-10 border-b border-outline-variant pb-6">
-        <h2 className="font-display text-4xl text-off-white uppercase tracking-wider flex items-center gap-3">
+        <h2 className="font-display text-4xl text-off-white uppercase flex items-center gap-3">
           <User className="text-primary-red" size={32} /> HỒ SƠ CÁ NHÂN
         </h2>
         <p className="font-mono text-xs text-tactical-gray mt-2">// Cập nhật thông tin nhận diện trên hệ thống giải đấu</p>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-primary-red/10 border border-primary-red text-primary-red font-mono text-sm flex items-center gap-2">
+        <div className="mb-6 p-4 bg-primary-red/10 border border-primary-red text-primary-red font-mono text-xs flex items-center gap-2">
           <AlertCircle size={16} /> {error}
         </div>
       )}
 
       {success && (
-        <div className="mb-6 p-4 bg-success-cyan/10 border border-success-cyan text-success-cyan font-mono text-sm flex items-center gap-2">
+        <div className="mb-6 p-4 bg-success-cyan/10 border border-success-cyan text-success-cyan font-mono text-xs flex items-center gap-2">
           <Check size={16} /> {success}
         </div>
       )}
@@ -121,12 +127,12 @@ export default function UserProfile({ currentUser, onUserUpdated }) {
           </span>
 
           <div className="w-full mt-6 pt-6 border-t border-outline-variant/60 text-left space-y-2 font-mono text-xs text-tactical-gray">
-            <p className="flex items-center gap-2">
-              <Mail size={14} className="text-primary-red" /> {currentUser?.email}
+            <p className="flex items-center gap-2 truncate">
+              <Mail size={14} className="text-primary-red shrink-0" /> <span className="truncate">{currentUser?.email}</span>
             </p>
             {formData.phoneNumber && (
               <p className="flex items-center gap-2">
-                <Phone size={14} className="text-success-cyan" /> {formData.phoneNumber}
+                <Phone size={14} className="text-success-cyan shrink-0" /> {formData.phoneNumber}
               </p>
             )}
           </div>
@@ -178,7 +184,7 @@ export default function UserProfile({ currentUser, onUserUpdated }) {
 
             {/* Full Name */}
             <div>
-              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Họ và Tên đầy đủ</label>
+              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Họ và Tên Đầy Đủ</label>
               <input
                 type="text"
                 value={formData.fullName}
@@ -190,7 +196,7 @@ export default function UserProfile({ currentUser, onUserUpdated }) {
 
             {/* Phone Number */}
             <div>
-              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Số điện thoại liên hệ</label>
+              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Số Điện Thoại Liên Hệ</label>
               <input
                 type="tel"
                 value={formData.phoneNumber}
@@ -215,8 +221,9 @@ export default function UserProfile({ currentUser, onUserUpdated }) {
             <div className="pt-4 border-t border-outline-variant">
               <TactileButton
                 type="submit"
+                variant="primary"
                 disabled={loading}
-                className="w-full bg-primary-red hover:bg-primary-red/90 text-off-white font-display text-sm py-3 uppercase font-bold tracking-wider flex justify-center items-center gap-2 disabled:opacity-50"
+                className="w-full justify-center flex items-center gap-2"
               >
                 <Save size={16} /> {loading ? 'ĐANG LƯU...' : 'CẬP NHẬT HỒ SƠ'}
               </TactileButton>

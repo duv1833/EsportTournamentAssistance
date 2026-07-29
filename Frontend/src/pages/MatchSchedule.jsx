@@ -13,17 +13,9 @@ import {
   updateMatchResult
 } from '../services/matchService';
 import { getAllTournaments } from '../services/tournamentService';
+import { useAuth } from '../contexts/AuthContext';
+import TactileButton from '../components/common/TactileButton';
 
-function TactileButton({ children, className = '', ...props }) {
-  return (
-    <button
-      className={`transition-all active:scale-[0.97] active:-translate-y-[0.5px] cursor-pointer ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
 
 // ─── Status Badge ─────────────────────────
 function StatusBadge({ status }) {
@@ -407,7 +399,10 @@ const MOCK_EXTERNAL_MATCHES = {
 };
 
 // ─── Main Component ──────────────────────
-export default function MatchSchedule({ currentUser }) {
+export default function MatchSchedule({ currentUser: propUser }) {
+  const { currentUser: authUser } = useAuth();
+  const currentUser = propUser || authUser;
+
   const [viewMode, setViewMode] = useState('external'); // 'external' | 'bracket'
   const [externalFilter, setExternalFilter] = useState('upcoming'); // 'upcoming' | 'running' | 'past'
   const [externalMatches, setExternalMatches] = useState([]);

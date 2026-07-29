@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { teamService } from '../services/teamService';
 import { Shield, Check, X, UserMinus, AlertTriangle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import TactileButton from '../components/common/TactileButton';
+import LoadingSkeleton from '../components/common/LoadingSkeleton';
 
-function TactileButton({ children, className = '', ...props }) {
-  return (
-    <button
-      className={`transition-all active:scale-[0.97] active:-translate-y-[0.5px] cursor-pointer ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
+export default function ManageTeam({ currentUser: propUser }) {
+  const { currentUser: authUser } = useAuth();
+  const currentUser = propUser || authUser;
 
-export default function ManageTeam({ currentUser }) {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -25,7 +20,7 @@ export default function ManageTeam({ currentUser }) {
     try {
       const res = await teamService.getTeamsByCaptain(currentUser.id);
       if (res.success) {
-        setTeams(res.data);
+        setTeams(res.data || []);
       } else {
         setError(res.message);
       }
@@ -55,7 +50,7 @@ export default function ManageTeam({ currentUser }) {
       }
 
       if (res && res.success) {
-        setSuccess(res.message);
+        setSuccess(res.message || 'Thao tác thành công!');
         fetchManagedTeams();
       } else if (res) {
         setError(res.message);
@@ -66,36 +61,52 @@ export default function ManageTeam({ currentUser }) {
   };
 
   if (loading) {
-    return <div className="text-center py-20 text-off-white font-mono">ĐANG TẢI THÔNG TIN...</div>;
+    return (
+      <div className="container mx-auto max-w-5xl px-6 py-12">
+        <LoadingSkeleton type="card" count={2} />
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="container mx-auto max-w-4xl px-6 py-12 text-center animate-fade-in">
+        <div className="bg-surface-charcoal border border-outline-variant p-12 clip-corner">
+          <Shield size={48} className="text-tactical-gray mx-auto mb-4" />
+          <h2 className="font-display text-2xl text-off-white uppercase mb-2">VUI LÒNG ĐĂNG NHẬP</h2>
+          <p className="font-mono text-sm text-tactical-gray">Bạn cần đăng nhập để xem các đội tuyển đang quản lý.</p>
+        </div>
+      </div>
+    );
   }
 
   if (teams.length === 0) {
     return (
-      <div className="container mx-auto max-w-4xl px-6 py-12 text-center">
-        <div className="bg-surface-charcoal border border-outline-variant p-12">
+      <div className="container mx-auto max-w-4xl px-6 py-12 text-center animate-fade-in">
+        <div className="bg-surface-charcoal border border-outline-variant p-12 clip-corner">
           <Shield size={48} className="text-tactical-gray mx-auto mb-4" />
           <h2 className="font-display text-2xl text-off-white uppercase mb-2">BẠN CHƯA QUẢN LÝ ĐỘI NÀO</h2>
-          <p className="font-mono text-sm text-tactical-gray">Hãy tạo đội tuyển và đăng ký giải đấu để bắt đầu.</p>
+          <p className="font-mono text-sm text-tactical-gray">Hãy đăng ký tham gia giải đấu với vai trò Đội Trưởng để bắt đầu quản lý đội.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto max-w-5xl px-6 py-12">
+    <div className="container mx-auto max-w-5xl px-6 py-12 animate-fade-in">
       <div className="mb-10 border-b border-outline-variant pb-6">
         <h2 className="font-display text-4xl text-off-white uppercase">QUẢN LÝ ĐỘI TUYỂN</h2>
-        <p className="font-mono text-xs text-tactical-gray mt-2">DUYỆT THÀNH VIÊN VÀ QUẢN LÝ ĐỘI HÌNH</p>
+        <p className="font-mono text-xs text-tactical-gray mt-2">// DUYỆT THÀNH VIÊN VÀ QUẢN LÝ ĐỘI HÌNH THI ĐẤU</p>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-primary-red/10 border border-primary-red text-primary-red font-mono text-sm">
-          {error}
+        <div className="mb-6 p-4 bg-primary-red/10 border border-primary-red text-primary-red font-mono text-xs uppercase">
+          // Lỗi: {error}
         </div>
       )}
       {success && (
-        <div className="mb-6 p-4 bg-success-cyan/10 border border-success-cyan text-success-cyan font-mono text-sm">
-          {success}
+        <div className="mb-6 p-4 bg-success-cyan/10 border border-success-cyan text-success-cyan font-mono text-xs uppercase">
+          // {success}
         </div>
       )}
 
@@ -103,7 +114,7 @@ export default function ManageTeam({ currentUser }) {
         {teams.map(team => {
           const approvedMembers = team.members ? team.members.filter(m => (m.status === 'APPROVED' || m.status === 'ACCEPTED') && m.username !== team.captainUsername && m.userId !== team.captainId) : [];
           const pendingMembers = team.members ? team.members.filter(m => (m.status === 'PENDING' || m.status === 'INVITED') && m.username !== team.captainUsername && m.userId !== team.captainId) : [];
-          const totalMembers = 1 + approvedMembers.length; // Captain (1) + approved members
+          const totalMembers = 1 + approvedMembers.length;
 
           return (
             <div key={team.id} className="bg-surface-charcoal border border-outline-variant clip-corner-top overflow-hidden">
@@ -116,7 +127,7 @@ export default function ManageTeam({ currentUser }) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="font-mono text-xs text-tactical-gray uppercase block mb-1">SĨ SỐ</span>
+                  <span className="font-mono text-xs text-tactical-gray uppercase block mb-1">SĨ SỐ THÀNH VIÊN</span>
                   <span className={`font-display text-xl ${totalMembers >= 7 ? 'text-primary-red' : 'text-success-cyan'}`}>
                     {totalMembers} / 7
                   </span>
@@ -126,27 +137,36 @@ export default function ManageTeam({ currentUser }) {
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Yêu cầu chờ duyệt */}
                 <div>
-                  <h4 className="font-mono text-sm text-warning-amber uppercase border-b border-outline-variant pb-2 mb-4 flex items-center gap-2">
+                  <h4 className="font-mono text-sm text-warning-amber uppercase border-b border-outline-variant pb-2 mb-4 flex items-center gap-2 font-bold">
                     <AlertTriangle size={16} /> YÊU CẦU CHỜ DUYỆT ({pendingMembers.length})
                   </h4>
                   {pendingMembers.length === 0 ? (
-                    <p className="font-mono text-xs text-tactical-gray">Không có yêu cầu nào.</p>
+                    <p className="font-mono text-xs text-tactical-gray py-4">Không có yêu cầu tham gia mới.</p>
                   ) : (
                     <div className="space-y-3">
                       {pendingMembers.map(req => (
                         <div key={req.id} className="bg-background border border-outline-variant p-3 flex justify-between items-center">
-                          <span className="font-body text-sm text-off-white">{req.username}</span>
+                          <div>
+                            <span className="font-body text-sm font-semibold text-off-white">@{req.username}</span>
+                            {req.inGameName && (
+                              <p className="font-mono text-[10px] text-success-cyan">IGN: {req.inGameName}</p>
+                            )}
+                          </div>
                           <div className="flex gap-2">
                             <TactileButton
+                              variant="cyan"
+                              size="sm"
                               onClick={() => handleAction('approve', team.id, req.id)}
                               disabled={totalMembers >= 7}
-                              className="bg-success-cyan hover:bg-success-cyan/80 text-background px-3 py-1.5 flex items-center gap-1 font-mono text-xs uppercase disabled:opacity-50"
+                              className="flex items-center gap-1"
                             >
                               <Check size={14} /> DUYỆT
                             </TactileButton>
                             <TactileButton
+                              variant="outline"
+                              size="sm"
                               onClick={() => handleAction('reject', team.id, req.id)}
-                              className="bg-surface-charcoal border border-outline-variant hover:border-primary-red text-off-white px-3 py-1.5 flex items-center gap-1 font-mono text-xs uppercase"
+                              className="flex items-center gap-1"
                             >
                               <X size={14} /> TỪ CHỐI
                             </TactileButton>
@@ -159,23 +179,33 @@ export default function ManageTeam({ currentUser }) {
 
                 {/* Danh sách thành viên chính thức */}
                 <div>
-                  <h4 className="font-mono text-sm text-success-cyan uppercase border-b border-outline-variant pb-2 mb-4">
-                    THÀNH VIÊN CHÍNH THỨC
+                  <h4 className="font-mono text-sm text-success-cyan uppercase border-b border-outline-variant pb-2 mb-4 font-bold">
+                    THÀNH VIÊN CHÍNH THỨC ({totalMembers})
                   </h4>
                   <div className="space-y-3">
                     {/* Captain */}
                     <div className="bg-background border border-primary-red/30 p-3 flex justify-between items-center relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-1 h-full bg-primary-red"></div>
-                      <span className="font-body text-sm text-off-white pl-2">{team.captainUsername}</span>
-                      <span className="font-mono text-[10px] bg-primary-red/20 text-primary-red px-2 py-0.5 uppercase">CAPTAIN</span>
+                      <span className="font-body text-sm font-semibold text-off-white pl-2">@{team.captainUsername}</span>
+                      <span className="font-mono text-[10px] bg-primary-red/20 text-primary-red border border-primary-red/30 px-2 py-0.5 uppercase font-bold">
+                        👑 CAPTAIN
+                      </span>
                     </div>
+
                     {/* Members */}
                     {approvedMembers.map(member => (
                       <div key={member.id} className="bg-background border border-outline-variant p-3 flex justify-between items-center">
-                        <span className="font-body text-sm text-off-white">{member.username}</span>
+                        <div>
+                          <span className="font-body text-sm text-off-white">@{member.username}</span>
+                          {member.inGameName && (
+                            <p className="font-mono text-[10px] text-tactical-gray">IGN: {member.inGameName}</p>
+                          )}
+                        </div>
                         <TactileButton
+                          variant="danger"
+                          size="sm"
                           onClick={() => handleAction('kick', team.id, member.id)}
-                          className="text-tactical-gray hover:text-primary-red font-mono text-xs flex items-center gap-1 uppercase transition-colors"
+                          className="flex items-center gap-1"
                         >
                           <UserMinus size={14} /> KICK
                         </TactileButton>

@@ -1,5 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 
 @theme {
   --color-background: #0a141e;
@@ -26,8 +26,26 @@
   --font-mono: "JetBrains Mono", monospace;
 }
 
+/* Base styles & Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
 
+::-webkit-scrollbar-track {
+  background: #0a141e;
+}
 
+::-webkit-scrollbar-thumb {
+  background: #303a45;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FF4655;
+}
+
+/* Custom tactical clips */
 .clip-corner {
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
 }
@@ -44,14 +62,53 @@
   box-shadow: 0 0 15px rgba(255, 70, 85, 0.4);
 }
 
-.glitch-anim {
-  animation: glitch 1s linear infinite;
+/* Keyframes & Animation utility classes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 @keyframes glitch {
   2%, 64% { transform: translate(2px, 0) skew(0deg); }
   4%, 60% { transform: translate(-2px, 0) skew(0deg); }
   62% { transform: translate(0, 0) skew(5deg); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #1f2326 25%, #303a45 50%, #1f2326 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.glitch-anim {
+  animation: glitch 1s linear infinite;
 }
 
 /* Reduced motion support */

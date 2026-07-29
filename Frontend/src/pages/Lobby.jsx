@@ -31,10 +31,13 @@ const INITIAL_SERIES = {
   ]
 };
 
+import { useAuth } from '../contexts/AuthContext';
+
 const Lobby = () => {
   const { matchId } = useParams(); 
   const navigate = useNavigate();
-  const currentUser = getCurrentUser() || {}; 
+  const { currentUser: authUser } = useAuth();
+  const currentUser = authUser || getCurrentUser() || {}; 
   
   const [seriesData, setSeriesData] = useState(INITIAL_SERIES);
   const [activeGame, setActiveGame] = useState(null);
@@ -53,23 +56,25 @@ const Lobby = () => {
   const [stompClient, setStompClient] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState(new Set()); 
 
-  let autoRole = 'PLAYER';
-  let currentTurnTeamId = 0;
+  const { autoRole, currentTurnTeamId } = React.useMemo(() => {
+    let role = 'PLAYER';
+    let teamId = 0;
+    const username = (currentUser.username || '').toLowerCase();
+    const email = (currentUser.email || '').toLowerCase();
 
-  const username = (currentUser.username || '').toLowerCase();
-  const email = (currentUser.email || '').toLowerCase();
-
-  if (currentUser.globalRole === 'ADMIN' || currentUser.globalRole === 'REFEREE' || currentUser.globalRole === 'ORGANIZER') {
-    autoRole = 'ADMIN';
-  } 
-  else if (currentUser.id === seriesData.teamA.captainId || username.includes('sgp') || email.includes('sgp')) {
-    autoRole = 'TEAM_A';
-    currentTurnTeamId = 1;
-  } 
-  else if (currentUser.id === seriesData.teamB.captainId || username.includes('prx') || email.includes('prx')) {
-    autoRole = 'TEAM_B';
-    currentTurnTeamId = 2;
-  }
+    if (currentUser.globalRole === 'ADMIN' || currentUser.globalRole === 'REFEREE' || currentUser.globalRole === 'ORGANIZER') {
+      role = 'ADMIN';
+    } 
+    else if (currentUser.id === seriesData.teamA.captainId || username.includes('sgp') || email.includes('sgp')) {
+      role = 'TEAM_A';
+      teamId = 1;
+    } 
+    else if (currentUser.id === seriesData.teamB.captainId || username.includes('prx') || email.includes('prx')) {
+      role = 'TEAM_B';
+      teamId = 2;
+    }
+    return { autoRole: role, currentTurnTeamId: teamId };
+  }, [currentUser, seriesData.teamA.captainId, seriesData.teamB.captainId]);
 
   const currentUserRole = autoRole === 'ADMIN' ? 'ADMIN' : 'PLAYER';
   const currentUserId = currentTurnTeamId; 
@@ -556,22 +561,26 @@ const Lobby = () => {
         <div className="max-w-7xl mx-auto flex flex-col gap-4">
           {seriesData.games.map((game) => {
             const displayStatus = game.status;
+            
+            const winThreshold = seriesData.format === 'BO3' ? 2 : seriesData.format === 'BO5' ? 3 : 1;
+            const isSeriesOver = seriesData.teamA.score >= winThreshold || seriesData.teamB.score >= winThreshold;
+            
             return (
               <div key={game.id} className={`flex flex-col xl:flex-row items-center justify-between p-4 xl:p-5 gap-4 border rounded-sm transition-all duration-300
-                ${displayStatus === 'WAITING' ? 'border-gray-500 bg-[#1f2933]' : ''}
+                ${displayStatus === 'WAITING' && !isSeriesOver ? 'border-gray-500 bg-[#1f2933]' : ''}
                 ${displayStatus === 'PLAYING' ? 'border-blue-500 bg-[#1f2933]' : ''} 
                 ${displayStatus === 'COMPLETED' ? 'border-gray-600 bg-[#121a23]' : ''}
-                ${(displayStatus === 'LOCKED' || displayStatus === 'CANCELED') ? 'border-gray-800 bg-[#0a1118] opacity-40' : ''}
+                ${(displayStatus === 'LOCKED' || displayStatus === 'CANCELED' || (displayStatus === 'WAITING' && isSeriesOver)) ? 'border-gray-800 bg-[#0a1118] opacity-40' : ''}
               `}>
                 <div className="flex flex-col text-center xl:text-left w-full xl:w-32 shrink-0">
                   <span className="text-gray-400 text-xs font-bold tracking-widest uppercase mb-1">Ván {game.gameNumber}</span>
                   <span className={`text-3xl font-display uppercase font-bold tracking-wide ${game.map === 'CHƯA CHỌN' ? 'text-gray-600' : 'text-white'}`}>{game.map}</span>
                   <span className={`text-[10px] mt-1 uppercase tracking-wider font-bold ${displayStatus === 'PLAYING' ? 'text-blue-400' : 'text-gray-500'}`}>
-                    {displayStatus === 'WAITING' ? 'Chuẩn bị' : displayStatus === 'PLAYING' ? 'ĐANG THI ĐẤU' : displayStatus === 'LOCKED' ? 'Bị khóa' : 'Đã kết thúc'}
+                    {displayStatus === 'PLAYING' ? 'ĐANG THI ĐẤU' : (displayStatus === 'WAITING' && !isSeriesOver) ? 'Chuẩn bị' : displayStatus === 'COMPLETED' ? 'Đã kết thúc' : 'Bị khóa'}
                   </span>
                 </div>
 
-                {(displayStatus !== 'CANCELED' && displayStatus !== 'LOCKED') ? (
+                {(displayStatus !== 'CANCELED' && displayStatus !== 'LOCKED' && !(displayStatus === 'WAITING' && isSeriesOver)) ? (
                   <div className="flex flex-1 flex-col xl:flex-row items-center justify-center gap-4 w-full">
                     <div className="flex items-center gap-2 justify-end shrink-0">
                       <div className="flex gap-1 hidden md:flex">{renderAgentSlots(game.teamABans, 'ban', 3, 'sm')}</div>
@@ -588,23 +597,45 @@ const Lobby = () => {
                 ) : (<div className="flex-1"></div>)}
 
                 <div className="w-full xl:w-40 flex shrink-0 justify-center xl:justify-end">
-                  {displayStatus === 'WAITING' && currentUserRole === 'ADMIN' && (
+                  {displayStatus === 'WAITING' && !isSeriesOver && currentUserRole === 'ADMIN' && (
                     <button onClick={() => handleAdminStartDraft(game.id)} className="bg-[#ff4655] text-white text-[11px] px-6 py-3 font-bold uppercase rounded tracking-widest whitespace-nowrap transition-all hover:bg-red-500 shadow-[0_0_10px_rgba(255,70,85,0.4)] animate-pulse">
                       BẮT ĐẦU VÁN {game.gameNumber}
                     </button>
                   )}
-                  {displayStatus === 'WAITING' && currentUserRole !== 'ADMIN' && <span className="text-[11px] text-yellow-400 font-bold uppercase flex items-center gap-2 whitespace-nowrap">⏳ Chờ trọng tài...</span>}
+                  {displayStatus === 'WAITING' && !isSeriesOver && currentUserRole !== 'ADMIN' && <span className="text-[11px] text-yellow-400 font-bold uppercase flex items-center gap-2 whitespace-nowrap">⏳ Chờ trọng tài...</span>}
                   
                   {displayStatus === 'PLAYING' && currentUserRole === 'ADMIN' && <button onClick={() => handleAdminSaveScore(game.id)} className="bg-success-cyan text-background text-[11px] px-6 py-3 font-bold uppercase rounded hover:brightness-110 tracking-widest shadow-[0_0_10px_rgba(0,255,209,0.3)] whitespace-nowrap">Lưu kết quả</button>}
                   {displayStatus === 'PLAYING' && currentUserRole !== 'ADMIN' && <span className="text-[11px] text-blue-400 font-bold uppercase animate-pulse whitespace-nowrap">ĐANG THI ĐẤU</span>}
                   
                   {displayStatus === 'COMPLETED' && <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-2 whitespace-nowrap">ĐÃ LƯU KẾT QUẢ</span>}
-                  {(displayStatus === 'CANCELED' || displayStatus === 'LOCKED') && <span className="text-2xl text-gray-700">🔒</span>}
+                  {(displayStatus === 'CANCELED' || displayStatus === 'LOCKED' || (displayStatus === 'WAITING' && isSeriesOver)) && <span className="text-2xl text-gray-700">🔒</span>}
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* NÚT LƯU KẾT QUẢ TOÀN BỘ TRẬN ĐẤU */}
+        {currentUserRole === 'ADMIN' && (
+           <div className="max-w-7xl mx-auto mt-8 flex flex-col items-center justify-center p-6 border border-gray-700 bg-[#121a23] rounded-lg">
+             <h3 className="text-xl font-bold mb-4">CẬP NHẬT KẾT QUẢ TRẬN ĐẤU VÀO HỆ THỐNG</h3>
+             <div className="flex gap-8 items-center mb-6">
+                <span className="text-2xl font-display">{seriesData.teamA.short}: <span className="text-blue-400 font-bold">{seriesData.teamA.score}</span></span>
+                <span className="text-2xl font-display">{seriesData.teamB.short}: <span className="text-[#ff4655] font-bold">{seriesData.teamB.score}</span></span>
+             </div>
+             <button onClick={async () => {
+                if (window.confirm(`Xác nhận kết thúc trận đấu với tỷ số ${seriesData.teamA.score} - ${seriesData.teamB.score}?`)) {
+                   try {
+                     await api.put(`/matches/${matchId}/score`, { scoreTeam1: seriesData.teamA.score, scoreTeam2: seriesData.teamB.score }, { params: { userId: currentUser.id }});
+                     alert('Đã cập nhật tỷ số và kết thúc trận đấu trên hệ thống!');
+                     navigate(-1);
+                   } catch (e) { alert('Lỗi cập nhật tỷ số: ' + (e.response?.data?.message || e.message)); }
+                }
+             }} className="bg-success-cyan text-background px-10 py-3 font-bold tracking-widest rounded uppercase transition hover:brightness-110 shadow-[0_0_20px_rgba(0,255,209,0.4)]">
+               XÁC NHẬN KẾT THÚC TRẬN ĐẤU
+             </button>
+           </div>
+        )}
       </div>
     );
   }
