@@ -427,3 +427,13 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# IDE and temp files
+.idea/
+**/.idea/
+.vscode/
+**/.vscode/
+.github/modernize/
+**/.github/modernize/
+**/target/
+

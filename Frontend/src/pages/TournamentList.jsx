@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Plus, ArrowRight, Calendar, Users, MapPin } from 'lucide-react';
-import { getAllTournaments, createTournament } from '../services/tournamentService';
+import { getAllTournaments, createTournament, getMyTournaments, updateTournament } from '../services/tournamentService';
 import { useAuth } from '../contexts/AuthContext';
 import TactileButton from '../components/common/TactileButton';
 import EmptyState from '../components/common/EmptyState';
@@ -13,7 +13,9 @@ export default function TournamentList() {
 
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'create'
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'my' | 'create'
+  const [myTournaments, setMyTournaments] = useState([]);
+  const [editingId, setEditingId] = useState(null);
   
   // Create form state
   const [createForm, setCreateForm] = useState({
@@ -24,7 +26,8 @@ export default function TournamentList() {
     endDate: '',
     prizePool: '',
     location: '',
-    structure: 'SINGLE_ELIMINATION'
+    structure: 'SINGLE_ELIMINATION',
+    format: 'BO3'
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -37,6 +40,12 @@ export default function TournamentList() {
       if (res.success) {
         setTournaments(res.data || []);
       }
+      if (currentUser) {
+        const myRes = await getMyTournaments();
+        if (myRes.success) {
+          setMyTournaments(myRes.data || []);
+        }
+      }
     } catch (err) {
       console.error("Lỗi lấy danh sách giải đấu:", err);
     } finally {
@@ -46,7 +55,7 @@ export default function TournamentList() {
 
   useEffect(() => {
     fetchTournaments();
-  }, []);
+  }, [currentUser]);
 
   const handleCreateTournament = async (e) => {
     e.preventDefault();
@@ -64,20 +73,36 @@ export default function TournamentList() {
     setCreateLoading(true);
 
     try {
-      const res = await createTournament(
-        createForm.name,
-        parseInt(createForm.maxTeams),
-        createForm.rulesDescription,
-        createForm.startDate,
-        createForm.endDate,
-        createForm.prizePool,
-        createForm.location,
-        createForm.structure,
-        currentUser.id
-      );
+      let res;
+      if (editingId) {
+        res = await updateTournament(
+          editingId,
+          createForm.name,
+          parseInt(createForm.maxTeams),
+          createForm.rulesDescription,
+          createForm.startDate,
+          createForm.endDate,
+          createForm.prizePool,
+          createForm.location,
+          createForm.structure,
+          createForm.format
+        );
+      } else {
+        res = await createTournament(
+          createForm.name,
+          parseInt(createForm.maxTeams),
+          createForm.rulesDescription,
+          createForm.startDate,
+          createForm.endDate,
+          createForm.prizePool,
+          createForm.location,
+          createForm.structure,
+          createForm.format
+        );
+      }
 
       if (res.success) {
-        setSuccess('Tạo giải đấu thành công! Giải đấu đang chờ Admin duyệt trước khi xuất bản công khai.');
+        setSuccess(editingId ? 'Cập nhật giải đấu thành công!' : 'Tạo giải đấu thành công! Giải đấu đang chờ Admin duyệt.');
         setCreateForm({
           name: '',
           maxTeams: 16,
@@ -86,28 +111,46 @@ export default function TournamentList() {
           endDate: '',
           prizePool: '',
           location: '',
-          structure: 'SINGLE_ELIMINATION'
+          structure: 'SINGLE_ELIMINATION',
+          format: 'BO3'
         });
+        setEditingId(null);
         await fetchTournaments();
         setTimeout(() => {
-          setViewMode('list');
+          setViewMode('my');
           setSuccess('');
         }, 2000);
       } else {
-        setError(res.message || 'Tạo giải đấu thất bại!');
+        setError(res.message || (editingId ? 'Cập nhật giải đấu thất bại!' : 'Tạo giải đấu thất bại!'));
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi hệ thống khi tạo giải đấu!');
+      setError(err.response?.data?.message || 'Lỗi hệ thống!');
     } finally {
       setCreateLoading(false);
     }
   };
 
+  const handleEdit = (t) => {
+    setEditingId(t.id);
+    setCreateForm({
+      name: t.name || '',
+      maxTeams: t.maxTeams || 16,
+      rulesDescription: t.rulesDescription || '',
+      startDate: t.startDate ? t.startDate.substring(0, 10) : '',
+      endDate: t.endDate ? t.endDate.substring(0, 10) : '',
+      prizePool: t.prizePool || '',
+      location: t.location || '',
+      structure: t.structure || 'SINGLE_ELIMINATION',
+      format: t.format || 'BO3'
+    });
+    setViewMode('create');
+  };
+
   return (
     <div className="container mx-auto max-w-7xl px-6 md:px-12 py-12 animate-fade-in">
-      {viewMode === 'list' && (
+      {(viewMode === 'list' || viewMode === 'my') && (
         <>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
               <h2 className="font-display text-4xl text-off-white uppercase mb-1">GIẢI ĐẤU</h2>
               <p className="font-mono text-xs text-tactical-gray">// Các giải đấu Esports đỉnh cao</p>
@@ -119,6 +162,18 @@ export default function TournamentList() {
                 onClick={() => {
                   setError('');
                   setSuccess('');
+                  setEditingId(null);
+                  setCreateForm({
+                    name: '',
+                    maxTeams: 16,
+                    rulesDescription: '',
+                    startDate: '',
+                    endDate: '',
+                    prizePool: '',
+                    location: '',
+                    structure: 'SINGLE_ELIMINATION',
+                    format: 'BO3'
+                  });
                   setViewMode('create');
                 }}
                 className="flex items-center gap-2"
@@ -132,17 +187,42 @@ export default function TournamentList() {
             )}
           </div>
 
+          {currentUser && (
+            <div className="flex gap-4 mb-8 border-b border-outline-variant pb-4">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`font-mono text-sm uppercase tracking-wider px-4 py-2 transition-colors ${
+                  viewMode === 'list' 
+                    ? 'text-primary-red border-b-2 border-primary-red font-bold' 
+                    : 'text-tactical-gray hover:text-off-white'
+                }`}
+              >
+                Tất Cả Giải Đấu
+              </button>
+              <button
+                onClick={() => setViewMode('my')}
+                className={`font-mono text-sm uppercase tracking-wider px-4 py-2 transition-colors ${
+                  viewMode === 'my' 
+                    ? 'text-primary-red border-b-2 border-primary-red font-bold' 
+                    : 'text-tactical-gray hover:text-off-white'
+                }`}
+              >
+                Giải Đấu Của Tôi
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <LoadingSkeleton type="card" count={6} />
-          ) : tournaments.length === 0 ? (
+          ) : (viewMode === 'my' ? myTournaments : tournaments).length === 0 ? (
             <EmptyState
               icon={Trophy}
-              title="Chưa có giải đấu nào"
-              desc="Không tìm thấy thông tin giải đấu. Nếu bạn là nhà tổ chức, hãy tạo giải đấu đầu tiên ngay bây giờ!"
+              title={viewMode === 'my' ? "Bạn chưa tạo giải đấu nào" : "Chưa có giải đấu nào"}
+              desc={viewMode === 'my' ? "Hãy tạo giải đấu đầu tiên của bạn ngay bây giờ!" : "Không tìm thấy thông tin giải đấu."}
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tournaments.map((t) => (
+              {(viewMode === 'my' ? myTournaments : tournaments).map((t) => (
                 <div
                   key={t.id}
                   onClick={() => navigate(`/tournaments/${t.id}`)}
@@ -152,11 +232,19 @@ export default function TournamentList() {
                     <div className="flex justify-between items-start mb-4">
                       <span className="font-mono text-xs text-success-cyan font-bold tracking-wider">// ID: {t.id}</span>
                       <span className={`font-mono text-[10px] px-2 py-0.5 uppercase font-bold border ${
-                        t.registrationStatus === 'OPEN' ? 'bg-success-cyan/10 text-success-cyan border-success-cyan/30' :
-                        t.registrationStatus === 'PENDING' ? 'bg-warning-amber/10 text-warning-amber border-warning-amber/30' :
-                        'bg-tactical-gray/10 text-tactical-gray border-tactical-gray/30'
+                        viewMode === 'my' ? (
+                          t.approvalStatus === 'APPROVED' ? 'bg-success-cyan/10 text-success-cyan border-success-cyan/30' :
+                          t.approvalStatus === 'PENDING' ? 'bg-warning-amber/10 text-warning-amber border-warning-amber/30' :
+                          'bg-primary-red/10 text-primary-red border-primary-red/30'
+                        ) : (
+                          t.registrationStatus === 'OPEN' ? 'bg-success-cyan/10 text-success-cyan border-success-cyan/30' :
+                          t.registrationStatus === 'PENDING' ? 'bg-warning-amber/10 text-warning-amber border-warning-amber/30' :
+                          'bg-tactical-gray/10 text-tactical-gray border-tactical-gray/30'
+                        )
                       }`}>
-                        {t.registrationStatus === 'PENDING' ? 'Chờ duyệt' : t.registrationStatus}
+                        {viewMode === 'my' 
+                          ? (t.approvalStatus === 'PENDING' ? 'Đang Chờ Duyệt' : t.approvalStatus === 'APPROVED' ? 'Đã Xuất Bản' : 'Bị Từ Chối')
+                          : (t.registrationStatus === 'PENDING' ? 'Chờ duyệt' : t.registrationStatus)}
                       </span>
                     </div>
 
@@ -187,15 +275,28 @@ export default function TournamentList() {
                   </div>
 
                   <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-                    <TactileButton
-                      variant="primary"
-                      onClick={() => navigate(`/tournaments/${t.id}`)}
-                      className="w-full justify-center flex items-center gap-1.5"
-                    >
-                      THAM GIA GIẢI ĐẤU <ArrowRight size={14} />
-                    </TactileButton>
+                    {t.approvalStatus === 'APPROVED' && (
+                      <TactileButton
+                        variant="primary"
+                        onClick={() => navigate(`/tournaments/${t.id}`)}
+                        className="w-full justify-center flex items-center gap-1.5"
+                      >
+                        THAM GIA GIẢI ĐẤU <ArrowRight size={14} />
+                      </TactileButton>
+                    )}
 
-                    {currentUser && (currentUser.username === t.creatorUsername || currentUser.globalRole === 'ADMIN') && (
+                    {viewMode === 'my' && t.approvalStatus === 'PENDING' && (
+                      <TactileButton
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(t)}
+                        className="w-full justify-center"
+                      >
+                        Chỉnh sửa Thông tin
+                      </TactileButton>
+                    )}
+
+                    {currentUser && (currentUser.username === t.creatorUsername || currentUser.globalRole === 'ADMIN') && t.approvalStatus === 'APPROVED' && (
                       <TactileButton
                         variant="cyan"
                         size="sm"
@@ -215,8 +316,12 @@ export default function TournamentList() {
 
       {viewMode === 'create' && (
         <div className="max-w-2xl mx-auto bg-surface-charcoal border border-outline-variant p-8 clip-corner animate-scale-in">
-          <h3 className="font-display text-3xl text-off-white uppercase mb-1">Tạo Giải Đấu Mới</h3>
-          <p className="font-mono text-xs text-tactical-gray mb-6">// Thiết lập các thông số cơ bản cho giải đấu của bạn</p>
+          <h3 className="font-display text-3xl text-off-white uppercase mb-1">
+            {editingId ? 'Chỉnh Sửa Giải Đấu' : 'Tạo Giải Đấu Mới'}
+          </h3>
+          <p className="font-mono text-xs text-tactical-gray mb-6">
+            // {editingId ? 'Cập nhật lại thông tin giải đấu của bạn' : 'Thiết lập các thông số cơ bản cho giải đấu của bạn'}
+          </p>
 
           {error && (
             <div className="bg-primary-red/10 border border-primary-red text-primary-red p-3 mb-4 text-xs font-mono uppercase">
@@ -242,7 +347,7 @@ export default function TournamentList() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Số Lượng Đội</label>
                 <select
@@ -257,14 +362,26 @@ export default function TournamentList() {
                 </select>
               </div>
               <div>
-                <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Thể Thức Thi Đấu</label>
+                <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Định Dạng Ván (Format)</label>
+                <select
+                  className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
+                  value={createForm.format}
+                  onChange={(e) => setCreateForm({ ...createForm, format: e.target.value })}
+                >
+                  <option value="BO1">Best of 1 (BO1)</option>
+                  <option value="BO3">Best of 3 (BO3)</option>
+                  <option value="BO5">Best of 5 (BO5)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Cấu Trúc Giải Đấu</label>
                 <select
                   className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
                   value={createForm.structure}
                   onChange={(e) => setCreateForm({ ...createForm, structure: e.target.value })}
                 >
                   <option value="SINGLE_ELIMINATION">Loại Trực Tiếp (Single Elimination)</option>
-                  <option value="GROUP_KNOCKOUT">Vòng Bảng + Nhánh Đấu (Group Stage & Knockout)</option>
+                  <option value="GROUP_KNOCKOUT">Vòng Bảng + Nhánh Đấu</option>
                 </select>
               </div>
             </div>
@@ -330,15 +447,10 @@ export default function TournamentList() {
                 onClick={() => setViewMode('list')}
                 className="w-full justify-center"
               >
-                HỦY & QUAY LẠI
+                HỦY BỎ
               </TactileButton>
-              <TactileButton
-                type="submit"
-                variant="primary"
-                disabled={createLoading}
-                className="w-full justify-center"
-              >
-                {createLoading ? 'ĐANG TẠO...' : 'XÁC NHẬN TẠO'}
+              <TactileButton type="submit" variant="primary" className="w-full justify-center" disabled={createLoading}>
+                {createLoading ? (editingId ? 'ĐANG CẬP NHẬT...' : 'ĐANG TẠO...') : (editingId ? 'LƯU THAY ĐỔI' : 'XÁC NHẬN TẠO GIẢI ĐẤU')}
               </TactileButton>
             </div>
           </form>

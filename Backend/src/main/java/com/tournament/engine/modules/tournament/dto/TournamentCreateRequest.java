@@ -1,17 +1,36 @@
 package com.tournament.engine.modules.tournament.dto;
 
+import com.tournament.engine.modules.tournament.model.Tournament;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+
+import java.time.LocalDate;
 
 @Data
 public class TournamentCreateRequest {
+    @NotBlank(message = "Tên giải đấu không được để trống")
     private String name;
-    private String format; // BO1, BO3, BO5
-    private String structure; // SINGLE_ELIMINATION, GROUP_KNOCKOUT
+    
+    @NotNull(message = "Thể thức thi đấu không được để trống")
+    private Tournament.MatchFormat format; // BO1, BO3, BO5
+    
+    @NotNull(message = "Cấu trúc giải đấu không được để trống")
+    private Tournament.TournamentStructure structure; // SINGLE_ELIMINATION, GROUP_KNOCKOUT
+    
+    @NotNull(message = "Số đội tối đa không được để trống")
+    @Min(value = 2, message = "Số đội tối thiểu phải là 2")
     private Integer maxTeams; // 8, 16, 32
+    
     private String rulesDescription;
-    private String startDate;
-    private String endDate;
+    
+    @NotNull(message = "Ngày bắt đầu không được để trống")
+    private LocalDate startDate;
+    
+    @NotNull(message = "Ngày kết thúc không được để trống")
+    private LocalDate endDate;
+    
     private String prizePool;
     private String location;
-    private Long creatorId;
 }

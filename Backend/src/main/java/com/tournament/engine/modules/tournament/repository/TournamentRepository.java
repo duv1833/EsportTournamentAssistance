@@ -10,4 +10,5 @@ import java.util.List;
 public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     List<Tournament> findByApprovalStatus(Tournament.ApprovalStatus approvalStatus);
     long countByApprovalStatus(Tournament.ApprovalStatus approvalStatus);
+    List<Tournament> findByCreatorUsername(String username);
 }

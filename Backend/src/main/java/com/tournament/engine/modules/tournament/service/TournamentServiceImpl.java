@@ -47,6 +47,14 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<TournamentResponse> getMyTournaments(String username) {
+        return tournamentRepository.findByCreatorUsername(username).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public TournamentResponse getTournamentDetails(Long id) {
         Tournament tournament = tournamentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
@@ -55,55 +63,24 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional
-    public TournamentResponse createTournament(TournamentCreateRequest request) {
-        User creator = userRepository.findById(request.getCreatorId())
+    public TournamentResponse createTournament(TournamentCreateRequest request, String username) {
+        User creator = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Người tạo không tồn tại!"));
-
-        Tournament.MatchFormat matchFormat = null;
-        if (request.getFormat() != null && !request.getFormat().isBlank()) {
-            try {
-                matchFormat = Tournament.MatchFormat.valueOf(request.getFormat());
-            } catch (IllegalArgumentException ignored) {}
-        }
-        
-        Tournament.TournamentStructure tStructure = Tournament.TournamentStructure.SINGLE_ELIMINATION;
-        if (request.getStructure() != null && !request.getStructure().isBlank()) {
-            try {
-                tStructure = Tournament.TournamentStructure.valueOf(request.getStructure());
-            } catch (IllegalArgumentException ignored) {}
-        }
 
         Tournament tournament = Tournament.builder()
                 .name(request.getName())
-                .format(matchFormat)
+                .format(request.getFormat())
                 .maxTeams(request.getMaxTeams())
                 .rulesDescription(request.getRulesDescription())
-                .structure(tStructure)
+                .structure(request.getStructure())
                 .prizePool(request.getPrizePool())
                 .location(request.getLocation())
+                .startDate(request.getStartDate().atStartOfDay())
+                .endDate(request.getEndDate().atStartOfDay())
                 .registrationStatus(Tournament.RegistrationStatus.LOCKED)
                 .approvalStatus(Tournament.ApprovalStatus.PENDING)
                 .creator(creator)
                 .build();
-                
-        if (request.getStartDate() != null && !request.getStartDate().isBlank()) {
-            try {
-                tournament.setStartDate(LocalDate.parse(request.getStartDate()).atStartOfDay());
-            } catch (DateTimeParseException e) {
-                try {
-                    tournament.setStartDate(LocalDateTime.parse(request.getStartDate()));
-                } catch (DateTimeParseException ignored) {}
-            }
-        }
-        if (request.getEndDate() != null && !request.getEndDate().isBlank()) {
-            try {
-                tournament.setEndDate(LocalDate.parse(request.getEndDate()).atStartOfDay());
-            } catch (DateTimeParseException e) {
-                try {
-                    tournament.setEndDate(LocalDateTime.parse(request.getEndDate()));
-                } catch (DateTimeParseException ignored) {}
-            }
-        }
 
         tournament = tournamentRepository.save(tournament);
 
@@ -156,7 +133,7 @@ public class TournamentServiceImpl implements TournamentService {
             tournament.setName(request.getName());
         }
         if (request.getFormat() != null) {
-            tournament.setFormat(Tournament.MatchFormat.valueOf(request.getFormat()));
+            tournament.setFormat(request.getFormat());
         }
         if (request.getMaxTeams() != null && request.getMaxTeams() > 0) {
             tournament.setMaxTeams(request.getMaxTeams());
@@ -170,23 +147,11 @@ public class TournamentServiceImpl implements TournamentService {
         if (request.getLocation() != null) {
             tournament.setLocation(request.getLocation());
         }
-        if (request.getStartDate() != null && !request.getStartDate().isBlank()) {
-            try {
-                tournament.setStartDate(LocalDate.parse(request.getStartDate()).atStartOfDay());
-            } catch (DateTimeParseException e) {
-                try {
-                    tournament.setStartDate(LocalDateTime.parse(request.getStartDate()));
-                } catch (DateTimeParseException ignored) {}
-            }
+        if (request.getStartDate() != null) {
+            tournament.setStartDate(request.getStartDate().atStartOfDay());
         }
-        if (request.getEndDate() != null && !request.getEndDate().isBlank()) {
-            try {
-                tournament.setEndDate(LocalDate.parse(request.getEndDate()).atStartOfDay());
-            } catch (DateTimeParseException e) {
-                try {
-                    tournament.setEndDate(LocalDateTime.parse(request.getEndDate()));
-                } catch (DateTimeParseException ignored) {}
-            }
+        if (request.getEndDate() != null) {
+            tournament.setEndDate(request.getEndDate().atStartOfDay());
         }
 
         tournamentRepository.save(tournament);
@@ -194,17 +159,20 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional
-    public void updateTournament(Long tournamentId, TournamentCreateRequest request, Long organizerUserId) {
+    public void updateTournament(Long tournamentId, TournamentCreateRequest request, String username) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
 
-        validateOrganizer(tournamentId, organizerUserId);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại!"));
+
+        validateOrganizer(tournamentId, user.getId());
 
         if (request.getName() != null && !request.getName().isBlank()) {
             tournament.setName(request.getName());
         }
         if (request.getFormat() != null) {
-            tournament.setFormat(Tournament.MatchFormat.valueOf(request.getFormat()));
+            tournament.setFormat(request.getFormat());
         }
         if (request.getMaxTeams() != null && request.getMaxTeams() > 0) {
             tournament.setMaxTeams(request.getMaxTeams());
@@ -218,23 +186,11 @@ public class TournamentServiceImpl implements TournamentService {
         if (request.getLocation() != null) {
             tournament.setLocation(request.getLocation());
         }
-        if (request.getStartDate() != null && !request.getStartDate().isBlank()) {
-            try {
-                tournament.setStartDate(LocalDate.parse(request.getStartDate()).atStartOfDay());
-            } catch (DateTimeParseException e) {
-                try {
-                    tournament.setStartDate(LocalDateTime.parse(request.getStartDate()));
-                } catch (DateTimeParseException ignored) {}
-            }
+        if (request.getStartDate() != null) {
+            tournament.setStartDate(request.getStartDate().atStartOfDay());
         }
-        if (request.getEndDate() != null && !request.getEndDate().isBlank()) {
-            try {
-                tournament.setEndDate(LocalDate.parse(request.getEndDate()).atStartOfDay());
-            } catch (DateTimeParseException e) {
-                try {
-                    tournament.setEndDate(LocalDateTime.parse(request.getEndDate()));
-                } catch (DateTimeParseException ignored) {}
-            }
+        if (request.getEndDate() != null) {
+            tournament.setEndDate(request.getEndDate().atStartOfDay());
         }
 
         tournamentRepository.save(tournament);

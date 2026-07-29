@@ -5,18 +5,23 @@ export const getAllTournaments = async () => {
   return response.data;
 };
 
+export const getMyTournaments = async () => {
+  const response = await api.get('/tournaments/my');
+  return response.data;
+};
+
 export const getTournamentDetails = async (id) => {
   const response = await api.get(`/tournaments/${id}`);
   return response.data;
 };
 
-export const createTournament = async (name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, creatorId) => {
-  const response = await api.post('/tournaments', { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, creatorId });
+export const createTournament = async (name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format) => {
+  const response = await api.post('/tournaments', { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format });
   return response.data;
 };
 
-export const updateTournament = async (id, name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, organizerUserId) => {
-  const response = await api.put(`/tournaments/${id}`, { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure }, { params: { organizerUserId } });
+export const updateTournament = async (id, name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format) => {
+  const response = await api.put(`/tournaments/${id}`, { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format });
   return response.data;
 };
 

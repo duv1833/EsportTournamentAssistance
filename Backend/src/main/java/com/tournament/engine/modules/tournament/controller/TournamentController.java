@@ -8,6 +8,8 @@ import com.tournament.engine.shared.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
@@ -29,6 +31,17 @@ public class TournamentController {
         }
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<ApiResponse<List<TournamentResponse>>> getMyTournaments() {
+        try {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            List<TournamentResponse> response = tournamentService.getMyTournaments(username);
+            return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách giải đấu của tôi thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<TournamentResponse>> getTournamentDetails(@PathVariable Long id) {
         try {
@@ -40,9 +53,10 @@ public class TournamentController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<TournamentResponse>> createTournament(@RequestBody TournamentCreateRequest request) {
+    public ResponseEntity<ApiResponse<TournamentResponse>> createTournament(@Valid @RequestBody TournamentCreateRequest request) {
         try {
-            TournamentResponse response = tournamentService.createTournament(request);
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            TournamentResponse response = tournamentService.createTournament(request, username);
             return ResponseEntity.ok(ApiResponse.success(response, "Tạo giải đấu thành công!"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -64,11 +78,11 @@ public class TournamentController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> updateTournament(
             @PathVariable Long id,
-            @RequestBody TournamentCreateRequest request,
-            @RequestParam Long organizerUserId
+            @RequestBody TournamentCreateRequest request
     ) {
         try {
-            tournamentService.updateTournament(id, request, organizerUserId);
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            tournamentService.updateTournament(id, request, username);
             return ResponseEntity.ok(ApiResponse.success(null, "Cập nhật giải đấu thành công!"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

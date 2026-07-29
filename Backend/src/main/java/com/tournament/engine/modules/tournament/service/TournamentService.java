@@ -8,8 +8,9 @@ import java.util.List;
 
 public interface TournamentService {
     List<TournamentResponse> getAllTournaments();
+    List<TournamentResponse> getMyTournaments(String username);
     TournamentResponse getTournamentDetails(Long id);
-    TournamentResponse createTournament(com.tournament.engine.modules.tournament.dto.TournamentCreateRequest request);
+    TournamentResponse createTournament(com.tournament.engine.modules.tournament.dto.TournamentCreateRequest request, String username);
     void registerForTournament(Long tournamentId, com.tournament.engine.modules.tournament.dto.TournamentRegisterRequest request);
     
     // Organizer endpoints
@@ -22,7 +23,7 @@ public interface TournamentService {
     void approveTournament(Long tournamentId, Long adminUserId);
     void rejectTournament(Long tournamentId, Long adminUserId);
     void updateTournamentByAdmin(Long tournamentId, com.tournament.engine.modules.tournament.dto.TournamentCreateRequest request, Long adminUserId);
-    void updateTournament(Long tournamentId, com.tournament.engine.modules.tournament.dto.TournamentCreateRequest request, Long organizerUserId);
+    void updateTournament(Long tournamentId, com.tournament.engine.modules.tournament.dto.TournamentCreateRequest request, String username);
     void deleteTournamentByAdmin(Long tournamentId, Long adminUserId);
     // Organizer & Referee management
     List<com.tournament.engine.modules.tournament.dto.TournamentOrganizerResponse> getTournamentOrganizers(Long tournamentId);
