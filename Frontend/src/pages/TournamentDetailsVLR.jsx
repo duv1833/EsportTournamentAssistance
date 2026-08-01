@@ -6,6 +6,7 @@ import { getTournamentDetails, registerForTournament } from '../services/tournam
 import TournamentOverview from './tournament/TournamentOverview';
 import TournamentMatches from './tournament/TournamentMatches';
 import OrganizerDashboard from './OrganizerDashboard';
+import LoadingSkeleton from '../components/common/LoadingSkeleton';
 
 export default function TournamentDetailsVLR({ currentUser, onJoinTeam }) {
   const { id } = useParams();
@@ -51,8 +52,11 @@ export default function TournamentDetailsVLR({ currentUser, onJoinTeam }) {
 
   if (loading) {
     return (
-      <div className="w-full bg-[#1b1b1b] min-h-screen text-off-white flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-red" />
+      <div className="w-full bg-background min-h-[calc(100vh-80px)] p-8 text-off-white container mx-auto max-w-7xl mt-12">
+        <div className="max-w-[1200px] mx-auto">
+          <LoadingSkeleton type="text" count={3} />
+          <div className="mt-8"><LoadingSkeleton type="card" count={3} /></div>
+        </div>
       </div>
     );
   }

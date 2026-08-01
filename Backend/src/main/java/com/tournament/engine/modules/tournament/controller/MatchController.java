@@ -38,6 +38,16 @@ public class MatchController {
         }
     }
 
+    @GetMapping("/{matchId}")
+    public ResponseEntity<ApiResponse<MatchResponse>> getMatchById(@PathVariable Long matchId) {
+        try {
+            MatchResponse match = matchService.getMatchById(matchId);
+            return ResponseEntity.ok(ApiResponse.success(match, "Lấy thông tin trận đấu thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @PostMapping("/tournament/{tournamentId}/generate")
     public ResponseEntity<ApiResponse<Void>> generateBracket(
             @PathVariable Long tournamentId,

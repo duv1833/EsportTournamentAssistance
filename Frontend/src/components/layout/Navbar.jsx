@@ -1,47 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Swords, Trophy, Shield, Newspaper, Gamepad2, Layers, LogOut, Menu, X, ShieldCheck, User, ChevronDown, Settings } from 'lucide-react';
 import TactileButton from '../common/TactileButton';
+import { useAuth } from '../../contexts/AuthContext';
 
-export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout, onAuthNav }) {
+export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dropdownRef = useRef(null);
+
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const navItems = [
-    { key: 'home', label: 'TRANG CHỦ', icon: Home },
-    { key: 'matches', label: 'LỊCH THI ĐẤU', icon: Swords },
-    { key: 'tournaments', label: 'GIẢI ĐẤU', icon: Trophy },
-    { key: 'teams', label: 'ĐỘI TUYỂN', icon: Shield },
-    { key: 'manage_team', label: 'QUẢN LÝ ĐỘI', icon: ShieldCheck },
-    { key: 'news', label: 'TIN TỨC', icon: Newspaper },
-    { key: 'lobby', label: 'PHÒNG BAN/PICK', icon: Gamepad2 },
+    { path: '/', label: 'TRANG CHỦ', icon: Home },
+    { path: '/matches', label: 'LỊCH THI ĐẤU', icon: Swords },
+    { path: '/tournaments', label: 'GIẢI ĐẤU', icon: Trophy },
+    { path: '/teams', label: 'ĐỘI TUYỂN', icon: Shield },
+    { path: '/manage_team', label: 'QUẢN LÝ ĐỘI', icon: ShieldCheck },
+    { path: '/news', label: 'TIN TỨC', icon: Newspaper },
   ];
 
-  // Admin dashboard link is now in the user dropdown
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+    navigate('/');
+  };
 
   return (
-    <header className="fixed top-0 w-full z-[100] flex justify-between items-center px-6 md:px-12 py-4 bg-background/95 backdrop-blur-sm border-b-2 border-outline-variant">
+    <header className={`fixed top-0 w-full z-[100] transition-all duration-300 flex justify-between items-center px-6 md:px-12 py-4 border-b-2 border-outline-variant ${scrolled ? 'bg-background/80 backdrop-blur-md shadow-lg shadow-black/50' : 'bg-background/95 backdrop-blur-sm'}`}>
       <div className="flex items-center gap-8">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
+        <NavLink to="/" className="flex items-center gap-3 cursor-pointer">
           <Layers className="w-8 h-8 text-primary-red" strokeWidth={2.5} />
           <span className="font-display text-2xl tracking-tighter text-primary-red">TACTICAL EDGE</span>
-        </div>
+        </NavLink>
         <nav className="hidden md:flex gap-6">
-          {navItems.map(({ key, label }) => (
-            <TactileButton
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`font-display text-sm uppercase tracking-wider pb-1 ${
-                activeTab === key ? 'text-primary-red border-b-2 border-primary-red' : 'text-off-white/70 hover:text-off-white'
+          {navItems.map(({ path, label }) => (
+            <NavLink
+              key={path}
+              to={path}
+              className={({ isActive }) => `font-display text-sm uppercase tracking-wider pb-1 transition-colors ${
+                isActive ? 'text-primary-red border-b-2 border-primary-red' : 'text-off-white/70 hover:text-off-white'
               }`}
             >
               {label}
-            </TactileButton>
+            </NavLink>
           ))}
         </nav>
       </div>
       <div className="flex items-center gap-4">
         {currentUser ? (
-          <div className="relative">
+          <div className="relative" ref={dropdownRef}>
             <button 
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 hover:bg-surface-bright/20 p-2 rounded transition-colors"
@@ -56,7 +83,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
             </button>
 
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-surface-charcoal border border-outline-variant shadow-lg z-[110] py-2">
+              <div className="absolute right-0 mt-2 w-56 bg-surface-charcoal border border-outline-variant shadow-lg z-[110] py-2 clip-corner animate-fadeIn">
                 <div className="px-4 py-2 border-b border-outline-variant/50 mb-2">
                   <p className="font-body text-sm font-bold text-off-white">
                     {currentUser.displayName || currentUser.nickname || currentUser.fullName || currentUser.username}
@@ -66,7 +93,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
                 </div>
                 
                 <button
-                  onClick={() => { setActiveTab('profile'); setUserMenuOpen(false); }}
+                  onClick={() => { navigate('/profile'); setUserMenuOpen(false); }}
                   className="w-full text-left px-4 py-2 font-display text-xs uppercase tracking-wider text-off-white/80 hover:bg-surface-bright/40 hover:text-off-white flex items-center gap-2"
                 >
                   <Settings size={14} /> Hồ sơ cá nhân
@@ -74,7 +101,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
 
                 {currentUser.globalRole === 'ADMIN' && (
                   <button
-                    onClick={() => { setActiveTab('admin_dashboard'); setUserMenuOpen(false); }}
+                    onClick={() => { navigate('/admin_dashboard'); setUserMenuOpen(false); }}
                     className="w-full text-left px-4 py-2 font-display text-xs uppercase tracking-wider text-warning-amber hover:bg-surface-bright/40 flex items-center gap-2"
                   >
                     <ShieldCheck size={14} /> Admin Dashboard
@@ -83,7 +110,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
 
                 <div className="border-t border-outline-variant/50 mt-2 pt-2">
                   <button
-                    onClick={() => { onLogout(); setUserMenuOpen(false); }}
+                    onClick={handleLogout}
                     className="w-full text-left px-4 py-2 font-display text-xs uppercase tracking-wider text-primary-red hover:bg-surface-bright/40 flex items-center gap-2"
                   >
                     <LogOut size={14} /> Đăng xuất
@@ -94,16 +121,16 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
           </div>
         ) : (
           <>
-            <TactileButton
-              onClick={() => onAuthNav('login')}
-              className={`font-display text-sm uppercase tracking-wider hidden sm:inline-block ${
-                activeTab === 'login' ? 'text-primary-red' : 'text-off-white/70 hover:text-off-white'
+            <NavLink
+              to="/login"
+              className={({ isActive }) => `font-display text-sm uppercase tracking-wider hidden sm:inline-block pb-1 transition-colors ${
+                isActive ? 'text-primary-red border-b-2 border-primary-red' : 'text-off-white/70 hover:text-off-white'
               }`}
             >
               LOGIN
-            </TactileButton>
+            </NavLink>
             <TactileButton
-              onClick={() => onAuthNav('register')}
+              onClick={() => navigate('/register')}
               className="clip-corner bg-primary-red text-off-white font-display text-sm px-6 py-2 uppercase hover:bg-primary-red/90 font-bold hidden sm:inline-block"
             >
               REGISTER
@@ -122,30 +149,32 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="absolute top-full left-0 w-full bg-surface-charcoal border-b-2 border-outline-variant md:hidden z-50">
+        <div className="absolute top-full left-0 w-full bg-surface-charcoal border-b-2 border-outline-variant md:hidden z-50 animate-slideUp">
           <nav className="flex flex-col p-4 gap-2">
-            {navItems.map(({ key, label, icon: Icon }) => (
-              <TactileButton
-                key={key}
-                onClick={() => { setActiveTab(key); setMobileMenuOpen(false); }}
-                className={`font-display text-sm uppercase tracking-wider py-3 px-4 flex items-center gap-3 ${
-                  activeTab === key ? 'text-primary-red bg-primary-red/10' : 'text-off-white/70 hover:text-off-white'
+            {navItems.map(({ path, label, icon: Icon }) => (
+              <NavLink
+                key={path}
+                to={path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={({ isActive }) => `font-display text-sm uppercase tracking-wider py-3 px-4 flex items-center gap-3 transition-colors ${
+                  isActive ? 'text-primary-red bg-primary-red/10' : 'text-off-white/70 hover:text-off-white'
                 }`}
               >
                 <Icon size={16} /> {label}
-              </TactileButton>
+              </NavLink>
             ))}
             <div className="border-t border-outline-variant mt-2 pt-3 flex flex-col gap-2">
               {!currentUser ? (
                 <>
-                  <TactileButton
-                    onClick={() => { onAuthNav('login'); setMobileMenuOpen(false); }}
+                  <NavLink
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
                     className="font-display text-sm uppercase tracking-wider py-3 px-4 text-off-white/70 hover:text-off-white"
                   >
                     LOGIN
-                  </TactileButton>
+                  </NavLink>
                   <TactileButton
-                    onClick={() => { onAuthNav('register'); setMobileMenuOpen(false); }}
+                    onClick={() => { navigate('/register'); setMobileMenuOpen(false); }}
                     className="clip-corner bg-primary-red text-off-white font-display text-sm py-3 px-4 uppercase font-bold text-center"
                   >
                     REGISTER
@@ -158,28 +187,28 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, onLogout,
                     <p className="font-mono text-xs text-tactical-gray truncate">{currentUser.email}</p>
                   </div>
                   
-                  <TactileButton
-                    onClick={() => { setActiveTab('profile'); setMobileMenuOpen(false); }}
-                    className="font-display text-sm uppercase tracking-wider py-3 px-4 text-off-white/70 hover:text-off-white flex items-center gap-2"
+                  <button
+                    onClick={() => { navigate('/profile'); setMobileMenuOpen(false); }}
+                    className="w-full text-left font-display text-sm uppercase tracking-wider py-3 px-4 text-off-white/70 hover:text-off-white flex items-center gap-2"
                   >
                     <Settings size={16} /> HỒ SƠ CÁ NHÂN
-                  </TactileButton>
+                  </button>
 
                   {currentUser.globalRole === 'ADMIN' && (
-                    <TactileButton
-                      onClick={() => { setActiveTab('admin_dashboard'); setMobileMenuOpen(false); }}
-                      className="font-display text-sm uppercase tracking-wider py-3 px-4 text-warning-amber hover:text-warning-amber/80 flex items-center gap-2"
+                    <button
+                      onClick={() => { navigate('/admin_dashboard'); setMobileMenuOpen(false); }}
+                      className="w-full text-left font-display text-sm uppercase tracking-wider py-3 px-4 text-warning-amber hover:text-warning-amber/80 flex items-center gap-2"
                     >
                       <ShieldCheck size={16} /> ADMIN DASHBOARD
-                    </TactileButton>
+                    </button>
                   )}
 
-                  <TactileButton
-                    onClick={() => { onLogout(); setMobileMenuOpen(false); }}
-                    className="font-display text-sm uppercase tracking-wider py-3 px-4 text-primary-red hover:text-off-white flex items-center gap-2"
+                  <button
+                    onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                    className="w-full text-left font-display text-sm uppercase tracking-wider py-3 px-4 text-primary-red hover:text-off-white flex items-center gap-2"
                   >
                     <LogOut size={16} /> ĐĂNG XUẤT
-                  </TactileButton>
+                  </button>
                 </>
               )}
             </div>

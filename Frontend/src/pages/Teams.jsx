@@ -2,16 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { teamService } from '../services/teamService';
 import { Shield, ArrowRight, Check } from 'lucide-react';
 
-function TactileButton({ children, className = '', ...props }) {
-  return (
-    <button
-      className={`transition-all active:scale-[0.97] active:-translate-y-[0.5px] cursor-pointer ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
+import TactileButton from '../components/common/TactileButton';
+import LoadingSkeleton from '../components/common/LoadingSkeleton';
 
 export default function Teams({ currentUser, onJoinTeam }) {
   const [teams, setTeams] = useState([]);
@@ -68,7 +60,12 @@ export default function Teams({ currentUser, onJoinTeam }) {
   };
 
   if (loading) {
-    return <div className="text-center py-20 text-off-white font-mono">ĐANG TẢI DANH SÁCH ĐỘI TUYỂN...</div>;
+    return (
+      <div className="container mx-auto max-w-6xl px-6 py-12">
+        <LoadingSkeleton type="text" count={2} />
+        <div className="mt-10"><LoadingSkeleton type="card" count={6} /></div>
+      </div>
+    );
   }
 
   return (
@@ -136,7 +133,9 @@ export default function Teams({ currentUser, onJoinTeam }) {
                 ) : (
                   <TactileButton
                     onClick={() => handleJoinClick(team.id)}
-                    className="w-full bg-primary-red hover:bg-primary-red/90 text-off-white font-mono text-sm py-2.5 uppercase flex justify-center items-center gap-2"
+                    variant="primary"
+                    size="md"
+                    className="w-full"
                   >
                     XIN GIA NHẬP <ArrowRight size={14} />
                   </TactileButton>

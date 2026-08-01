@@ -3,7 +3,8 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../services/authService';
-import api from '../services/api'; 
+import api from '../services/api';
+import { updateMatchResult } from '../services/matchService'; 
 
 const AGENT_POOL = [
   { name: 'JETT', role: 'Duelist' }, { name: 'RAZE', role: 'Duelist' }, { name: 'REYNA', role: 'Duelist' }, 
@@ -36,7 +37,20 @@ const Lobby = () => {
   const navigate = useNavigate();
   const currentUser = getCurrentUser() || {}; 
   
-  const [seriesData, setSeriesData] = useState(INITIAL_SERIES);
+  const [seriesData, setSeriesData] = useState(() => {
+    const saved = localStorage.getItem(`lobby_series_${matchId}`);
+    if (saved) {
+      try { return JSON.parse(saved); } catch(e) {}
+    }
+    return INITIAL_SERIES;
+  });
+  
+  useEffect(() => {
+    if (seriesData.id) {
+      localStorage.setItem(`lobby_series_${matchId}`, JSON.stringify(seriesData));
+    }
+  }, [seriesData, matchId]);
+
   const [activeGame, setActiveGame] = useState(null);
   
   const [draftPhase, setDraftPhase] = useState('NONE'); 
@@ -159,13 +173,26 @@ const Lobby = () => {
       const fetchMatchData = async () => {
         try {
           const response = await api.get(`/matches/${matchId}`);
-          const realMatch = response.data;
+          const realMatch = response.data.data;
           
-          setSeriesData(prev => ({
-            ...prev, id: realMatch.id, format: realMatch.format || 'BO3',
-            teamA: { ...prev.teamA, id: realMatch.team1_id, name: realMatch.team1_name || 'SAIGON PHANTOM', captainId: realMatch.team1_captain_id, short: 'SGP' },
-            teamB: { ...prev.teamB, id: realMatch.team2_id, name: realMatch.team2_name || 'PAPER REX', captainId: realMatch.team2_captain_id, short: 'PRX' }
-          }));
+          setSeriesData(prev => {
+            const scoreA = realMatch.scoreTeam1 || 0;
+            const scoreB = realMatch.scoreTeam2 || 0;
+            const totalCompleted = scoreA + scoreB;
+            
+            const newGames = prev.games.map((g, index) => {
+               if (index < totalCompleted && g.status !== 'COMPLETED') return { ...g, status: 'COMPLETED' };
+               if (index === totalCompleted && g.status === 'LOCKED') return { ...g, status: 'WAITING' };
+               return g;
+            });
+
+            return {
+              ...prev, id: realMatch.id, format: realMatch.format || 'BO3',
+              teamA: { ...prev.teamA, id: realMatch.team1Id, name: realMatch.team1Name || 'SAIGON PHANTOM', short: 'SGP', score: Math.max(prev.teamA.score || 0, scoreA) },
+              teamB: { ...prev.teamB, id: realMatch.team2Id, name: realMatch.team2Name || 'PAPER REX', short: 'PRX', score: Math.max(prev.teamB.score || 0, scoreB) },
+              games: newGames
+            };
+          });
         } catch (error) {
           setSeriesData(prev => ({ ...prev, teamA: { ...prev.teamA, name: 'SAIGON PHANTOM', short: 'SGP' }, teamB: { ...prev.teamB, name: 'PAPER REX', short: 'PRX' } }));
         }
@@ -354,6 +381,48 @@ const Lobby = () => {
               return { ...prev, games: newGames };
             });
           }
+          if (data.type === 'UPDATE_SCORE') {
+            const { gameId, scoreA, scoreB } = data;
+            setSeriesData(prev => {
+              const targetGame = prev.games.find(g => g.id === gameId);
+              if (targetGame && targetGame.status === 'COMPLETED') return prev; // Already updated locally
+
+              let newScoreA = prev.teamA.score; let newScoreB = prev.teamB.score;
+              if (scoreA > scoreB) newScoreA += 1; else newScoreB += 1;
+              const winThreshold = prev.format === 'BO3' ? 2 : prev.format === 'BO5' ? 3 : 1;
+              const over = newScoreA >= winThreshold || newScoreB >= winThreshold;
+              let nextGameUnlocked = false;
+
+              const newGames = prev.games.map((g) => {
+                if (g.id === gameId) return { ...g, status: 'COMPLETED', scoreA, scoreB };
+                if (over && (g.status === 'LOCKED' || g.status === 'WAITING')) return { ...g, status: 'CANCELED' };
+                if (!over && g.status === 'LOCKED' && !nextGameUnlocked && g.id > gameId) {
+                  nextGameUnlocked = true; return { ...g, status: 'WAITING' };
+                }
+                return g;
+              });
+              
+              return { ...prev, teamA: { ...prev.teamA, score: newScoreA }, teamB: { ...prev.teamB, score: newScoreB }, games: newGames };
+            });
+          }
+          if (data.type === 'UNDO_SCORE') {
+            const { gameId } = data;
+            setSeriesData(prev => {
+              const game = prev.games.find(g => g.id === gameId);
+              if (!game || game.status !== 'COMPLETED') return prev;
+
+              let newScoreA = prev.teamA.score; let newScoreB = prev.teamB.score;
+              if (game.scoreA > game.scoreB) newScoreA = Math.max(0, newScoreA - 1); else newScoreB = Math.max(0, newScoreB - 1);
+
+              const newGames = prev.games.map((g) => {
+                if (g.id === gameId) return { ...g, status: 'PLAYING', scoreA: 0, scoreB: 0 };
+                if (g.id > gameId) return { ...g, status: 'LOCKED', scoreA: 0, scoreB: 0 };
+                return g;
+              });
+              
+              return { ...prev, teamA: { ...prev.teamA, score: newScoreA }, teamB: { ...prev.teamB, score: newScoreB }, games: newGames };
+            });
+          }
         });
         
         client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'JOIN', role: autoRole }) });
@@ -395,26 +464,98 @@ const Lobby = () => {
     }
   };
 
-  const handleAdminSaveScore = (gameId) => {
+  const handleAdminSaveScore = async (gameId) => {
     const scoreA = parseInt(tempScores[`${gameId}_A`] || 0); const scoreB = parseInt(tempScores[`${gameId}_B`] || 0);
     if (scoreA === scoreB) { alert("⚠️ Tỷ số không hợp lệ!"); return; }
+
+    let currentSeriesScoreA = seriesData.teamA.score; 
+    let currentSeriesScoreB = seriesData.teamB.score;
+    if (scoreA > scoreB) currentSeriesScoreA += 1; else currentSeriesScoreB += 1;
+    const winThreshold = seriesData.format === 'BO3' ? 2 : seriesData.format === 'BO5' ? 3 : 1;
+    const isSeriesOver = currentSeriesScoreA >= winThreshold || currentSeriesScoreB >= winThreshold;
+    
+    try {
+      const payload = {
+          scoreTeam1: currentSeriesScoreA,
+          scoreTeam2: currentSeriesScoreB,
+          status: isSeriesOver ? 'COMPLETED' : 'LIVE',
+          winnerId: isSeriesOver ? (currentSeriesScoreA > currentSeriesScoreB ? seriesData.teamA.id : seriesData.teamB.id) : null
+      };
+      await updateMatchResult(seriesData.id, payload, currentUser.id);
+
+      if (stompClient) {
+        stompClient.publish({
+          destination: `/topic/room/${matchId}`,
+          body: JSON.stringify({ type: 'UPDATE_SCORE', gameId, scoreA, scoreB })
+        });
+      }
+    } catch (error) {
+      console.error("Lỗi khi đồng bộ kết quả:", error);
+      alert("Không thể lưu kết quả trận đấu lên máy chủ. Hãy kiểm tra lại kết nối hoặc quyền hạn của bạn!");
+      return;
+    }
     
     setSeriesData(prev => {
-      let currentSeriesScoreA = prev.teamA.score; let currentSeriesScoreB = prev.teamB.score;
-      if (scoreA > scoreB) currentSeriesScoreA += 1; else currentSeriesScoreB += 1;
-      const winThreshold = prev.format === 'BO3' ? 2 : prev.format === 'BO5' ? 3 : 1;
-      const isSeriesOver = currentSeriesScoreA >= winThreshold || currentSeriesScoreB >= winThreshold;
+      let newScoreA = prev.teamA.score; let newScoreB = prev.teamB.score;
+      if (scoreA > scoreB) newScoreA += 1; else newScoreB += 1;
+      const over = newScoreA >= winThreshold || newScoreB >= winThreshold;
       let nextGameUnlocked = false;
 
       const newGames = prev.games.map((g) => {
         if (g.id === gameId) return { ...g, status: 'COMPLETED', scoreA, scoreB };
-        if (isSeriesOver && (g.status === 'LOCKED' || g.status === 'WAITING')) return { ...g, status: 'CANCELED' };
-        if (!isSeriesOver && g.status === 'LOCKED' && !nextGameUnlocked && g.id > gameId) {
+        if (over && (g.status === 'LOCKED' || g.status === 'WAITING')) return { ...g, status: 'CANCELED' };
+        if (!over && g.status === 'LOCKED' && !nextGameUnlocked && g.id > gameId) {
           nextGameUnlocked = true; return { ...g, status: 'WAITING' };
         }
         return g;
       });
-      return { ...prev, teamA: { ...prev.teamA, score: currentSeriesScoreA }, teamB: { ...prev.teamB, score: currentSeriesScoreB }, games: newGames };
+      return { ...prev, teamA: { ...prev.teamA, score: newScoreA }, teamB: { ...prev.teamB, score: newScoreB }, games: newGames };
+    });
+  };
+
+  const handleAdminUndoScore = async (gameId) => {
+    const game = seriesData.games.find(g => g.id === gameId);
+    if (!game || game.status !== 'COMPLETED') return;
+
+    if (!window.confirm("Bạn có chắc muốn hủy kết quả ván này để nhập lại?")) return;
+
+    let currentSeriesScoreA = seriesData.teamA.score; 
+    let currentSeriesScoreB = seriesData.teamB.score;
+    if (game.scoreA > game.scoreB) currentSeriesScoreA = Math.max(0, currentSeriesScoreA - 1); 
+    else currentSeriesScoreB = Math.max(0, currentSeriesScoreB - 1);
+
+    try {
+      const payload = {
+          scoreTeam1: currentSeriesScoreA,
+          scoreTeam2: currentSeriesScoreB,
+          status: 'LIVE',
+          winnerId: -1
+      };
+      await updateMatchResult(seriesData.id, payload, currentUser.id);
+
+      if (stompClient) {
+        stompClient.publish({
+          destination: `/topic/room/${matchId}`,
+          body: JSON.stringify({ type: 'UNDO_SCORE', gameId })
+        });
+      }
+    } catch (error) {
+      console.error("Lỗi khi hủy kết quả:", error);
+      alert("Không thể hủy kết quả trận đấu lên máy chủ.");
+      return;
+    }
+
+    setSeriesData(prev => {
+      let newScoreA = prev.teamA.score; let newScoreB = prev.teamB.score;
+      if (game.scoreA > game.scoreB) newScoreA = Math.max(0, newScoreA - 1); else newScoreB = Math.max(0, newScoreB - 1);
+
+      const newGames = prev.games.map((g) => {
+        if (g.id === gameId) return { ...g, status: 'PLAYING', scoreA: 0, scoreB: 0 };
+        if (g.id > gameId) return { ...g, status: 'LOCKED', scoreA: 0, scoreB: 0 };
+        return g;
+      });
+      
+      return { ...prev, teamA: { ...prev.teamA, score: newScoreA }, teamB: { ...prev.teamB, score: newScoreB }, games: newGames };
     });
   };
 
@@ -472,9 +613,12 @@ const Lobby = () => {
         </div>
 
         <div className="max-w-7xl mx-auto flex flex-col gap-4">
-          {seriesData.games.map((game) => {
-            const displayStatus = game.status;
-            return (
+          {(() => {
+            const lastCompletedGame = [...seriesData.games].reverse().find(g => g.status === 'COMPLETED');
+            const lastCompletedGameId = lastCompletedGame ? lastCompletedGame.id : null;
+            return seriesData.games.map((game) => {
+              const displayStatus = game.status;
+              return (
               <div key={game.id} className={`flex flex-col xl:flex-row items-center justify-between p-4 xl:p-5 gap-4 border rounded-sm transition-all duration-300
                 ${displayStatus === 'WAITING' ? 'border-gray-500 bg-[#1f2933]' : ''}
                 ${displayStatus === 'PLAYING' ? 'border-blue-500 bg-[#1f2933]' : ''} 
@@ -494,11 +638,11 @@ const Lobby = () => {
                     <div className="flex items-center gap-2 justify-end shrink-0">
                       <div className="flex gap-1 hidden md:flex">{renderAgentSlots(game.teamABans, 'ban', 3, 'sm')}</div>
                       <div className="flex gap-1">{renderAgentSlots(game.teamAPicks, 'pick', 5, 'sm')}</div>
-                      {currentUserRole === 'ADMIN' && displayStatus === 'PLAYING' ? (<input type="number" defaultValue={game.scoreA} onChange={(e) => setTempScores({...tempScores, [`${game.id}_A`]: e.target.value})} className="w-12 h-10 bg-black border border-gray-600 text-center font-display text-2xl text-blue-400 focus:border-blue-500 outline-none ml-2 rounded" />) : (<span className="text-2xl font-display font-bold w-10 text-center text-blue-400 ml-2">{displayStatus === 'WAITING' ? '-' : game.scoreA}</span>)}
+                      {currentUserRole === 'ADMIN' && displayStatus === 'PLAYING' ? (<input type="number" min="0" max="13" value={tempScores[`${game.id}_A`] !== undefined ? tempScores[`${game.id}_A`] : game.scoreA} onChange={(e) => { let val = parseInt(e.target.value); if (isNaN(val)) val = ''; else if (val < 0) val = 0; else if (val > 13) val = 13; setTempScores({...tempScores, [`${game.id}_A`]: val}); }} className="w-12 h-10 bg-black border border-gray-600 text-center font-display text-2xl text-blue-400 focus:border-blue-500 outline-none ml-2 rounded" />) : (<span className="text-2xl font-display font-bold w-10 text-center text-blue-400 ml-2">{displayStatus === 'WAITING' ? '-' : game.scoreA}</span>)}
                     </div>
                     <span className="text-gray-600 font-bold hidden xl:block text-xl shrink-0">VS</span>
                     <div className="flex items-center gap-2 justify-start flex-row-reverse xl:flex-row shrink-0">
-                      {currentUserRole === 'ADMIN' && displayStatus === 'PLAYING' ? (<input type="number" defaultValue={game.scoreB} onChange={(e) => setTempScores({...tempScores, [`${game.id}_B`]: e.target.value})} className="w-12 h-10 bg-black border border-gray-600 text-center font-display text-2xl text-[#ff4655] focus:border-[#ff4655] outline-none mr-2 rounded" />) : (<span className="text-2xl font-display font-bold w-10 text-center text-[#ff4655] mr-2">{displayStatus === 'WAITING' ? '-' : game.scoreB}</span>)}
+                      {currentUserRole === 'ADMIN' && displayStatus === 'PLAYING' ? (<input type="number" min="0" max="13" value={tempScores[`${game.id}_B`] !== undefined ? tempScores[`${game.id}_B`] : game.scoreB} onChange={(e) => { let val = parseInt(e.target.value); if (isNaN(val)) val = ''; else if (val < 0) val = 0; else if (val > 13) val = 13; setTempScores({...tempScores, [`${game.id}_B`]: val}); }} className="w-12 h-10 bg-black border border-gray-600 text-center font-display text-2xl text-[#ff4655] focus:border-[#ff4655] outline-none mr-2 rounded" />) : (<span className="text-2xl font-display font-bold w-10 text-center text-[#ff4655] mr-2">{displayStatus === 'WAITING' ? '-' : game.scoreB}</span>)}
                       <div className="flex gap-1">{renderAgentSlots(game.teamBPicks, 'pick', 5, 'sm')}</div>
                       <div className="flex gap-1 hidden md:flex">{renderAgentSlots(game.teamBBans, 'ban', 3, 'sm')}</div>
                     </div>
@@ -513,15 +657,28 @@ const Lobby = () => {
                   )}
                   {displayStatus === 'WAITING' && currentUserRole !== 'ADMIN' && <span className="text-[11px] text-yellow-400 font-bold uppercase flex items-center gap-2 whitespace-nowrap">⏳ Chờ trọng tài...</span>}
                   
-                  {displayStatus === 'PLAYING' && currentUserRole === 'ADMIN' && <button onClick={() => handleAdminSaveScore(game.id)} className="bg-success-cyan text-background text-[11px] px-6 py-3 font-bold uppercase rounded hover:brightness-110 tracking-widest shadow-[0_0_10px_rgba(0,255,209,0.3)] whitespace-nowrap">Lưu kết quả</button>}
+                  {displayStatus === 'PLAYING' && currentUserRole === 'ADMIN' && (
+                    <div className="flex flex-col gap-2">
+                      <button onClick={() => handleAdminSaveScore(game.id)} className="bg-success-cyan text-background text-[11px] px-6 py-3 font-bold uppercase rounded hover:brightness-110 tracking-widest shadow-[0_0_10px_rgba(0,255,209,0.3)] whitespace-nowrap">Lưu kết quả</button>
+                      <button onClick={() => setTempScores(prev => ({...prev, [`${game.id}_A`]: 0, [`${game.id}_B`]: 0}))} className="bg-gray-800 text-gray-300 text-[10px] px-4 py-2 font-bold uppercase rounded hover:bg-gray-700 tracking-widest whitespace-nowrap">Reset Tỉ số</button>
+                    </div>
+                  )}
                   {displayStatus === 'PLAYING' && currentUserRole !== 'ADMIN' && <span className="text-[11px] text-blue-400 font-bold uppercase animate-pulse whitespace-nowrap">ĐANG THI ĐẤU</span>}
                   
-                  {displayStatus === 'COMPLETED' && <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-2 whitespace-nowrap">ĐÃ LƯU KẾT QUẢ</span>}
+                  {displayStatus === 'COMPLETED' && (
+                    <div className="flex flex-col items-center xl:items-end gap-2">
+                      <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider whitespace-nowrap">ĐÃ LƯU KẾT QUẢ</span>
+                      {currentUserRole === 'ADMIN' && game.id === lastCompletedGameId && (
+                        <button onClick={() => handleAdminUndoScore(game.id)} className="text-[10px] text-[#ff4655] hover:text-red-400 font-bold uppercase underline whitespace-nowrap">Sửa kết quả</button>
+                      )}
+                    </div>
+                  )}
                   {(displayStatus === 'CANCELED' || displayStatus === 'LOCKED') && <span className="text-2xl text-gray-700">🔒</span>}
                 </div>
               </div>
             );
-          })}
+            });
+          })()}
         </div>
       </div>
     );
@@ -621,8 +778,8 @@ const Lobby = () => {
                  const isSelected = selectedHover === itemName;
                  
                  const status = isMapVeto ? mapStatus(itemName) : agentStatus(itemName);
-                 const disabled = status === 'BANNED' || status === 'PICKED_BY_ME' || !isMyTurn;
-                 const label = status === 'BANNED' ? 'BỊ CẤM' : status === 'PICKED_BY_ME' ? 'ĐÃ CHỌN' : '';
+                 const disabled = status === 'BANNED' || status === 'PICKED' || status === 'PICKED_BY_ME' || !isMyTurn;
+                 const label = status === 'BANNED' ? 'BỊ CẤM' : (status === 'PICKED' || status === 'PICKED_BY_ME') ? 'ĐÃ CHỌN' : '';
                  
                  if (isMapVeto) {
                    return (

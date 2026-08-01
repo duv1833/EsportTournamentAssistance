@@ -2,16 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { userService } from '../services/userService';
 import { User, Mail, Phone, BadgeCheck, Save, Sparkles, AlertCircle, Check } from 'lucide-react';
 
-function TactileButton({ children, className = '', ...props }) {
-  return (
-    <button
-      className={`transition-all active:scale-[0.97] active:-translate-y-[0.5px] cursor-pointer ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
+import TactileButton from '../components/common/TactileButton';
 
 export default function UserProfile({ currentUser, onUserUpdated }) {
   const [formData, setFormData] = useState({
@@ -216,7 +207,9 @@ export default function UserProfile({ currentUser, onUserUpdated }) {
               <TactileButton
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary-red hover:bg-primary-red/90 text-off-white font-display text-sm py-3 uppercase font-bold tracking-wider flex justify-center items-center gap-2 disabled:opacity-50"
+                variant="primary"
+                size="lg"
+                className="w-full flex justify-center items-center gap-2"
               >
                 <Save size={16} /> {loading ? 'ĐANG LƯU...' : 'CẬP NHẬT HỒ SƠ'}
               </TactileButton>

@@ -28,6 +28,14 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional(readOnly = true)
+    public MatchResponse getMatchById(Long matchId) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy trận đấu!"));
+        return mapToResponse(match, match.getTournament().getName());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<MatchResponse> getMatchesByTournament(Long tournamentId) {
         List<Match> matches = matchRepository.findByTournamentIdOrderByRoundNumberAscPositionInRoundAsc(tournamentId);
         Tournament tournament = tournamentRepository.findById(tournamentId)
@@ -241,27 +249,41 @@ public class MatchServiceImpl implements MatchService {
 
         // Set winner and advance to next match
         if (request.getWinnerId() != null) {
-            Team winner = null;
-            if (match.getTeam1() != null && match.getTeam1().getId().equals(request.getWinnerId())) {
-                winner = match.getTeam1();
-            } else if (match.getTeam2() != null && match.getTeam2().getId().equals(request.getWinnerId())) {
-                winner = match.getTeam2();
-            } else {
-                throw new RuntimeException("Đội được chọn không tham gia trận đấu này!");
-            }
-
-            match.setWinner(winner);
-            match.setStatus(Match.MatchStatus.COMPLETED);
-
-            // Auto-advance winner to next match
-            if (match.getNextMatch() != null) {
-                Match nextMatch = match.getNextMatch();
-                if (match.getNextMatchSlot() != null && match.getNextMatchSlot() == 1) {
-                    nextMatch.setTeam1(winner);
-                } else {
-                    nextMatch.setTeam2(winner);
+            if (request.getWinnerId() == -1L) {
+                match.setWinner(null);
+                match.setStatus(Match.MatchStatus.LIVE);
+                if (match.getNextMatch() != null) {
+                    Match nextMatch = match.getNextMatch();
+                    if (match.getNextMatchSlot() != null && match.getNextMatchSlot() == 1) {
+                        nextMatch.setTeam1(null);
+                    } else {
+                        nextMatch.setTeam2(null);
+                    }
+                    matchRepository.save(nextMatch);
                 }
-                matchRepository.save(nextMatch);
+            } else {
+                Team winner = null;
+                if (match.getTeam1() != null && match.getTeam1().getId().equals(request.getWinnerId())) {
+                    winner = match.getTeam1();
+                } else if (match.getTeam2() != null && match.getTeam2().getId().equals(request.getWinnerId())) {
+                    winner = match.getTeam2();
+                } else {
+                    throw new RuntimeException("Đội được chọn không tham gia trận đấu này!");
+                }
+    
+                match.setWinner(winner);
+                match.setStatus(Match.MatchStatus.COMPLETED);
+    
+                // Auto-advance winner to next match
+                if (match.getNextMatch() != null) {
+                    Match nextMatch = match.getNextMatch();
+                    if (match.getNextMatchSlot() != null && match.getNextMatchSlot() == 1) {
+                        nextMatch.setTeam1(winner);
+                    } else {
+                        nextMatch.setTeam2(winner);
+                    }
+                    matchRepository.save(nextMatch);
+                }
             }
         }
 
@@ -411,8 +433,16 @@ public class MatchServiceImpl implements MatchService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
 
-        // Admin has full access
-        if (user.getGlobalRole() == User.GlobalRole.ADMIN) {
+        // Admin and Referee have full access
+        if (user.getGlobalRole() == User.GlobalRole.ADMIN || user.getGlobalRole() == User.GlobalRole.REFEREE) {
+            return;
+        }
+
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
+
+        // Creator has full access
+        if (tournament.getCreator() != null && tournament.getCreator().getId().equals(userId)) {
             return;
         }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Pause, Play, ArrowRight, MonitorPlay, Bell } from 'lucide-react';
 import TactileButton from '../components/common/TactileButton';
 
@@ -196,7 +197,7 @@ function EventCard({ date, title, desc, statusText, statusColor, accentColor, ct
   );
 }
 
-export default function Home({ setActiveTab }) {
+export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
 
@@ -268,7 +269,7 @@ export default function Home({ setActiveTab }) {
               <h2 className="font-display text-3xl uppercase text-off-white">NỔI BẬT LÚC NÀY</h2>
               <p className="font-mono text-xs text-tactical-gray mt-1 uppercase">// CÁC TRẬN ĐẤU ĐÁNG CHÚ Ý</p>
             </div>
-            <TactileButton onClick={() => setActiveTab('matches')} className="font-mono text-xs text-primary-red hover:text-off-white underline uppercase flex items-center gap-1">
+            <TactileButton onClick={() => navigate('/matches')} className="font-mono text-xs text-primary-red hover:text-off-white underline uppercase flex items-center gap-1">
               XEM TẤT CẢ <ArrowRight size={12} />
             </TactileButton>
           </div>

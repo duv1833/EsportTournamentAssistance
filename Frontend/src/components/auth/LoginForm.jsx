@@ -66,7 +66,9 @@ export default function LoginForm({ loginForm, setLoginForm, onSubmit, isLoading
           <TactileButton
             type="submit"
             disabled={isLoading}
-            className="w-full clip-corner bg-primary-red hover:bg-primary-red/90 text-off-white font-display text-lg py-3 flex justify-center items-center gap-2 uppercase font-bold mt-2"
+            variant="primary"
+            size="lg"
+            className="w-full mt-2"
           >
             {isLoading ? (
               <span className="animate-spin h-5 w-5 border-2 border-off-white border-t-transparent rounded-full"></span>
@@ -84,7 +86,8 @@ export default function LoginForm({ loginForm, setLoginForm, onSubmit, isLoading
 
         <TactileButton
           type="button"
-          className="w-full clip-corner bg-surface-charcoal border border-outline-variant hover:border-tactical-gray text-off-white font-mono text-[11px] py-3 flex justify-center items-center gap-2 uppercase"
+          variant="outline"
+          className="w-full"
         >
           <Globe size={14} /> ĐĂNG NHẬP VỚI GOOGLE
         </TactileButton>
@@ -92,12 +95,12 @@ export default function LoginForm({ loginForm, setLoginForm, onSubmit, isLoading
 
       <div className="mt-8 text-center text-[11px] font-mono text-tactical-gray uppercase">
         Chưa có tài khoản?{' '}
-        <TactileButton
+        <button
           onClick={onSwitchToRegister}
-          className="text-primary-red hover:text-off-white underline font-bold inline"
+          className="text-primary-red hover:text-off-white underline font-bold inline cursor-pointer"
         >
           ĐĂNG KÝ NGAY
-        </TactileButton>
+        </button>
       </div>
     </div>
   );

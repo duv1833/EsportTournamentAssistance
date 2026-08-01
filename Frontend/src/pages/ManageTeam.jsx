@@ -2,16 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { teamService } from '../services/teamService';
 import { Shield, Check, X, UserMinus, AlertTriangle } from 'lucide-react';
 
-function TactileButton({ children, className = '', ...props }) {
-  return (
-    <button
-      className={`transition-all active:scale-[0.97] active:-translate-y-[0.5px] cursor-pointer ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
+import TactileButton from '../components/common/TactileButton';
+import LoadingSkeleton from '../components/common/LoadingSkeleton';
 
 export default function ManageTeam({ currentUser }) {
   const [teams, setTeams] = useState([]);
@@ -66,7 +58,12 @@ export default function ManageTeam({ currentUser }) {
   };
 
   if (loading) {
-    return <div className="text-center py-20 text-off-white font-mono">ĐANG TẢI THÔNG TIN...</div>;
+    return (
+      <div className="container mx-auto max-w-5xl px-6 py-12">
+        <LoadingSkeleton type="text" count={2} />
+        <div className="mt-10"><LoadingSkeleton type="card" count={3} /></div>
+      </div>
+    );
   }
 
   if (teams.length === 0) {
@@ -140,13 +137,15 @@ export default function ManageTeam({ currentUser }) {
                             <TactileButton
                               onClick={() => handleAction('approve', team.id, req.id)}
                               disabled={totalMembers >= 7}
-                              className="bg-success-cyan hover:bg-success-cyan/80 text-background px-3 py-1.5 flex items-center gap-1 font-mono text-xs uppercase disabled:opacity-50"
+                              variant="primary"
+                              size="sm"
                             >
                               <Check size={14} /> DUYỆT
                             </TactileButton>
                             <TactileButton
                               onClick={() => handleAction('reject', team.id, req.id)}
-                              className="bg-surface-charcoal border border-outline-variant hover:border-primary-red text-off-white px-3 py-1.5 flex items-center gap-1 font-mono text-xs uppercase"
+                              variant="outline"
+                              size="sm"
                             >
                               <X size={14} /> TỪ CHỐI
                             </TactileButton>
