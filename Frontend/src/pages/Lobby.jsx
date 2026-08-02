@@ -73,11 +73,11 @@ const Lobby = () => {
   if (currentUser.globalRole === 'ADMIN' || currentUser.globalRole === 'REFEREE' || currentUser.globalRole === 'ORGANIZER') {
     autoRole = 'ADMIN';
   } 
-  else if (currentUser.id === seriesData.teamA.captainId || username.includes('sgp') || email.includes('sgp')) {
+  else if (currentUser.id === seriesData.teamA.captainId || (seriesData.teamA.short && (username.includes(seriesData.teamA.short.toLowerCase()) || email.includes(seriesData.teamA.short.toLowerCase())))) {
     autoRole = 'TEAM_A';
     currentTurnTeamId = 1;
   } 
-  else if (currentUser.id === seriesData.teamB.captainId || username.includes('prx') || email.includes('prx')) {
+  else if (currentUser.id === seriesData.teamB.captainId || (seriesData.teamB.short && (username.includes(seriesData.teamB.short.toLowerCase()) || email.includes(seriesData.teamB.short.toLowerCase())))) {
     autoRole = 'TEAM_B';
     currentTurnTeamId = 2;
   }
@@ -285,7 +285,7 @@ const Lobby = () => {
 
   useEffect(() => {
     if (!matchId) return;
-    const socket = new SockJS('http://localhost:8081/ws');
+    const socket = new SockJS('/ws');
     const client = new Client({
       webSocketFactory: () => socket,
       onConnect: () => {
