@@ -429,6 +429,7 @@ const Lobby = () => {
               
               return { ...prev, games: newGames };
             });
+          } // <--- Added this bracket!
           if (data.type === 'SYNC_REQUEST') {
               setSeriesData(prev => {
                   const game1 = prev.games.find(g => g.gameNumber === 1);
