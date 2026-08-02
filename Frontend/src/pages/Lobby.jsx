@@ -445,17 +445,25 @@ const Lobby = () => {
 
     // Xử lý khi đóng tab trình duyệt
     const handleBeforeUnload = () => {
-      if (client.active) {
-        client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'LEAVE', role: autoRole }) });
-      }
+      try {
+        if (client.connected) {
+          client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'LEAVE', role: autoRole }) });
+        }
+      } catch (e) {}
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      if (client.active) {
-        client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'LEAVE', role: autoRole }) });
+      try {
+        if (client.connected) {
+          client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'LEAVE', role: autoRole }) });
+        }
+      } catch (e) {}
+      
+      try {
         client.deactivate();
-      }
+      } catch (e) {}
+      
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [matchId, autoRole]);
