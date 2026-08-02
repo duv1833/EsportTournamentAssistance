@@ -40,7 +40,12 @@ const Lobby = () => {
   const [seriesData, setSeriesData] = useState(() => {
     const saved = localStorage.getItem(`lobby_series_${matchId}`);
     if (saved) {
-      try { return JSON.parse(saved); } catch(e) {}
+      try { 
+        const parsed = JSON.parse(saved); 
+        if (parsed && parsed.teamA && parsed.teamB && Array.isArray(parsed.games)) {
+          return parsed;
+        }
+      } catch(e) {}
     }
     return INITIAL_SERIES;
   });
