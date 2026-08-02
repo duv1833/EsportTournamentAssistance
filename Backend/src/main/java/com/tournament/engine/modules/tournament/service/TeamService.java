@@ -13,6 +13,11 @@ public interface TeamService {
     void rejectJoinRequest(Long teamId, Long memberId, Long captainId);
     void kickMember(Long teamId, Long memberId, Long captainId);
     
+    void inviteMember(Long teamId, com.tournament.engine.modules.tournament.dto.InviteMemberRequest request, Long captainId);
+    
+    TeamResponse getTeamByInviteCode(String inviteCode);
+    void joinTeamByInviteCode(String inviteCode, com.tournament.engine.modules.tournament.dto.JoinTeamRequest request);
+
     // Admin features
     void deleteTeam(Long teamId);
 }

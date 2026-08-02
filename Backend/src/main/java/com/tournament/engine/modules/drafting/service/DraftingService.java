@@ -41,10 +41,10 @@ public class DraftingService {
     private static final int DEFAULT_TURN_SECONDS = 30;
     private final Random random = new Random();
 
-    @Transactional(readOnly = true)
+    @Transactional
     public DraftStateResponse getMatchDraftState(Long matchId) {
         MatchDraftState draftState = matchDraftStateRepository.findById(matchId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy trạng thái Draft cho Ván " + matchId));
+                .orElseGet(() -> initializeDraftState(matchId));
 
         List<DraftAction> actions = draftActionRepository.findByMatchIdOrderByStepNumberAsc(matchId);
 
@@ -71,6 +71,38 @@ public class DraftingService {
                 .turnDeadlineAt(draftState.getTurnDeadlineAt())
                 .history(history)
                 .build();
+    }
+
+    @Transactional
+    public MatchDraftState initializeDraftState(Long matchId) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy trận đấu " + matchId));
+
+        if (match.getTeam1() == null || match.getTeam2() == null) {
+            throw new RuntimeException("Trận đấu chưa sẵn sàng! Cần đủ 2 đội tuyển để cấm/chọn.");
+        }
+
+        String format = match.getFormat() != null ? match.getFormat().name() : "BO3";
+        DraftSequenceTemplate template = draftSequenceTemplateRepository.findByFormatAndStepNumber(format, 1)
+                .orElse(null);
+
+        Team firstTeam = (template != null && template.getTurnOrder() == 2) ? match.getTeam2() : match.getTeam1();
+
+        MatchDraftState state = MatchDraftState.builder()
+                .matchId(matchId)
+                .match(match)
+                .currentStepNumber(1)
+                .currentTurnTeam(firstTeam)
+                .turnDeadlineAt(LocalDateTime.now().plusSeconds(DEFAULT_TURN_SECONDS))
+                .draftStatus(MatchDraftState.DraftStatus.IN_PROGRESS)
+                .build();
+
+        if (match.getStatus() != Match.MatchStatus.DRAFTING && match.getStatus() != Match.MatchStatus.COMPLETED) {
+            match.setStatus(Match.MatchStatus.DRAFTING);
+            matchRepository.save(match);
+        }
+
+        return matchDraftStateRepository.save(state);
     }
 
     @Transactional

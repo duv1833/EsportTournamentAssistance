@@ -51,4 +51,16 @@ public class DraftingController {
             return org.springframework.http.ResponseEntity.badRequest().body(com.tournament.engine.shared.dto.ApiResponse.error(e.getMessage()));
         }
     }
+
+    @org.springframework.web.bind.annotation.PostMapping("/api/v1/drafting/{matchId}/start")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public org.springframework.http.ResponseEntity<com.tournament.engine.shared.dto.ApiResponse<com.tournament.engine.modules.drafting.dto.DraftStateResponse>> startDrafting(@org.springframework.web.bind.annotation.PathVariable Long matchId) {
+        try {
+            draftingService.initializeDraftState(matchId);
+            com.tournament.engine.modules.drafting.dto.DraftStateResponse state = draftingService.getMatchDraftState(matchId);
+            return org.springframework.http.ResponseEntity.ok(com.tournament.engine.shared.dto.ApiResponse.success(state, "Bắt đầu Ban/Pick trận đấu thành công!"));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(com.tournament.engine.shared.dto.ApiResponse.error(e.getMessage()));
+        }
+    }
 }

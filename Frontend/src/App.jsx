@@ -18,6 +18,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Lobby from './pages/Lobby';
 import NewsPage from './pages/NewsPage';
+import JoinTeamPage from './pages/JoinTeamPage';
 
 function AppLayout() {
   const location = useLocation();
@@ -39,6 +40,7 @@ function AppLayout() {
             <Route path="/teams" element={<Teams />} />
             <Route path="/manage-team" element={<ManageTeam />} />
             <Route path="/manage_team" element={<ManageTeam />} /> {/* Legacy fallback */}
+            <Route path="/join-team" element={<JoinTeamPage />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin_dashboard" element={<AdminDashboard />} /> {/* Legacy fallback */}

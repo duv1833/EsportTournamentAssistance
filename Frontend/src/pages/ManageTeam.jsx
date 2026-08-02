@@ -123,58 +123,130 @@ export default function ManageTeam({ currentUser: propUser }) {
                   <Shield size={28} className="text-primary-red" />
                   <div>
                     <h3 className="font-display text-2xl text-off-white uppercase">{team.name}</h3>
-                    <span className="font-mono text-xs text-tactical-gray uppercase">TAG: #{team.tag}</span>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="font-mono text-xs text-tactical-gray uppercase">TAG: #{team.tag}</span>
+                      {team.inviteCode && (
+                        <span className="font-mono text-[10px] text-success-cyan bg-success-cyan/10 border border-success-cyan/30 px-2 py-0.5 uppercase font-bold">
+                          MÃ MỜI: {team.inviteCode}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="font-mono text-xs text-tactical-gray uppercase block mb-1">SĨ SỐ THÀNH VIÊN</span>
-                  <span className={`font-display text-xl ${totalMembers >= 7 ? 'text-primary-red' : 'text-success-cyan'}`}>
-                    {totalMembers} / 7
-                  </span>
+                <div className="text-right flex flex-col items-end gap-2">
+                  <div>
+                    <span className="font-mono text-xs text-tactical-gray uppercase block mb-1">SĨ SỐ THÀNH VIÊN</span>
+                    <span className={`font-display text-xl ${totalMembers >= 7 ? 'text-primary-red' : 'text-success-cyan'}`}>
+                      {totalMembers} / 7
+                    </span>
+                  </div>
+                  {team.inviteCode && (
+                    <button
+                      onClick={() => {
+                        const inviteUrl = `${window.location.origin}/join-team?code=${team.inviteCode}`;
+                        navigator.clipboard.writeText(inviteUrl);
+                        alert(`Đã sao chép link mời tham gia đội ${team.name}:\n\n${inviteUrl}`);
+                      }}
+                      className="font-mono text-[10px] bg-primary-red/10 hover:bg-primary-red text-primary-red hover:text-off-white border border-primary-red/40 px-3 py-1.5 transition-colors uppercase font-bold tracking-wider flex items-center gap-1.5"
+                    >
+                      🔗 COPIED LINK MỜI THAM GIA
+                    </button>
+                  )}
                 </div>
               </div>
 
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Yêu cầu chờ duyệt */}
-                <div>
-                  <h4 className="font-mono text-sm text-warning-amber uppercase border-b border-outline-variant pb-2 mb-4 flex items-center gap-2 font-bold">
-                    <AlertTriangle size={16} /> YÊU CẦU CHỜ DUYỆT ({pendingMembers.length})
-                  </h4>
-                  {pendingMembers.length === 0 ? (
-                    <p className="font-mono text-xs text-tactical-gray py-4">Không có yêu cầu tham gia mới.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {pendingMembers.map(req => (
-                        <div key={req.id} className="bg-background border border-outline-variant p-3 flex justify-between items-center">
-                          <div>
-                            <span className="font-body text-sm font-semibold text-off-white">@{req.username}</span>
-                            {req.inGameName && (
-                              <p className="font-mono text-[10px] text-success-cyan">IGN: {req.inGameName}</p>
-                            )}
+                {/* Form Mời Thành Viên Mới & Yêu cầu chờ duyệt */}
+                <div className="space-y-6">
+                  {/* Form Mời */}
+                  <div className="bg-background border border-outline-variant p-4 clip-corner">
+                    <h4 className="font-mono text-xs text-primary-red uppercase font-bold mb-3 flex items-center gap-1.5">
+                      <UserMinus className="rotate-180" size={16} /> MỜI THÀNH VIÊN VÀO ĐỘI
+                    </h4>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.target);
+                      const usernameOrEmail = formData.get('usernameOrEmail');
+                      const inGameName = formData.get('inGameName');
+                      if (!usernameOrEmail) return;
+                      try {
+                        setError(''); setSuccess('');
+                        const res = await teamService.inviteMember(team.id, currentUser.id, usernameOrEmail, inGameName);
+                        if (res.success) {
+                          setSuccess(res.message || 'Mời thành viên thành công!');
+                          e.target.reset();
+                          fetchManagedTeams();
+                        } else {
+                          setError(res.message);
+                        }
+                      } catch (err) {
+                        setError(err.response?.data?.message || 'Không thể mời thành viên này');
+                      }
+                    }} className="space-y-3">
+                      <div>
+                        <input
+                          type="text"
+                          name="usernameOrEmail"
+                          placeholder="Username hoặc Email người chơi..."
+                          required
+                          className="w-full bg-surface-charcoal border border-outline-variant px-3 py-2 text-xs text-off-white focus:border-primary-red outline-none font-mono"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          name="inGameName"
+                          placeholder="In-Game Name (Ví dụ: TenZ#NA1)..."
+                          className="w-full bg-surface-charcoal border border-outline-variant px-3 py-2 text-xs text-off-white focus:border-primary-red outline-none font-mono"
+                        />
+                      </div>
+                      <TactileButton variant="primary" size="sm" type="submit" disabled={totalMembers >= 7} className="w-full justify-center">
+                        GỬI LỜI MỜI
+                      </TactileButton>
+                    </form>
+                  </div>
+
+                  {/* Yêu cầu chờ duyệt */}
+                  <div>
+                    <h4 className="font-mono text-sm text-warning-amber uppercase border-b border-outline-variant pb-2 mb-4 flex items-center gap-2 font-bold">
+                      <AlertTriangle size={16} /> YÊU CẦU CHỜ DUYỆT ({pendingMembers.length})
+                    </h4>
+                    {pendingMembers.length === 0 ? (
+                      <p className="font-mono text-xs text-tactical-gray py-2">Không có yêu cầu tham gia mới.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {pendingMembers.map(req => (
+                          <div key={req.id} className="bg-background border border-outline-variant p-3 flex justify-between items-center">
+                            <div>
+                              <span className="font-body text-sm font-semibold text-off-white">@{req.username}</span>
+                              {req.inGameName && (
+                                <p className="font-mono text-[10px] text-success-cyan">IGN: {req.inGameName}</p>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <TactileButton
+                                variant="cyan"
+                                size="sm"
+                                onClick={() => handleAction('approve', team.id, req.id)}
+                                disabled={totalMembers >= 7}
+                                className="flex items-center gap-1"
+                              >
+                                <Check size={14} /> DUYỆT
+                              </TactileButton>
+                              <TactileButton
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAction('reject', team.id, req.id)}
+                                className="flex items-center gap-1"
+                              >
+                                <X size={14} /> TỪ CHỐI
+                              </TactileButton>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <TactileButton
-                              variant="cyan"
-                              size="sm"
-                              onClick={() => handleAction('approve', team.id, req.id)}
-                              disabled={totalMembers >= 7}
-                              className="flex items-center gap-1"
-                            >
-                              <Check size={14} /> DUYỆT
-                            </TactileButton>
-                            <TactileButton
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleAction('reject', team.id, req.id)}
-                              className="flex items-center gap-1"
-                            >
-                              <X size={14} /> TỪ CHỐI
-                            </TactileButton>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Danh sách thành viên chính thức */}

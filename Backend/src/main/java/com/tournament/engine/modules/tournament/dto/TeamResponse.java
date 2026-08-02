@@ -15,5 +15,6 @@ public class TeamResponse {
     private String captainUsername;
     private String captainInGameName;
     private String logoUrl;
+    private String inviteCode;
     private List<TeamMemberResponse> members;
 }

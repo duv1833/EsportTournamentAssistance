@@ -120,6 +120,27 @@ export default function TournamentDetailsVLR({ onJoinTeam }) {
     <div className="w-full bg-background min-h-screen text-off-white font-body pb-16 animate-fade-in">
       {/* Header Section */}
       <div className="max-w-[1200px] mx-auto pt-6 px-4">
+        {tournament.registrationStatus === 'COMPLETED' && (() => {
+          const finalMatch = internalMatches.find(m => (!m.nextMatchId || m.nextMatchId === null) && (m.stage === 'KNOCKOUT' || internalMatches.length === 1));
+          const championName = finalMatch && finalMatch.winnerName ? finalMatch.winnerName : (tournament.registeredTeams?.[0]?.name || 'NHÀ VÔ ĐỊCH');
+          return (
+            <div className="mb-6 p-4 bg-gradient-to-r from-warning-amber/20 via-warning-amber/10 to-transparent border border-warning-amber text-warning-amber clip-corner flex items-center justify-between shadow-[0_0_20px_rgba(255,191,0,0.15)] animate-pulse">
+              <div className="flex items-center gap-3">
+                <Trophy size={32} className="text-warning-amber animate-bounce" />
+                <div>
+                  <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-warning-amber/80 block">// GIẢI ĐẤU ĐÃ KẾT THÚC</span>
+                  <h3 className="font-display text-2xl uppercase tracking-wider text-off-white">
+                    QUÁN QUÂN: <span className="text-warning-amber font-bold">{championName}</span>
+                  </h3>
+                </div>
+              </div>
+              <span className="font-mono text-xs border border-warning-amber px-3 py-1 bg-warning-amber/20 uppercase font-bold tracking-widest">
+                🏆 CHAMPION 🏆
+              </span>
+            </div>
+          );
+        })()}
+
         <button
           onClick={handleBack}
           className="text-tactical-gray hover:text-off-white text-xs uppercase font-bold flex items-center gap-1 mb-4 transition-colors font-mono"

@@ -145,6 +145,64 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     @Transactional
+    public void inviteMember(Long teamId, com.tournament.engine.modules.tournament.dto.InviteMemberRequest request, Long captainId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đội tuyển"));
+
+        if (!team.getCaptain().getId().equals(captainId)) {
+            throw new RuntimeException("Chỉ đội trưởng mới có quyền mời thành viên!");
+        }
+
+        String query = request.getUsernameOrEmail() != null ? request.getUsernameOrEmail().trim() : "";
+        if (query.isBlank()) {
+            throw new RuntimeException("Vui lòng nhập Username hoặc Email của người chơi!");
+        }
+
+        User user = userRepository.findByUsername(query)
+                .orElseGet(() -> userRepository.findByEmail(query)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng có Username/Email: " + query)));
+
+        if (user.getId().equals(captainId)) {
+            throw new RuntimeException("Bạn là đội trưởng của đội này rồi!");
+        }
+
+        teamMemberRepository.findByTeamIdAndUserId(teamId, user.getId())
+                .ifPresent(m -> {
+                    throw new RuntimeException("Người dùng " + user.getDisplayName() + " đã nằm trong đội hoặc đã nhận lời mời rồi!");
+                });
+
+        int currentMembersCount = teamMemberRepository.countByTeamIdAndStatus(teamId, TeamMember.MembershipStatus.ACCEPTED);
+        if (currentMembersCount >= 7) {
+            throw new RuntimeException("Đội đã đạt tối đa 7 thành viên!");
+        }
+
+        TeamMember member = TeamMember.builder()
+                .team(team)
+                .user(user)
+                .inGameName(request.getInGameName() != null ? request.getInGameName() : user.getUsername())
+                .status(TeamMember.MembershipStatus.ACCEPTED) // Captain inviting directly adds them or pending
+                .build();
+        teamMemberRepository.save(member);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TeamResponse getTeamByInviteCode(String inviteCode) {
+        Team team = teamRepository.findByInviteCode(inviteCode)
+                .orElseThrow(() -> new RuntimeException("Mã mời đội tuyển không hợp lệ hoặc không tồn tại!"));
+        return mapToResponse(team);
+    }
+
+    @Override
+    @Transactional
+    public void joinTeamByInviteCode(String inviteCode, com.tournament.engine.modules.tournament.dto.JoinTeamRequest request) {
+        Team team = teamRepository.findByInviteCode(inviteCode)
+                .orElseThrow(() -> new RuntimeException("Mã mời đội tuyển không hợp lệ!"));
+        joinTeam(team.getId(), request);
+    }
+
+    @Override
+    @Transactional
     public void deleteTeam(Long teamId) {
         if (!teamRepository.existsById(teamId)) {
             throw new RuntimeException("Không tìm thấy đội tuyển");
@@ -164,7 +222,13 @@ public class TeamServiceImpl implements TeamService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
     }
 
-    private TeamResponse mapToResponse(Team team) {
+    private TeamResponse mapToResponse(Team targetTeam) {
+        if (targetTeam.getInviteCode() == null || targetTeam.getInviteCode().isBlank()) {
+            targetTeam.setInviteCode(java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            targetTeam = teamRepository.save(targetTeam);
+        }
+        final Team team = targetTeam;
+
         List<TeamMemberResponse> memberResponses = team.getMembers().stream()
                 .map(m -> TeamMemberResponse.builder()
                         .id(m.getId())
@@ -189,6 +253,7 @@ public class TeamServiceImpl implements TeamService {
                 .captainUsername(team.getCaptain().getDisplayName())
                 .captainInGameName(captainInGameName)
                 .logoUrl(team.getLogoUrl())
+                .inviteCode(team.getInviteCode())
                 .members(memberResponses)
                 .build();
     }

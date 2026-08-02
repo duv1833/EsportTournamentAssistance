@@ -44,5 +44,22 @@ export const teamService = {
       params: { captainId }
     });
     return response.data;
+  },
+
+  inviteMember: async (teamId, captainId, usernameOrEmail, inGameName) => {
+    const response = await api.post(`/teams/${teamId}/members/invite`, { usernameOrEmail, inGameName }, {
+      params: { captainId }
+    });
+    return response.data;
+  },
+
+  getTeamByInviteCode: async (inviteCode) => {
+    const response = await api.get(`/teams/invite/${inviteCode}`);
+    return response.data;
+  },
+
+  joinTeamByInviteCode: async (inviteCode, userId, inGameName) => {
+    const response = await api.post(`/teams/join-by-code/${inviteCode}`, { userId, inGameName });
+    return response.data;
   }
 };

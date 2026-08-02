@@ -270,6 +270,11 @@ public class MatchServiceImpl implements MatchService {
                     nextMatch.setTeam2(winner);
                 }
                 matchRepository.save(nextMatch);
+            } else if (match.getStage() == Match.MatchStage.KNOCKOUT) {
+                // If there is no next match and stage is KNOCKOUT, this was the Final! Mark tournament as COMPLETED
+                Tournament tournament = match.getTournament();
+                tournament.setRegistrationStatus(Tournament.RegistrationStatus.COMPLETED);
+                tournamentRepository.save(tournament);
             }
         }
 

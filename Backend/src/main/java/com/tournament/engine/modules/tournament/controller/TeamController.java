@@ -95,4 +95,39 @@ public class TeamController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @PostMapping("/{teamId}/members/invite")
+    public ResponseEntity<ApiResponse<Void>> inviteMember(
+            @PathVariable Long teamId,
+            @RequestBody com.tournament.engine.modules.tournament.dto.InviteMemberRequest request,
+            @RequestParam Long captainId) {
+        try {
+            teamService.inviteMember(teamId, request, captainId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Mời thành viên vào đội thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/invite/{inviteCode}")
+    public ResponseEntity<ApiResponse<TeamResponse>> getTeamByInviteCode(@PathVariable String inviteCode) {
+        try {
+            TeamResponse team = teamService.getTeamByInviteCode(inviteCode);
+            return ResponseEntity.ok(ApiResponse.success(team, "Lấy thông tin mã mời thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/join-by-code/{inviteCode}")
+    public ResponseEntity<ApiResponse<Void>> joinTeamByInviteCode(
+            @PathVariable String inviteCode,
+            @RequestBody com.tournament.engine.modules.tournament.dto.JoinTeamRequest request) {
+        try {
+            teamService.joinTeamByInviteCode(inviteCode, request);
+            return ResponseEntity.ok(ApiResponse.success(null, "Đã gửi yêu cầu tham gia đội tuyển qua mã mời!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }
