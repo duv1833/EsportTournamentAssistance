@@ -193,8 +193,8 @@ const Lobby = () => {
 
             return {
               ...prev, id: realMatch.id, format: realMatch.format || 'BO3',
-              teamA: { ...prev.teamA, id: realMatch.team1Id, name: realMatch.team1Name || 'SAIGON PHANTOM', short: 'SGP', score: Math.max(prev.teamA.score || 0, scoreA) },
-              teamB: { ...prev.teamB, id: realMatch.team2Id, name: realMatch.team2Name || 'PAPER REX', short: 'PRX', score: Math.max(prev.teamB.score || 0, scoreB) },
+              teamA: { ...prev.teamA, id: realMatch.team1Id, name: realMatch.team1Name || 'SAIGON PHANTOM', short: realMatch.team1Tag || 'SGP', score: Math.max(prev.teamA.score || 0, scoreA) },
+              teamB: { ...prev.teamB, id: realMatch.team2Id, name: realMatch.team2Name || 'PAPER REX', short: realMatch.team2Tag || 'PRX', score: Math.max(prev.teamB.score || 0, scoreB) },
               games: newGames
             };
           });
