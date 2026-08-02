@@ -793,7 +793,7 @@ const Lobby = () => {
 
       <div className="flex-1 flex flex-col items-center mt-16">
         <h2 className="text-2xl font-bold mb-8 uppercase tracking-widest text-gray-300">
-          VÁN {activeGameSafe.gameNumber} - {isMapVeto ? (currentMapAction?.action === 'BAN' ? currentMapAction?.action === 'PICK_SIDE' ? 'ĐANG CHỜ CHỌN PHE' : (currentMapAction?.action === 'BAN' ? 'ĐANG CHỜ CẤM MAP' : 'ĐANG CHỜ CHỌN MAP')) : (isAgentDraftComplete ? 'ĐÃ HOÀN TẤT' : currentAgentAction?.action === 'BAN' ? 'ĐANG CHỜ CẤM TƯỚNG' : 'ĐANG CHỜ CHỌN TƯỚNG')}
+          VÁN {activeGameSafe.gameNumber} - {isMapVeto ? (currentMapAction?.action === 'PICK_SIDE' ? 'ĐANG CHỜ CHỌN PHE' : (currentMapAction?.action === 'BAN' ? 'ĐANG CHỜ CẤM MAP' : 'ĐANG CHỜ CHỌN MAP')) : (isAgentDraftComplete ? 'ĐÃ HOÀN TẤT' : currentAgentAction?.action === 'BAN' ? 'ĐANG CHỜ CẤM TƯỚNG' : 'ĐANG CHỜ CHỌN TƯỚNG')}
         </h2>
         
         <div className="w-full max-w-[1400px] grid grid-cols-[1fr_auto_1fr] gap-8 items-center mb-12">
@@ -851,41 +851,64 @@ const Lobby = () => {
               {isMapVeto ? 'DANH SÁCH BẢN ĐỒ (MAP POOL)' : 'DANH SÁCH ĐẶC VỤ'}
             </h4>
             
-            <div className="flex flex-wrap justify-center gap-3">
-              {POOL_DATA.map((item) => {
-                 const itemName = isMapVeto ? item : item.name;
-                 const isSelected = selectedHover === itemName;
-                 
-                 const status = isMapVeto ? mapStatus(itemName) : agentStatus(itemName);
-                 const disabled = status === 'BANNED' || status === 'PICKED' || status === 'PICKED_BY_ME' || !isMyTurn;
-                 const label = status === 'BANNED' ? 'BỊ CẤM' : (status === 'PICKED' || status === 'PICKED_BY_ME') ? 'ĐÃ CHỌN' : '';
-                 
-                 if (isMapVeto) {
-                   return (
-                      <button key={itemName}
-                        onClick={() => !disabled && setSelectedHover(itemName)}
-                        disabled={disabled}
-                        className={`relative w-32 h-20 bg-[#0a1118] border-2 flex items-center justify-center rounded overflow-hidden group transition-all duration-200 ${isSelected ? 'border-[#ff4655] scale-110 z-10 shadow-[0_0_15px_rgba(255,70,85,0.5)]' : disabled ? 'border-gray-800 bg-gray-900/80 cursor-not-allowed' : 'border-gray-600 hover:border-gray-400'}`}>
-                          <span className="font-display font-bold tracking-widest text-lg transition-transform">{itemName}</span>
-                          {label && <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-[10px] uppercase tracking-[0.2em] font-bold text-white py-1">{label}</div>}
-                      </button>
-                   );
-                 } else {
-                   return (
-                      <button key={itemName}
-                        onClick={() => !disabled && setSelectedHover(itemName)}
-                        disabled={disabled}
-                        className={`relative w-20 h-20 md:w-24 md:h-24 bg-[#0a1118] border-2 flex items-center justify-center rounded overflow-hidden group transition-all duration-200 ${isSelected ? 'border-[#ff4655] scale-110 z-10 shadow-[0_0_15px_rgba(255,70,85,0.5)]' : 'border-transparent hover:border-gray-400'} ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}> 
-                        <AgentImage agentName={itemName} className="group-hover:scale-110 transition-transform duration-300" />
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-1 pt-4 text-center">
-                           <span className={`text-[10px] font-bold tracking-wider ${item.role === 'Duelist' ? 'text-red-300' : item.role === 'Controller' ? 'text-purple-300' : item.role === 'Initiator' ? 'text-green-300' : 'text-yellow-300'}`}>{itemName}</span>
-                        </div>
-                        {label && <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-10"><span className="text-white text-[10px] font-bold tracking-widest uppercase border border-gray-500 bg-black/50 px-1 py-0.5 rounded">{label}</span></div>}
-                      </button>
-                   );
-                 }
-              })}
-            </div>
+            {currentMapAction?.action === 'PICK_SIDE' ? (
+              <div className="flex justify-center gap-8 mt-8">
+                <button
+                  onMouseEnter={() => setSelectedHover('ATTACK')}
+                  onMouseLeave={() => setSelectedHover(null)}
+                  onClick={() => setSelectedHover('ATTACK')}
+                  className={`w-64 py-8 rounded-lg border-2 flex flex-col items-center justify-center transition-all duration-300 ${selectedHover === 'ATTACK' ? 'border-red-500 bg-red-500/20' : 'border-gray-700 hover:border-red-500 hover:bg-red-500/10'}`}
+                >
+                  <span className="text-6xl mb-4">🗡️</span>
+                  <span className="text-2xl font-bold font-display uppercase tracking-widest text-red-400">ATTACK (CÔNG)</span>
+                </button>
+                <button
+                  onMouseEnter={() => setSelectedHover('DEFENSE')}
+                  onMouseLeave={() => setSelectedHover(null)}
+                  onClick={() => setSelectedHover('DEFENSE')}
+                  className={`w-64 py-8 rounded-lg border-2 flex flex-col items-center justify-center transition-all duration-300 ${selectedHover === 'DEFENSE' ? 'border-blue-500 bg-blue-500/20' : 'border-gray-700 hover:border-blue-500 hover:bg-blue-500/10'}`}
+                >
+                  <span className="text-6xl mb-4">🛡️</span>
+                  <span className="text-2xl font-bold font-display uppercase tracking-widest text-blue-400">DEFENSE (THỦ)</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap justify-center gap-3">
+                {POOL_DATA.map((item) => {
+                   const itemName = isMapVeto ? item : item.name;
+                   const isSelected = selectedHover === itemName;
+                   
+                   const status = isMapVeto ? mapStatus(itemName) : agentStatus(itemName);
+                   const disabled = status === 'BANNED' || status === 'PICKED' || status === 'PICKED_BY_ME' || !isMyTurn;
+                   const label = status === 'BANNED' ? 'BỊ CẤM' : (status === 'PICKED' || status === 'PICKED_BY_ME') ? 'ĐÃ CHỌN' : '';
+                   
+                   if (isMapVeto) {
+                     return (
+                        <button key={itemName}
+                          onClick={() => !disabled && setSelectedHover(itemName)}
+                          disabled={disabled}
+                          className={`relative w-32 h-20 bg-[#0a1118] border-2 flex items-center justify-center rounded overflow-hidden group transition-all duration-200 ${isSelected ? 'border-[#ff4655] scale-110 z-10 shadow-[0_0_15px_rgba(255,70,85,0.5)]' : disabled ? 'border-gray-800 bg-gray-900/80 cursor-not-allowed' : 'border-gray-600 hover:border-gray-400'}`}>
+                            <span className="font-display font-bold tracking-widest text-lg transition-transform">{itemName}</span>
+                            {label && <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-[10px] uppercase tracking-[0.2em] font-bold text-white py-1">{label}</div>}
+                        </button>
+                     );
+                   } else {
+                     return (
+                        <button key={itemName}
+                          onClick={() => !disabled && setSelectedHover(itemName)}
+                          disabled={disabled}
+                          className={`relative w-20 h-20 md:w-24 md:h-24 bg-[#0a1118] border-2 flex items-center justify-center rounded overflow-hidden group transition-all duration-200 ${isSelected ? 'border-[#ff4655] scale-110 z-10 shadow-[0_0_15px_rgba(255,70,85,0.5)]' : 'border-transparent hover:border-gray-400'} ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}> 
+                          <AgentImage agentName={itemName} className="group-hover:scale-110 transition-transform duration-300" />
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-1 pt-4 text-center">
+                             <span className={`text-[10px] font-bold tracking-wider ${item.role === 'Duelist' ? 'text-red-300' : item.role === 'Controller' ? 'text-purple-300' : item.role === 'Initiator' ? 'text-green-300' : 'text-yellow-300'}`}>{itemName}</span>
+                          </div>
+                          {label && <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-10"><span className="text-white text-[10px] font-bold tracking-widest uppercase border border-gray-500 bg-black/50 px-1 py-0.5 rounded">{label}</span></div>}
+                        </button>
+                     );
+                   }
+                })}
+              </div>
+            )}
 
             <button onClick={handleLockSelection} className={`mt-10 px-16 py-4 font-bold tracking-widest rounded uppercase transition-all duration-300 shadow-lg
               ${selectedHover ? 'bg-[#ff4655] text-white hover:bg-red-500 hover:shadow-[0_0_20px_rgba(255,70,85,0.6)] cursor-pointer' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}
