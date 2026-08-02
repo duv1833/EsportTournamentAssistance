@@ -214,7 +214,24 @@ const Lobby = () => {
 
   useEffect(() => {
     if (timeLeft === 0 && activeGame && startCountdown === null && !isAgentDraftComplete) {
+      const isTeamAOnline = onlineUsers.has('TEAM_A');
+      const isTeamBOnline = onlineUsers.has('TEAM_B');
+      const isAdminOnline = onlineUsers.has('ADMIN');
+      
+      const isActiveTeamOnline = currentTurnTeamIdForDraft === 1 ? isTeamAOnline : isTeamBOnline;
+      
+      let shouldITrigger = false;
       if (isMyTurn) {
+        shouldITrigger = true; 
+      } else if (!isActiveTeamOnline) {
+        if (autoRole === 'ADMIN') {
+           shouldITrigger = true;
+        } else if (autoRole === (currentTurnTeamIdForDraft === 1 ? 'TEAM_B' : 'TEAM_A') && !isAdminOnline) {
+           shouldITrigger = true;
+        }
+      }
+
+      if (shouldITrigger) {
         setTimeLeft(30); 
 
         let availableOptions = [];
