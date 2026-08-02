@@ -321,8 +321,14 @@ const Lobby = () => {
           const data = JSON.parse(message.body);
           
           if (data.type === 'PING' || data.type === 'JOIN') {
-            setOnlineUsers(prev => new Set([...prev, data.role]));
-            if (data.type === 'JOIN') client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'PING', role: autoRole }) });
+             // We can trigger a sync request when a new user joins!
+             if (data.type === 'JOIN') {
+                 client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'PING', role: autoRole }) });
+                 setTimeout(() => {
+                     client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'SYNC_REQUEST' }) });
+                 }, 500);
+             }
+             setOnlineUsers(prev => new Set([...prev, data.role]));
           }
           if (data.type === 'LEAVE') {
             setOnlineUsers(prev => {
@@ -423,6 +429,36 @@ const Lobby = () => {
               
               return { ...prev, games: newGames };
             });
+          if (data.type === 'SYNC_REQUEST') {
+              setSeriesData(prev => {
+                  const game1 = prev.games.find(g => g.gameNumber === 1);
+                  const totalActions = (game1?.mapBansA?.length||0) + (game1?.mapBansB?.length||0) + (game1?.mapPicksA?.length||0) + (game1?.mapPicksB?.length||0) + (game1?.sidePicksA?.length||0) + (game1?.sidePicksB?.length||0);
+                  if (totalActions > 0) {
+                      client.publish({
+                          destination: `/topic/room/${matchId}`,
+                          body: JSON.stringify({ type: 'SYNC_REPLY', seriesData: prev })
+                      });
+                  }
+                  return prev;
+              });
+          }
+          if (data.type === 'SYNC_REPLY') {
+              setSeriesData(prev => {
+                  const game1 = prev.games.find(g => g.gameNumber === 1);
+                  const myTotalActions = (game1?.mapBansA?.length||0) + (game1?.mapBansB?.length||0) + (game1?.mapPicksA?.length||0) + (game1?.mapPicksB?.length||0) + (game1?.sidePicksA?.length||0) + (game1?.sidePicksB?.length||0);
+                  
+                  const remoteGame1 = data.seriesData.games.find(g => g.gameNumber === 1);
+                  const remoteTotalActions = (remoteGame1?.mapBansA?.length||0) + (remoteGame1?.mapBansB?.length||0) + (remoteGame1?.mapPicksA?.length||0) + (remoteGame1?.mapPicksB?.length||0) + (remoteGame1?.sidePicksA?.length||0) + (remoteGame1?.sidePicksB?.length||0);
+                  
+                  if (remoteTotalActions > myTotalActions) {
+                      return data.seriesData;
+                  }
+                  return prev;
+              });
+          }
+          if (data.type === 'SYNC_RESET') {
+              localStorage.removeItem(`lobby_series_${matchId}`);
+              window.location.reload();
           }
           if (data.type === 'UPDATE_SCORE') {
             const { gameId, scoreA, scoreB } = data;
@@ -676,9 +712,16 @@ const Lobby = () => {
               {currentUserRole === 'ADMIN' && (
                 <button 
                   onClick={() => {
-                    if(window.confirm('Hành động này sẽ xoá toàn bộ dữ liệu tạm của trận đấu trên máy bạn và làm mới lại từ đầu. Bạn có chắc chắn?')) {
-                      localStorage.removeItem(`lobby_series_${matchId}`);
-                      window.location.reload();
+                    if(window.confirm("Bạn có chắc muốn Reset trạng thái trận này cho TẤT CẢ mọi người?")) {
+                      if (stompClient) {
+                          stompClient.publish({
+                              destination: `/topic/room/${matchId}`,
+                              body: JSON.stringify({ type: 'SYNC_RESET' })
+                          });
+                      } else {
+                          localStorage.removeItem(`lobby_series_${matchId}`);
+                          window.location.reload();
+                      }
                     }
                   }}
                   className="absolute -bottom-8 whitespace-nowrap text-[10px] text-red-500 hover:text-red-400 underline cursor-pointer uppercase tracking-widest"
