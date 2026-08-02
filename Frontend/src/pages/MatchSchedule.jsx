@@ -60,16 +60,12 @@ function InternalSystemMatchCard({ match }) {
   return (
     <div className={`bg-surface-charcoal border ${isLive ? 'border-primary-red/60 shadow-lg shadow-primary-red/10' : 'border-outline-variant'} p-4 clip-corner hover:border-primary-red/40 transition-all group`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <Trophy size={12} className="text-warning-amber shrink-0" />
-          <span className="font-mono text-[10px] text-tactical-gray truncate">{tournamentName}</span>
+          <span className="font-mono text-[10px] text-tactical-gray truncate uppercase">{matchName}</span>
         </div>
         <StatusBadge status={status} />
       </div>
-
-      {/* Match Name */}
-      <p className="font-mono text-[10px] text-tactical-gray/60 mb-2 truncate">{matchName}</p>
 
       {/* Teams */}
       <div className="flex items-center gap-3">
@@ -619,9 +615,29 @@ export default function MatchSchedule({ currentUser }) {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {externalMatches.map((match) => (
-                <InternalSystemMatchCard key={match.id} match={match} />
+            <div className="flex flex-col gap-8">
+              {Object.entries(
+                externalMatches.reduce((groups, match) => {
+                  const tName = match.tournamentName || 'Giải Đấu Nội Bộ';
+                  if (!groups[tName]) groups[tName] = [];
+                  groups[tName].push(match);
+                  return groups;
+                }, {})
+              ).map(([tournamentName, matches]) => (
+                <div key={tournamentName} className="flex flex-col gap-4">
+                  <div className="flex items-center gap-2 border-b border-outline-variant/50 pb-2">
+                    <Trophy size={16} className="text-warning-amber" />
+                    <h3 className="font-display text-lg text-off-white uppercase">{tournamentName}</h3>
+                    <span className="font-mono text-xs text-tactical-gray ml-2 px-2 py-0.5 bg-surface-charcoal rounded">
+                      {matches.length} trận
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {matches.map((match) => (
+                      <InternalSystemMatchCard key={match.id} match={match} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}

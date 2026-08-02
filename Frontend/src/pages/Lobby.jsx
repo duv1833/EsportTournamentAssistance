@@ -61,7 +61,7 @@ const Lobby = () => {
   const [draftPhase, setDraftPhase] = useState('NONE'); 
   const [mapDraftStep, setMapDraftStep] = useState(0);
   const [selectedHover, setSelectedHover] = useState(null); 
-  const [timeLeft, setTimeLeft] = useState(3);
+  const [timeLeft, setTimeLeft] = useState(30);
   
   const [startCountdown, setStartCountdown] = useState(null); 
   const [tempScores, setTempScores] = useState({});
@@ -234,7 +234,7 @@ const Lobby = () => {
       }
 
       if (shouldITrigger) {
-        setTimeLeft(3); 
+        setTimeLeft(30); 
 
         let availableOptions = [];
         if (isMapVeto) {
@@ -359,7 +359,7 @@ const Lobby = () => {
 
           if (data.type === 'DRAFT_ACTION') {
             const { matchId: incomingMatchId, teamId: actedTeamId, actionType, phase, selection } = data;
-            setTimeLeft(3);
+            setTimeLeft(30);
 
             setSeriesData(prev => {
               const sequenceMap = getMapDraftSequence(prev.format);
@@ -539,7 +539,7 @@ const Lobby = () => {
   const handleLockSelection = () => {
     if (!selectedHover || !stompClient || !activeGameSafe.id || isAgentDraftComplete) return;
 
-    setTimeLeft(3); 
+    setTimeLeft(30); 
     
     const phaseType = isMapVeto ? 'MAP' : 'AGENT';
     const actionType = isMapVeto ? currentMapAction?.action : currentAgentAction?.action;
