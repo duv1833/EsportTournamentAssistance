@@ -638,10 +638,23 @@ const Lobby = () => {
           </div>
 
           <h1 className="text-gray-400 text-sm tracking-widest mb-2 uppercase pt-8">TRẬN ĐẤU ID: {matchId} - {seriesData.format}</h1>
-          <div className="flex justify-center items-center gap-8 text-4xl font-bold">
+          <div className="flex justify-center items-center gap-12 font-display text-4xl mb-4 relative">
             <span className="text-blue-400 w-48 text-right">{seriesData.teamA.name}</span>
-            <div className="bg-[#1f2933] px-6 py-2 rounded border border-gray-700 shadow-inner">
+            <div className="bg-[#1b1b1b] px-6 py-3 rounded-lg border border-gray-800 tracking-[0.2em] shadow-lg flex items-center justify-center relative">
               <span className="text-white">{seriesData.teamA.score}</span><span className="text-[#ff4655] mx-4">-</span><span className="text-white">{seriesData.teamB.score}</span>
+              {currentUserRole === 'ADMIN' && (
+                <button 
+                  onClick={() => {
+                    if(window.confirm('Hành động này sẽ xoá toàn bộ dữ liệu tạm của trận đấu trên máy bạn và làm mới lại từ đầu. Bạn có chắc chắn?')) {
+                      localStorage.removeItem(`lobby_series_${matchId}`);
+                      window.location.reload();
+                    }
+                  }}
+                  className="absolute -bottom-8 whitespace-nowrap text-[10px] text-red-500 hover:text-red-400 underline cursor-pointer uppercase tracking-widest"
+                >
+                  LÀM MỚI TRẠNG THÁI (ADMIN)
+                </button>
+              )}
             </div>
             <span className="text-[#ff4655] w-48 text-left">{seriesData.teamB.name}</span>
           </div>
