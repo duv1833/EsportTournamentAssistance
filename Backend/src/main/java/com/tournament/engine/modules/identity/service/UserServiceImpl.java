@@ -5,6 +5,7 @@ import com.tournament.engine.modules.identity.dto.LoginRequest;
 import com.tournament.engine.modules.identity.dto.RegisterRequest;
 import com.tournament.engine.modules.identity.model.User;
 import com.tournament.engine.modules.identity.repository.UserRepository;
+import com.tournament.engine.modules.identity.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
@@ -39,7 +41,7 @@ public class UserServiceImpl implements UserService {
         user = userRepository.save(user);
 
         return AuthResponse.builder()
-                .token("mock-jwt-token-for-" + user.getUsername())
+                .token(jwtService.generateToken(user))
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
@@ -73,7 +75,7 @@ public class UserServiceImpl implements UserService {
         }
 
         return AuthResponse.builder()
-                .token("mock-jwt-token-for-" + user.getUsername())
+                .token(jwtService.generateToken(user))
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
