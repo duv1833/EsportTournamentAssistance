@@ -296,6 +296,13 @@ const Lobby = () => {
             setOnlineUsers(prev => new Set([...prev, data.role]));
             if (data.type === 'JOIN') client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'PING', role: autoRole }) });
           }
+          if (data.type === 'LEAVE') {
+            setOnlineUsers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(data.role);
+              return newSet;
+            });
+          }
           
           if (data.type === 'START_SYNC') {
             const gameIdValue = typeof data.gameId === 'string' ? Number(data.gameId) : data.gameId;
@@ -430,7 +437,22 @@ const Lobby = () => {
     });
     client.activate();
     setStompClient(client);
-    return () => client.deactivate();
+
+    // Xử lý khi đóng tab trình duyệt
+    const handleBeforeUnload = () => {
+      if (client.active) {
+        client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'LEAVE', role: autoRole }) });
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      if (client.active) {
+        client.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify({ type: 'LEAVE', role: autoRole }) });
+        client.deactivate();
+      }
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [matchId, autoRole]);
 
   const handleLockSelection = () => {
@@ -598,8 +620,8 @@ const Lobby = () => {
         <div className="max-w-7xl mx-auto mb-10 text-center relative mt-4">
           <div className="absolute top-0 right-0 bg-success-cyan/20 border border-success-cyan text-success-cyan text-xs font-bold px-3 py-1 rounded">VAI TRÒ HIỆN TẠI: {autoRole}</div>
           <div className="absolute top-0 left-0 flex gap-4">
-             <span className={`text-[10px] px-2 py-1 rounded border font-bold ${isTeamAPresent ? 'border-blue-500 text-blue-400' : 'border-gray-700 text-gray-500'}`}>Leader A: {isTeamAPresent ? '🟢 ONLINE' : '⚫ OFFLINE'}</span>
-             <span className={`text-[10px] px-2 py-1 rounded border font-bold ${isTeamBPresent ? 'border-[#ff4655] text-[#ff4655]' : 'border-gray-700 text-gray-500'}`}>Leader B: {isTeamBPresent ? '🟢 ONLINE' : '⚫ OFFLINE'}</span>
+             <span className={`text-[10px] px-2 py-1 rounded border font-bold ${isTeamAPresent ? 'border-blue-500 text-blue-400' : 'border-gray-700 text-gray-500'}`}>{seriesData.teamA.short}: {isTeamAPresent ? '🟢 ONLINE' : '⚫ OFFLINE'}</span>
+             <span className={`text-[10px] px-2 py-1 rounded border font-bold ${isTeamBPresent ? 'border-[#ff4655] text-[#ff4655]' : 'border-gray-700 text-gray-500'}`}>{seriesData.teamB.short}: {isTeamBPresent ? '🟢 ONLINE' : '⚫ OFFLINE'}</span>
           </div>
 
           <h1 className="text-gray-400 text-sm tracking-widest mb-2 uppercase pt-8">TRẬN ĐẤU ID: {matchId} - {seriesData.format}</h1>

@@ -214,7 +214,7 @@ export default function TournamentDetailsVLR({ currentUser, onJoinTeam }) {
                     `}
                   >
                     {tab}
-                    {tab === 'Matches' && <span className="ml-1 text-[9px] text-[#666]">(30)</span>}
+                    {tab === 'Matches' && <span className="ml-1 text-[9px] text-[#666]">({internalMatches.length})</span>}
                   </Link>
                 );
               })}
