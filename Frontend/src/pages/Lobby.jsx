@@ -136,6 +136,8 @@ const Lobby = () => {
     mapBansB: Array.isArray(activeGame?.mapBansB) ? activeGame.mapBansB : [],
     mapPicksA: Array.isArray(activeGame?.mapPicksA) ? activeGame.mapPicksA : [],
     mapPicksB: Array.isArray(activeGame?.mapPicksB) ? activeGame.mapPicksB : [],
+    sidePicksA: Array.isArray(activeGame?.sidePicksA) ? activeGame.sidePicksA : [],
+    sidePicksB: Array.isArray(activeGame?.sidePicksB) ? activeGame.sidePicksB : [],
     mapDecider: activeGame?.mapDecider ?? null,
   };
 
@@ -243,7 +245,7 @@ const Lobby = () => {
            availableOptions = AGENT_POOL.map(a => a.name).filter(a => !allBans.includes(a) && !myPicks.includes(a));
         }
 
-        const randomPick = availableOptions[Math.floor(Math.random() * availableOptions.length)] || (isMapVeto ? 'ASCENT' : 'JETT');
+        const randomPick = currentMapAction?.action === 'PICK_SIDE' ? (Math.random() > 0.5 ? 'ATTACK' : 'DEFENSE') : (availableOptions[Math.floor(Math.random() * availableOptions.length)] || (isMapVeto ? 'ASCENT' : 'JETT'));
         const phaseType = isMapVeto ? 'MAP' : 'AGENT';
         const actionType = isMapVeto ? currentMapAction?.action : currentAgentAction?.action;
 
@@ -273,7 +275,7 @@ const Lobby = () => {
     }
 
     const sequence = getMapDraftSequence(seriesData.format);
-    const totalMapActions = (syncGame.mapBansA?.length||0) + (syncGame.mapBansB?.length||0) + (syncGame.mapPicksA?.length||0) + (syncGame.mapPicksB?.length||0);
+    const totalMapActions = (syncGame.mapBansA?.length||0) + (syncGame.mapBansB?.length||0) + (syncGame.mapPicksA?.length||0) + (syncGame.mapPicksB?.length||0) + (syncGame.sidePicksA?.length||0) + (syncGame.sidePicksB?.length||0);
     const hasDecider = syncGame.mapDecider ? 1 : 0;
     
     if (syncGame.gameNumber === 1 && seriesData.bannedMaps.length === 0) {
@@ -382,11 +384,11 @@ const Lobby = () => {
                   }
                 }
 
-                const totalMapActions = (game1.mapBansA?.length||0) + (game1.mapBansB?.length||0) + (game1.mapPicksA?.length||0) + (game1.mapPicksB?.length||0);
+                const totalMapActions = (game1.mapBansA?.length||0) + (game1.mapBansB?.length||0) + (game1.mapPicksA?.length||0) + (game1.mapPicksB?.length||0) + (game1.sidePicksA?.length||0) + (game1.sidePicksB?.length||0);
                 game1.currentTurnTeamId = totalMapActions < sequenceMap.length ? sequenceMap[totalMapActions].teamId : 1;
                 
-                // KIỂM TRA ĐÃ HẾT LƯỢT MAP VETO (Để random Decider Map)
-                if (totalMapActions >= sequenceMap.length) {
+                // KIỂM TRA NẾU CÒN ĐÚNG 1 MAP (DECIDER) - Bước cuối là chọn Phe cho Decider
+                if (totalMapActions === sequenceMap.length - 1 && sequenceMap[totalMapActions].action === 'PICK_SIDE') {
                    const usedMapsArray = [...(game1.mapBansA||[]), ...(game1.mapBansB||[]), ...(game1.mapPicksA||[]), ...(game1.mapPicksB||[])];
                    const availableMaps = MAP_POOL.filter(m => !usedMapsArray.includes(m));
                    const deciderMap = availableMaps[0] || 'DECIDER';
@@ -394,6 +396,14 @@ const Lobby = () => {
                    game1.mapDecider = deciderMap;
                    
                    // Gán Map còn sót lại (Decider) cho Ván chưa được chọn
+                   const finalGame = newGames.find(g => g.map === 'CHƯA CHỌN');
+                   if (finalGame) finalGame.map = deciderMap;
+                } else if (totalMapActions >= sequenceMap.length && !game1.mapDecider) {
+                   // Fallback in case there is no PICK_SIDE for decider
+                   const usedMapsArray = [...(game1.mapBansA||[]), ...(game1.mapBansB||[]), ...(game1.mapPicksA||[]), ...(game1.mapPicksB||[])];
+                   const availableMaps = MAP_POOL.filter(m => !usedMapsArray.includes(m));
+                   const deciderMap = availableMaps[0] || 'DECIDER';
+                   game1.mapDecider = deciderMap;
                    const finalGame = newGames.find(g => g.map === 'CHƯA CHỌN');
                    if (finalGame) finalGame.map = deciderMap;
                 }
@@ -783,7 +793,7 @@ const Lobby = () => {
 
       <div className="flex-1 flex flex-col items-center mt-16">
         <h2 className="text-2xl font-bold mb-8 uppercase tracking-widest text-gray-300">
-          VÁN {activeGameSafe.gameNumber} - {isMapVeto ? (currentMapAction?.action === 'BAN' ? 'ĐANG CHỜ CẤM MAP' : 'ĐANG CHỜ CHỌN MAP') : (isAgentDraftComplete ? 'ĐÃ HOÀN TẤT' : currentAgentAction?.action === 'BAN' ? 'ĐANG CHỜ CẤM TƯỚNG' : 'ĐANG CHỜ CHỌN TƯỚNG')}
+          VÁN {activeGameSafe.gameNumber} - {isMapVeto ? (currentMapAction?.action === 'BAN' ? currentMapAction?.action === 'PICK_SIDE' ? 'ĐANG CHỜ CHỌN PHE' : (currentMapAction?.action === 'BAN' ? 'ĐANG CHỜ CẤM MAP' : 'ĐANG CHỜ CHỌN MAP')) : (isAgentDraftComplete ? 'ĐÃ HOÀN TẤT' : currentAgentAction?.action === 'BAN' ? 'ĐANG CHỜ CẤM TƯỚNG' : 'ĐANG CHỜ CHỌN TƯỚNG')}
         </h2>
         
         <div className="w-full max-w-[1400px] grid grid-cols-[1fr_auto_1fr] gap-8 items-center mb-12">
@@ -803,7 +813,7 @@ const Lobby = () => {
              
              <div className="absolute -bottom-16 w-[300px] text-center">
                  <span className={`text-sm uppercase font-bold tracking-widest px-6 py-2 rounded-full border shadow-lg ${isAgentDraftComplete ? 'bg-green-900/40 text-success-cyan border-success-cyan' : currentTurnTeamIdForDraft === 1 ? 'bg-blue-900/40 text-blue-400 border-blue-500' : 'bg-red-900/40 text-[#ff4655] border-[#ff4655]'}`}>
-                    {isAgentDraftComplete ? 'CHỜ ADMIN VÀO TRẬN' : `Đang đợi ${currentTurnTeamIdForDraft === 1 ? seriesData.teamA.short : seriesData.teamB.short} ${isMapVeto ? (currentMapAction?.action === 'BAN' ? 'CẤM MAP' : 'CHỌN MAP') : (currentAgentAction?.action === 'BAN' ? 'CẤM TƯỚNG' : 'CHỌN TƯỚNG')}...`}
+                    {isAgentDraftComplete ? 'CHỜ ADMIN VÀO TRẬN' : `Đang đợi ${currentTurnTeamIdForDraft === 1 ? seriesData.teamA.short : seriesData.teamB.short} ${isMapVeto ? (currentMapAction?.action === 'BAN' ? 'CẤM MAP' : currentMapAction?.action === 'PICK_SIDE' ? 'CHỌN PHE' : 'CHỌN MAP') : (currentAgentAction?.action === 'BAN' ? 'CẤM TƯỚNG' : 'CHỌN TƯỚNG')}...`}
                  </span>
              </div>
           </div>
