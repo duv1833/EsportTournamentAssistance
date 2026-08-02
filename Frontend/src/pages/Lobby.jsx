@@ -221,8 +221,8 @@ const Lobby = () => {
         if (isMapVeto) {
            availableOptions = MAP_POOL.filter(m => !usedMaps.has(m));
         } else {
-           const allBans = [...activeGame.teamABans, ...activeGame.teamBBans];
-           const myPicks = currentUserId === 1 ? activeGame.teamAPicks : activeGame.teamBPicks;
+           const allBans = [...activeGameSafe.teamABans, ...activeGameSafe.teamBBans];
+           const myPicks = currentUserId === 1 ? activeGameSafe.teamAPicks : activeGameSafe.teamBPicks;
            availableOptions = AGENT_POOL.map(a => a.name).filter(a => !allBans.includes(a) && !myPicks.includes(a));
         }
 
@@ -231,12 +231,16 @@ const Lobby = () => {
         const actionType = isMapVeto ? currentMapAction?.action : currentAgentAction?.action;
 
         const payload = { 
-           type: 'DRAFT_ACTION', matchId: activeGame.id, teamId: currentUserId, actionType, phase: phaseType, selection: randomPick
+           type: 'DRAFT_ACTION', matchId: activeGameSafe.id, teamId: currentUserId, actionType, phase: phaseType, selection: randomPick
         };
         
-        if (stompClient) {
-          stompClient.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify(payload) });
-          stompClient.publish({ destination: "/app/draft/action", body: JSON.stringify(payload) });
+        try {
+          if (stompClient && stompClient.connected) {
+            stompClient.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify(payload) });
+            stompClient.publish({ destination: "/app/draft/action", body: JSON.stringify(payload) });
+          }
+        } catch (e) {
+          console.error("Lỗi khi tự động chọn:", e);
         }
       }
     }
