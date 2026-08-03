@@ -94,6 +94,15 @@ const Lobby = () => {
 
   const getMapDraftSequence = (format) => {
     const normalized = (format || 'BO3').toUpperCase();
+    if (normalized === 'BO1') {
+      return [
+        { action: 'BAN', teamId: 1 }, { action: 'BAN', teamId: 2 },
+        { action: 'BAN', teamId: 1 }, { action: 'BAN', teamId: 2 },
+        { action: 'BAN', teamId: 1 }, { action: 'BAN', teamId: 2 },
+        { action: 'BAN', teamId: 1 }, { action: 'BAN', teamId: 2 },
+        { action: 'BAN', teamId: 1 }
+      ];
+    }
     if (normalized === 'BO5') {
       return [
         { action: 'BAN', teamId: 1 }, { action: 'BAN', teamId: 2 },
@@ -186,17 +195,33 @@ const Lobby = () => {
             const scoreA = realMatch.scoreTeam1 || 0;
             const scoreB = realMatch.scoreTeam2 || 0;
             const totalCompleted = scoreA + scoreB;
+            const matchFormat = realMatch.format || 'BO3';
+            const winThreshold = matchFormat === 'BO3' ? 2 : matchFormat === 'BO5' ? 3 : 1;
+            const isOver = realMatch.status === 'COMPLETED' || scoreA >= winThreshold || scoreB >= winThreshold;
             
             const newGames = prev.games.map((g, index) => {
-               if (index < totalCompleted && g.status !== 'COMPLETED') return { ...g, status: 'COMPLETED' };
-               if (index === totalCompleted && g.status === 'LOCKED') return { ...g, status: 'WAITING' };
+               if (index < totalCompleted) {
+                   return { ...g, status: 'COMPLETED' };
+               }
+               if (isOver && index >= totalCompleted) {
+                   return { ...g, status: 'CANCELED' };
+               }
+               if (!isOver && index === totalCompleted) {
+                   if (g.status === 'LOCKED' || g.status === 'CANCELED' || g.status === 'COMPLETED') {
+                       return { ...g, status: 'WAITING' };
+                   }
+                   return g;
+               }
+               if (!isOver && index > totalCompleted) {
+                   return { ...g, status: 'LOCKED' };
+               }
                return g;
             });
 
             return {
-              ...prev, id: realMatch.id, format: realMatch.format || 'BO3',
-              teamA: { ...prev.teamA, id: realMatch.team1Id, name: realMatch.team1Name || 'SAIGON PHANTOM', short: realMatch.team1Tag || 'SGP', score: Math.max(prev.teamA.score || 0, scoreA) },
-              teamB: { ...prev.teamB, id: realMatch.team2Id, name: realMatch.team2Name || 'PAPER REX', short: realMatch.team2Tag || 'PRX', score: Math.max(prev.teamB.score || 0, scoreB) },
+              ...prev, id: realMatch.id, format: matchFormat,
+              teamA: { ...prev.teamA, id: realMatch.team1Id, name: realMatch.team1Name || 'SAIGON PHANTOM', short: realMatch.team1Tag || 'SGP', score: scoreA },
+              teamB: { ...prev.teamB, id: realMatch.team2Id, name: realMatch.team2Name || 'PAPER REX', short: realMatch.team2Tag || 'PRX', score: scoreB },
               games: newGames
             };
           });
@@ -739,7 +764,11 @@ const Lobby = () => {
           {(() => {
             const lastCompletedGame = [...seriesData.games].reverse().find(g => g.status === 'COMPLETED');
             const lastCompletedGameId = lastCompletedGame ? lastCompletedGame.id : null;
-            return seriesData.games.map((game) => {
+            
+            const maxGames = seriesData.format === 'BO1' ? 1 : seriesData.format === 'BO5' ? 5 : 3;
+            const gamesToRender = seriesData.games.slice(0, maxGames);
+
+            return gamesToRender.map((game) => {
               const displayStatus = game.status;
               return (
               <div key={game.id} className={`flex flex-col xl:flex-row items-center justify-between p-4 xl:p-5 gap-4 border rounded-sm transition-all duration-300

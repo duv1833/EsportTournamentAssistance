@@ -89,9 +89,9 @@ export default function TournamentMatches({ internalMatches = [] }) {
                     <div className="flex-shrink-0 mt-3 md:mt-0 w-full md:w-auto text-right">
                       <button
                         onClick={() => navigate(`/lobby/${match.id}`)}
-                        className="w-full md:w-auto bg-[#ff4655] hover:bg-red-500 text-white px-4 py-2 md:py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-all shadow-[0_0_10px_rgba(255,70,85,0.2)] hover:shadow-[0_0_15px_rgba(255,70,85,0.4)]"
+                        className={`w-full md:w-auto text-white px-4 py-2 md:py-1.5 rounded text-[10px] font-bold uppercase tracking-widest transition-all ${isCompleted ? 'bg-[#555] hover:bg-[#666]' : 'bg-[#ff4655] hover:bg-red-500 shadow-[0_0_10px_rgba(255,70,85,0.2)] hover:shadow-[0_0_15px_rgba(255,70,85,0.4)]'}`}
                       >
-                        Vào Ban/Pick
+                        {isCompleted ? 'Lịch sử Ban/Pick' : 'Vào Ban/Pick'}
                       </button>
                     </div>
 
