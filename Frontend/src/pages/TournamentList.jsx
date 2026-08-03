@@ -14,7 +14,7 @@ export default function TournamentList() {
   const [tournaments, setTournaments] = useState([]);
   const [isFetching, setIsFetching] = useState(true);
   const [viewMode, setViewMode] = useState('list');
-  const [createForm, setCreateForm] = useState({ name: '', maxTeams: 16, rulesDescription: '', startDate: '', endDate: '', prizePool: '', location: '', structure: 'SINGLE_ELIMINATION' });
+  const [createForm, setCreateForm] = useState({ name: '', maxTeams: 16, rulesDescription: '', startDate: '', endDate: '', prizePool: '', location: '', structure: 'SINGLE_ELIMINATION', format: 'BO1' });
   const [tournamentError, setTournamentError] = useState('');
   const [tournamentSuccess, setTournamentSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -60,11 +60,12 @@ export default function TournamentList() {
         createForm.prizePool,
         createForm.location,
         createForm.structure,
+        createForm.format,
         currentUser.id
       );
       if (res.success) {
         setTournamentSuccess('Tạo giải đấu thành công! Giải đấu của bạn đang chờ Admin phê duyệt trước khi được xuất bản công khai.');
-        setCreateForm({ name: '', maxTeams: 16, rulesDescription: '', startDate: '', endDate: '', prizePool: '', location: '', structure: 'SINGLE_ELIMINATION' });
+        setCreateForm({ name: '', maxTeams: 16, rulesDescription: '', startDate: '', endDate: '', prizePool: '', location: '', structure: 'SINGLE_ELIMINATION', format: 'BO1' });
         await fetchTournaments();
         setTimeout(() => {
           setViewMode('list');
@@ -140,8 +141,8 @@ export default function TournamentList() {
                     </div>
                     <h3 className="font-display text-xl text-off-white uppercase mb-3 line-clamp-1">{t.name}</h3>
                     <div className="space-y-2 mb-6">
-                      <div className="flex justify-between font-mono text-xs text-off-white/60">
-                        <span>Thể thức:</span>
+                      <div className="flex justify-between font-mono text-xs border-b border-outline-variant pb-2">
+                        <span className="text-tactical-gray">Định dạng:</span>
                         <span className="text-off-white font-bold">{t.format}</span>
                       </div>
                       <div className="flex justify-between font-mono text-xs text-off-white/60">
@@ -209,7 +210,7 @@ export default function TournamentList() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Số lượng đội</label>
                 <select
@@ -224,7 +225,7 @@ export default function TournamentList() {
                 </select>
               </div>
               <div>
-                <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Thể thức thi đấu</label>
+                <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Cấu trúc giải đấu</label>
                 <select
                   className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
                   value={createForm.structure}
@@ -232,6 +233,18 @@ export default function TournamentList() {
                 >
                   <option value="SINGLE_ELIMINATION">Loại Trực Tiếp (Single Elimination)</option>
                   <option value="GROUP_KNOCKOUT">Vòng Bảng + Nhánh Đấu (Group Stage & Knockout)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-mono text-xs uppercase text-tactical-gray mb-2">Định dạng trận đấu (BO)</label>
+                <select
+                  className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
+                  value={createForm.format}
+                  onChange={(e) => setCreateForm({ ...createForm, format: e.target.value })}
+                >
+                  <option value="BO1">Best of 1 (BO1)</option>
+                  <option value="BO3">Best of 3 (BO3)</option>
+                  <option value="BO5">Best of 5 (BO5)</option>
                 </select>
               </div>
             </div>

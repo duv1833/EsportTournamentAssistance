@@ -16,7 +16,7 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
     name: tournament?.name || '',
     maxTeams: tournament?.maxTeams || 16,
     rulesDescription: tournament?.rulesDescription || '',
-    format: tournament?.format || 'SINGLE_ELIMINATION',
+    format: tournament?.format || 'BO1',
     structure: tournament?.structure || 'SINGLE_ELIMINATION',
     startDate: tournament?.startDate ? tournament.startDate.split('T')[0] : '',
     endDate: tournament?.endDate ? tournament.endDate.split('T')[0] : '',
@@ -99,6 +99,7 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
         editForm.prizePool,
         editForm.location,
         editForm.structure,
+        editForm.format,
         currentUser.id
       );
       if (res.success) {
@@ -120,10 +121,14 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
     setIsAdvancing(true);
     try {
       const { generateBracket } = await import('../services/tournamentService');
+      let finalsFormat = tournament.format;
+      if (tournament.format === 'BO1') finalsFormat = 'BO3';
+      else if (tournament.format === 'BO3') finalsFormat = 'BO5';
+
       const requestData = {
         earlyRoundsFormat: tournament.format,
         semiFinalsFormat: tournament.format,
-        finalsFormat: tournament.format
+        finalsFormat: finalsFormat
       };
       const res = await generateBracket(tournament.id, currentUser.id, requestData);
       if (res.success) {
@@ -314,7 +319,7 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Số lượng đội tối đa</label>
               <select
@@ -328,18 +333,30 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
                 <option value={32}>32 Đội</option>
               </select>
             </div>
-            <div>
-              <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Thể thức thi đấu</label>
-              <select
-                className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
-                value={editForm.structure}
-                onChange={(e) => setEditForm({ ...editForm, structure: e.target.value })}
-              >
-                <option value="SINGLE_ELIMINATION">Loại Trực Tiếp (Single Elimination)</option>
-                <option value="GROUP_KNOCKOUT">Vòng Bảng + Nhánh Đấu (Group Stage & Knockout)</option>
-              </select>
+              <div>
+                <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Cấu trúc giải đấu</label>
+                <select
+                  className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
+                  value={editForm.structure}
+                  onChange={(e) => setEditForm({ ...editForm, structure: e.target.value })}
+                >
+                  <option value="SINGLE_ELIMINATION">Loại Trực Tiếp (Single Elimination)</option>
+                  <option value="GROUP_KNOCKOUT">Vòng Bảng + Nhánh Đấu (Group Stage & Knockout)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Định dạng trận đấu (BO)</label>
+                <select
+                  className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
+                  value={editForm.format}
+                  onChange={(e) => setEditForm({ ...editForm, format: e.target.value })}
+                >
+                  <option value="BO1">Best of 1 (BO1)</option>
+                  <option value="BO3">Best of 3 (BO3)</option>
+                  <option value="BO5">Best of 5 (BO5)</option>
+                </select>
+              </div>
             </div>
-          </div>
 
           <div>
             <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Quy định / Mô tả</label>
