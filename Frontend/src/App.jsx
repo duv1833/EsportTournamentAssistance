@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useAuth } from './contexts/AuthContext';
 import Navbar from './components/layout/Navbar';
@@ -30,7 +30,7 @@ const LoadingFallback = () => (
 function AppLayout() {
   const location = useLocation();
   const isLobby = location.pathname.startsWith('/lobby');
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, updateCurrentUser } = useAuth();
 
   return (
     <div className="bg-background text-on-surface font-body antialiased overflow-x-hidden selection:bg-primary-red selection:text-off-white bg-pattern-scanline min-h-[100dvh] flex flex-col">
@@ -42,13 +42,13 @@ function AppLayout() {
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<PageTransition><Home /></PageTransition>} />
               <Route path="/tournaments" element={<PageTransition><TournamentList /></PageTransition>} />
-              <Route path="/tournaments/:id/*" element={<PageTransition><TournamentDetailsVLR /></PageTransition>} />
+              <Route path="/tournaments/:id/*" element={<PageTransition><TournamentDetailsVLR currentUser={currentUser} /></PageTransition>} />
               <Route path="/matches" element={<PageTransition><MatchSchedule /></PageTransition>} />
               <Route path="/teams" element={<PageTransition><Teams /></PageTransition>} />
               <Route path="/manage_team" element={<PageTransition><ManageTeam /></PageTransition>} />
-              <Route path="/profile" element={<PageTransition><UserProfile /></PageTransition>} />
-              <Route path="/admin_dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
-              <Route path="/organizer_dashboard/:id" element={<PageTransition><OrganizerDashboard /></PageTransition>} />
+              <Route path="/profile" element={<PageTransition><UserProfile currentUser={currentUser} onUserUpdated={updateCurrentUser} /></PageTransition>} />
+              <Route path="/admin_dashboard" element={<PageTransition><AdminDashboard currentUser={currentUser} /></PageTransition>} />
+              <Route path="/organizer_dashboard/:id" element={<Navigate to="/tournaments/:id/manage" replace />} />
               <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
               <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
               <Route path="/lobby/:matchId" element={<Lobby />} />

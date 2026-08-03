@@ -161,6 +161,17 @@ export default function TournamentList() {
                     >
                       THAM GIA GIẢI ĐẤU <ArrowRight size={14} />
                     </TactileButton>
+                    {currentUser && (currentUser.username === t.creatorUsername || currentUser.globalRole === 'ADMIN') && (
+                      <TactileButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/tournaments/${t.id}/manage`);
+                        }}
+                        className="w-full bg-success-cyan text-[#111] font-display text-xs py-2.5 px-4 uppercase tracking-wider hover:brightness-110 text-center font-bold flex justify-center items-center gap-1.5"
+                      >
+                        QUẢN LÝ GIẢI ĐẤU
+                      </TactileButton>
+                    )}
                   </div>
                 </div>
               ))}

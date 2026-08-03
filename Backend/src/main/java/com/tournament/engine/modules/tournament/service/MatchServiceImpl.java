@@ -77,7 +77,7 @@ public class MatchServiceImpl implements MatchService {
                 .collect(Collectors.toList());
 
         Collections.shuffle(teams);
-        LocalDateTime baseTime = LocalDateTime.now().plusDays(7);
+        LocalDateTime baseTime = tournament.getStartDate() != null ? tournament.getStartDate() : LocalDateTime.now().plusDays(7);
 
         if (tournament.getStructure() == Tournament.TournamentStructure.GROUP_KNOCKOUT) {
             if (teams.size() < 8) {
@@ -240,6 +240,22 @@ public class MatchServiceImpl implements MatchService {
         // Update scheduled time
         if (request.getScheduledTime() != null) {
             match.setScheduledTime(request.getScheduledTime());
+            
+            Tournament tournament = match.getTournament();
+            boolean tournamentUpdated = false;
+            
+            if (tournament.getStartDate() == null || request.getScheduledTime().isBefore(tournament.getStartDate())) {
+                tournament.setStartDate(request.getScheduledTime());
+                tournamentUpdated = true;
+            }
+            if (tournament.getEndDate() == null || request.getScheduledTime().isAfter(tournament.getEndDate())) {
+                tournament.setEndDate(request.getScheduledTime());
+                tournamentUpdated = true;
+            }
+            
+            if (tournamentUpdated) {
+                tournamentRepository.save(tournament);
+            }
         }
 
         // Update status

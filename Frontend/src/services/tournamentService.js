@@ -58,6 +58,11 @@ export const advanceToKnockout = async (tournamentId, userId) => {
 };
 
 // Admin endpoints
+export const generateBracket = async (tournamentId, userId, requestData) => {
+  const response = await api.post(`/matches/tournament/${tournamentId}/generate`, requestData, { params: { userId } });
+  return response.data;
+};
+
 export const getAdminTournaments = async (adminUserId) => {
   const response = await api.get('/tournaments/admin/all', { params: { adminUserId } });
   return response.data;

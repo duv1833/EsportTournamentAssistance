@@ -115,6 +115,30 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
     }
   };
 
+  const handleGenerateBracket = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn chốt danh sách đội và tạo sơ đồ thi đấu không? Hành động này không thể hoàn tác.")) return;
+    setIsAdvancing(true);
+    try {
+      const { generateBracket } = await import('../services/tournamentService');
+      const requestData = {
+        earlyRoundsFormat: tournament.format,
+        semiFinalsFormat: tournament.format,
+        finalsFormat: tournament.format
+      };
+      const res = await generateBracket(tournament.id, currentUser.id, requestData);
+      if (res.success) {
+        setSuccess('Đã chốt danh sách và tạo sơ đồ thi đấu!');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(res.message || 'Lỗi khi tạo sơ đồ.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Lỗi hệ thống khi tạo sơ đồ.');
+    } finally {
+      setIsAdvancing(false);
+    }
+  };
+
   const handleAdvanceToKnockout = async () => {
     if (!window.confirm("Bạn có chắc chắn muốn chốt kết quả Vòng Bảng và tạo sơ đồ Tứ kết không? Hành động này không thể hoàn tác.")) return;
     setIsAdvancing(true);
@@ -383,7 +407,14 @@ const OrganizerDashboard = ({ tournament, currentUser, onBack }) => {
                 {isAdvancing ? 'Đang xử lý...' : 'Chốt Vòng Bảng & Tạo Tứ Kết'}
               </TactileButton>
             ) : (
-              <div></div>
+              <TactileButton
+                type="button"
+                disabled={isAdvancing}
+                onClick={handleGenerateBracket}
+                className="bg-warning-amber/10 text-warning-amber border border-warning-amber font-display text-sm py-3 px-6 uppercase font-bold hover:bg-warning-amber hover:text-background disabled:opacity-50"
+              >
+                {isAdvancing ? 'Đang xử lý...' : 'Chốt danh sách & Tạo sơ đồ thi đấu'}
+              </TactileButton>
             )}
             <TactileButton
               type="submit"

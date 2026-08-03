@@ -253,7 +253,25 @@ export default function TournamentDetailsVLR({ currentUser, onJoinTeam }) {
               onJoinTeam={onJoinTeam}
             />
           } />
-          <Route path="matches" element={<TournamentMatches internalMatches={internalMatches} />} />
+          <Route path="matches" element={
+            <TournamentMatches 
+              internalMatches={internalMatches} 
+              currentUser={currentUser} 
+              tournament={tournament} 
+              onMatchUpdate={async () => {
+                try {
+                  const [tourRes, matchRes] = await Promise.all([
+                    getTournamentDetails(id),
+                    getMatchesByTournament(id)
+                  ]);
+                  if (tourRes.success) setTournament(tourRes.data);
+                  if (matchRes.success) setInternalMatches(matchRes.data || []);
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
+            />
+          } />
           <Route path="register" element={
             <TournamentRegisterForm 
               tournament={tournament} 
