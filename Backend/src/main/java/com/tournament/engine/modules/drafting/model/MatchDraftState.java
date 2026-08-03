@@ -45,4 +45,59 @@ public class MatchDraftState {
     public enum DraftStatus {
         NOT_STARTED, IN_PROGRESS, COMPLETED
     }
+
+    public Long getMatchId() { return matchId; }
+    public void setMatchId(Long matchId) { this.matchId = matchId; }
+
+    public Match getMatch() { return match; }
+    public void setMatch(Match match) { this.match = match; }
+
+    public Integer getCurrentStepNumber() { return currentStepNumber; }
+    public void setCurrentStepNumber(Integer currentStepNumber) { this.currentStepNumber = currentStepNumber; }
+
+    public Team getCurrentTurnTeam() { return currentTurnTeam; }
+    public void setCurrentTurnTeam(Team currentTurnTeam) { this.currentTurnTeam = currentTurnTeam; }
+
+    public LocalDateTime getTurnDeadlineAt() { return turnDeadlineAt; }
+    public void setTurnDeadlineAt(LocalDateTime turnDeadlineAt) { this.turnDeadlineAt = turnDeadlineAt; }
+
+    public DraftStatus getDraftStatus() { return draftStatus; }
+    public void setDraftStatus(DraftStatus draftStatus) { this.draftStatus = draftStatus; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public static MatchDraftStateBuilder builder() {
+        return new MatchDraftStateBuilder();
+    }
+
+    public static class MatchDraftStateBuilder {
+        private Long matchId;
+        private Match match;
+        private Integer currentStepNumber;
+        private Team currentTurnTeam;
+        private LocalDateTime turnDeadlineAt;
+        private DraftStatus draftStatus;
+        private LocalDateTime updatedAt;
+
+        public MatchDraftStateBuilder matchId(Long matchId) { this.matchId = matchId; return this; }
+        public MatchDraftStateBuilder match(Match match) { this.match = match; return this; }
+        public MatchDraftStateBuilder currentStepNumber(Integer currentStepNumber) { this.currentStepNumber = currentStepNumber; return this; }
+        public MatchDraftStateBuilder currentTurnTeam(Team currentTurnTeam) { this.currentTurnTeam = currentTurnTeam; return this; }
+        public MatchDraftStateBuilder turnDeadlineAt(LocalDateTime turnDeadlineAt) { this.turnDeadlineAt = turnDeadlineAt; return this; }
+        public MatchDraftStateBuilder draftStatus(DraftStatus draftStatus) { this.draftStatus = draftStatus; return this; }
+        public MatchDraftStateBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
+
+        public MatchDraftState build() {
+            MatchDraftState obj = new MatchDraftState();
+            obj.setMatchId(matchId);
+            obj.setMatch(match);
+            obj.setCurrentStepNumber(currentStepNumber);
+            obj.setCurrentTurnTeam(currentTurnTeam);
+            obj.setTurnDeadlineAt(turnDeadlineAt);
+            obj.setDraftStatus(draftStatus);
+            obj.setUpdatedAt(updatedAt);
+            return obj;
+        }
+    }
 }

@@ -222,8 +222,10 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
               <TactileButton
                 type="submit"
                 variant="primary"
+                size="lg"
                 disabled={loading}
                 className="w-full justify-center flex items-center gap-2"
+              >
               >
                 <Save size={16} /> {loading ? 'ĐANG LƯU...' : 'CẬP NHẬT HỒ SƠ'}
               </TactileButton>

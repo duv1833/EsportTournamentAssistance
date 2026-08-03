@@ -1,16 +1,33 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, Swords, Trophy, Shield, Newspaper, Layers, LogOut, Menu, X, ShieldCheck, User, ChevronDown, Settings } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
 import TactileButton from '../common/TactileButton';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Navbar() {
-  const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
-
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef(null);
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const dropdownRef = useRef(null);
+
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const navItems = [
     { path: '/', label: 'TRANG CHỦ', icon: Home },
@@ -21,17 +38,6 @@ export default function Navbar() {
     { path: '/news', label: 'TIN TỨC', icon: Newspaper },
   ];
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
-        setUserMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleLogout = () => {
     logout();
     setUserMenuOpen(false);
@@ -39,25 +45,21 @@ export default function Navbar() {
   };
 
   return (
-    <header className="fixed top-0 w-full z-[100] flex justify-between items-center px-6 md:px-12 py-4 bg-background/95 backdrop-blur-md border-b-2 border-outline-variant transition-all">
+    <header className={`fixed top-0 w-full z-[100] transition-all duration-300 flex justify-between items-center px-6 md:px-12 py-4 border-b-2 border-outline-variant ${scrolled ? 'bg-background/80 backdrop-blur-md shadow-lg shadow-black/50' : 'bg-background/95 backdrop-blur-sm'}`}>
       <div className="flex items-center gap-8">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+        <NavLink to="/" className="flex items-center gap-3 cursor-pointer">
           <Layers className="w-8 h-8 text-primary-red" strokeWidth={2.5} />
           <span className="font-display text-2xl tracking-tighter text-primary-red">TACTICAL EDGE</span>
-        </div>
+        </NavLink>
 
         <nav className="hidden md:flex gap-6">
           {navItems.map(({ path, label }) => (
             <NavLink
               key={path}
               to={path}
-              className={({ isActive }) =>
-                `font-display text-sm uppercase tracking-wider pb-1 transition-colors ${
-                  isActive
-                    ? 'text-primary-red border-b-2 border-primary-red'
-                    : 'text-off-white/70 hover:text-off-white'
-                }`
-              }
+              className={({ isActive }) => `font-display text-sm uppercase tracking-wider pb-1 transition-colors ${
+                isActive ? 'text-primary-red border-b-2 border-primary-red' : 'text-off-white/70 hover:text-off-white'
+              }`}
             >
               {label}
             </NavLink>
@@ -67,8 +69,8 @@ export default function Navbar() {
 
       <div className="flex items-center gap-4">
         {currentUser ? (
-          <div className="relative" ref={userMenuRef}>
-            <button
+          <div className="relative" ref={dropdownRef}>
+            <button 
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 hover:bg-surface-bright/30 p-2 rounded transition-colors"
             >
@@ -86,7 +88,7 @@ export default function Navbar() {
             </button>
 
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-surface-charcoal border border-outline-variant shadow-2xl z-[110] py-2 animate-scale-in clip-corner">
+              <div className="absolute right-0 mt-2 w-56 bg-surface-charcoal border border-outline-variant shadow-2xl z-[110] py-2 clip-corner animate-scale-in">
                 <div className="px-4 py-2 border-b border-outline-variant/50 mb-2">
                   <p className="font-body text-sm font-bold text-off-white truncate">
                     {currentUser.displayName || currentUser.nickname || currentUser.fullName || currentUser.username}
@@ -160,11 +162,9 @@ export default function Navbar() {
                 key={path}
                 to={path}
                 onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) =>
-                  `font-display text-sm uppercase tracking-wider py-3 px-4 flex items-center gap-3 transition-colors ${
-                    isActive ? 'text-primary-red bg-primary-red/10 border-l-2 border-primary-red' : 'text-off-white/70 hover:text-off-white'
-                  }`
-                }
+                className={({ isActive }) => `font-display text-sm uppercase tracking-wider py-3 px-4 flex items-center gap-3 transition-colors ${
+                  isActive ? 'text-primary-red bg-primary-red/10 border-l-2 border-primary-red' : 'text-off-white/70 hover:text-off-white'
+                }`}
               >
                 <Icon size={16} /> {label}
               </NavLink>

@@ -33,4 +33,31 @@ public class TournamentCreateRequest {
     
     private String prizePool;
     private String location;
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public Tournament.MatchFormat getFormat() { return format; }
+    public void setFormat(Tournament.MatchFormat format) { this.format = format; }
+
+    public Tournament.TournamentStructure getStructure() { return structure; }
+    public void setStructure(Tournament.TournamentStructure structure) { this.structure = structure; }
+
+    public Integer getMaxTeams() { return maxTeams; }
+    public void setMaxTeams(Integer maxTeams) { this.maxTeams = maxTeams; }
+
+    public String getRulesDescription() { return rulesDescription; }
+    public void setRulesDescription(String rulesDescription) { this.rulesDescription = rulesDescription; }
+
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+
+    public String getPrizePool() { return prizePool; }
+    public void setPrizePool(String prizePool) { this.prizePool = prizePool; }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 }

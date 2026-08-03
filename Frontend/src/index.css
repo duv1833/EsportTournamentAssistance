@@ -26,6 +26,10 @@
   --font-mono: "JetBrains Mono", monospace;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 /* Base styles & Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -43,6 +47,12 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #FF4655;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid #FF4655;
+  outline-offset: 2px;
 }
 
 /* Custom tactical clips */
@@ -89,15 +99,15 @@
   62% { transform: translate(0, 0) skew(5deg); }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-fade-in, .animate-fadeIn {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animate-slide-up {
+.animate-slide-up, .animate-slideUp {
   animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animate-scale-in {
+.animate-scale-in, .animate-scaleIn {
   animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 

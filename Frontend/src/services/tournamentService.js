@@ -15,13 +15,13 @@ export const getTournamentDetails = async (id) => {
   return response.data;
 };
 
-export const createTournament = async (name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format) => {
-  const response = await api.post('/tournaments', { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format });
+export const createTournament = async (name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format, creatorId) => {
+  const response = await api.post('/tournaments', { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format, creatorId });
   return response.data;
 };
 
-export const updateTournament = async (id, name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format) => {
-  const response = await api.put(`/tournaments/${id}`, { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format });
+export const updateTournament = async (id, name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format, organizerUserId) => {
+  const response = await api.put(`/tournaments/${id}`, { name, maxTeams, rulesDescription, startDate, endDate, prizePool, location, structure, format }, { params: { organizerUserId } });
   return response.data;
 };
 
@@ -63,6 +63,11 @@ export const advanceToKnockout = async (tournamentId, userId) => {
 };
 
 // Admin endpoints
+export const generateBracket = async (tournamentId, userId, requestData) => {
+  const response = await api.post(`/matches/tournament/${tournamentId}/generate`, requestData, { params: { userId } });
+  return response.data;
+};
+
 export const getAdminTournaments = async (adminUserId) => {
   const response = await api.get('/tournaments/admin/all', { params: { adminUserId } });
   return response.data;
@@ -101,5 +106,10 @@ export const addTournamentOrganizer = async (tournamentId, usernameOrEmail, role
 
 export const removeTournamentOrganizer = async (tournamentId, targetUserId, assignerUserId) => {
   const response = await api.delete(`/tournaments/${tournamentId}/organizers/${targetUserId}`, { params: { assignerUserId } });
+  return response.data;
+};
+
+export const getTournamentAgentStats = async (tournamentId) => {
+  const response = await api.get(`/tournaments/${tournamentId}/agents`);
   return response.data;
 };

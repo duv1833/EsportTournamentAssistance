@@ -44,4 +44,59 @@ public class TournamentRegistration {
     public enum RegistrationStatus {
         PENDING, APPROVED, REJECTED
     }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public Tournament getTournament() { return tournament; }
+    public void setTournament(Tournament tournament) { this.tournament = tournament; }
+
+    public Team getTeam() { return team; }
+    public void setTeam(Team team) { this.team = team; }
+
+    public RegistrationStatus getStatus() { return status; }
+    public void setStatus(RegistrationStatus status) { this.status = status; }
+
+    public LocalDateTime getRegisteredAt() { return registeredAt; }
+    public void setRegisteredAt(LocalDateTime registeredAt) { this.registeredAt = registeredAt; }
+
+    public LocalDateTime getReviewedAt() { return reviewedAt; }
+    public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
+
+    public User getReviewedBy() { return reviewedBy; }
+    public void setReviewedBy(User reviewedBy) { this.reviewedBy = reviewedBy; }
+
+    public static TournamentRegistrationBuilder builder() {
+        return new TournamentRegistrationBuilder();
+    }
+
+    public static class TournamentRegistrationBuilder {
+        private Long id;
+        private Tournament tournament;
+        private Team team;
+        private RegistrationStatus status;
+        private LocalDateTime registeredAt;
+        private LocalDateTime reviewedAt;
+        private User reviewedBy;
+
+        public TournamentRegistrationBuilder id(Long id) { this.id = id; return this; }
+        public TournamentRegistrationBuilder tournament(Tournament tournament) { this.tournament = tournament; return this; }
+        public TournamentRegistrationBuilder team(Team team) { this.team = team; return this; }
+        public TournamentRegistrationBuilder status(RegistrationStatus status) { this.status = status; return this; }
+        public TournamentRegistrationBuilder registeredAt(LocalDateTime registeredAt) { this.registeredAt = registeredAt; return this; }
+        public TournamentRegistrationBuilder reviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; return this; }
+        public TournamentRegistrationBuilder reviewedBy(User reviewedBy) { this.reviewedBy = reviewedBy; return this; }
+
+        public TournamentRegistration build() {
+            TournamentRegistration obj = new TournamentRegistration();
+            obj.setId(id);
+            obj.setTournament(tournament);
+            obj.setTeam(team);
+            obj.setStatus(status);
+            obj.setRegisteredAt(registeredAt);
+            obj.setReviewedAt(reviewedAt);
+            obj.setReviewedBy(reviewedBy);
+            return obj;
+        }
+    }
 }

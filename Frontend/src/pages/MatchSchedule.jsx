@@ -15,7 +15,7 @@ import {
 import { getAllTournaments } from '../services/tournamentService';
 import { useAuth } from '../contexts/AuthContext';
 import TactileButton from '../components/common/TactileButton';
-
+import LoadingSkeleton from '../components/common/LoadingSkeleton';
 
 // ─── Status Badge ─────────────────────────
 function StatusBadge({ status }) {
@@ -66,7 +66,7 @@ function ExternalMatchCard({ match }) {
   return (
     <div className={`bg-surface-charcoal border ${isLive ? 'border-primary-red/60 shadow-lg shadow-primary-red/10' : 'border-outline-variant'} p-4 clip-corner hover:border-primary-red/40 transition-all group`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Trophy size={12} className="text-warning-amber shrink-0" />
           <span className="font-mono text-[10px] text-tactical-gray truncate">{leagueName} {serieName ? `• ${serieName}` : ''}</span>
@@ -76,7 +76,6 @@ function ExternalMatchCard({ match }) {
 
       {/* Match Name */}
       <p className="font-mono text-[10px] text-tactical-gray/60 mb-2 truncate">{tournamentName} — {matchName}</p>
-
       {/* Teams */}
       <div className="flex items-center gap-3">
         {/* Team 1 */}
@@ -614,10 +613,7 @@ export default function MatchSchedule({ currentUser: propUser }) {
 
           {/* Match Grid */}
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="animate-spin text-primary-red" size={32} />
-              <span className="ml-3 font-mono text-sm text-tactical-gray">Đang tải dữ liệu trận đấu...</span>
-            </div>
+            <div className="py-8"><LoadingSkeleton type="card" count={6} /></div>
           ) : externalMatches.length === 0 ? (
             <div className="text-center py-16 border border-outline-variant/30 bg-surface-charcoal/50">
               <Swords size={48} className="mx-auto text-tactical-gray/30 mb-4" />
@@ -683,9 +679,7 @@ export default function MatchSchedule({ currentUser: propUser }) {
               <p className="font-mono text-xs text-tactical-gray/60 mt-2">Vui lòng chọn một giải đấu để xem sơ đồ thi đấu.</p>
             </div>
           ) : loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="animate-spin text-primary-red" size={32} />
-            </div>
+            <div className="py-8"><LoadingSkeleton type="card" count={3} /></div>
           ) : internalMatches.length === 0 ? (
             <div className="text-center py-16 border border-outline-variant/30 bg-surface-charcoal/50">
               <GitBranch size={48} className="mx-auto text-tactical-gray/30 mb-4" />

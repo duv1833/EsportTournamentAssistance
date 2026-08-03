@@ -104,7 +104,9 @@ export default function RegisterForm({ registerForm, setRegisterForm, onSubmit, 
             <TactileButton
               type="submit"
               disabled={isLoading}
-              className="w-full clip-corner bg-primary-red hover:bg-primary-red/90 text-off-white font-display text-lg py-3.5 flex justify-center items-center gap-2 uppercase font-bold mt-2"
+              variant="primary"
+              size="lg"
+              className="w-full mt-2"
             >
               {isLoading ? (
                 <span className="animate-spin h-5 w-5 border-2 border-off-white border-t-transparent rounded-full"></span>
@@ -116,7 +118,8 @@ export default function RegisterForm({ registerForm, setRegisterForm, onSubmit, 
 
           <TactileButton
             type="button"
-            className="w-full clip-corner bg-surface-charcoal border border-outline-variant hover:border-tactical-gray text-off-white font-mono text-[11px] py-3.5 flex justify-center items-center gap-2 uppercase mt-4"
+            variant="outline"
+            className="w-full mt-4"
           >
             <Globe size={14} /> ĐĂNG KÝ VỚI GOOGLE
           </TactileButton>
@@ -125,12 +128,12 @@ export default function RegisterForm({ registerForm, setRegisterForm, onSubmit, 
 
       <div className="mt-6 text-center text-[11px] font-mono text-tactical-gray uppercase">
         Đã là thành viên?{' '}
-        <TactileButton
+        <button
           onClick={onSwitchToLogin}
-          className="text-off-white hover:text-primary-red underline font-bold inline"
+          className="text-off-white hover:text-primary-red underline font-bold inline cursor-pointer"
         >
           QUAY LẠI ĐĂNG NHẬP
-        </TactileButton>
+        </button>
       </div>
     </div>
   );

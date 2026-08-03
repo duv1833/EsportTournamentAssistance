@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Plus, ArrowRight, Calendar, Users, MapPin } from 'lucide-react';
+import { Plus, Trophy, ArrowRight } from 'lucide-react';
 import { getAllTournaments, createTournament, getMyTournaments, updateTournament } from '../services/tournamentService';
 import { useAuth } from '../contexts/AuthContext';
 import TactileButton from '../components/common/TactileButton';
@@ -451,6 +451,12 @@ export default function TournamentList() {
               </TactileButton>
               <TactileButton type="submit" variant="primary" className="w-full justify-center" disabled={createLoading}>
                 {createLoading ? (editingId ? 'ĐANG CẬP NHẬT...' : 'ĐANG TẠO...') : (editingId ? 'LƯU THAY ĐỔI' : 'XÁC NHẬN TẠO GIẢI ĐẤU')}
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-primary-red text-off-white font-display text-sm py-3 px-6 uppercase tracking-wider font-bold hover:brightness-110 disabled:opacity-50"
+              >
+                {isLoading ? 'Đang tạo...' : 'Xác nhận tạo'}
+>>>>>>> origin/tminh
               </TactileButton>
             </div>
           </form>

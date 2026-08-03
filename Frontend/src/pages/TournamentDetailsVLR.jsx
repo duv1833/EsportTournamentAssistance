@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Loader2, Calendar, Trophy, MapPin, Shield } from 'lucide-react';
+import { ArrowLeft, Loader2, Calendar, Trophy, MapPin, Shield, Users, Plus, Lock, CheckCircle2, ChevronRight, Award, Zap, AlertCircle, RefreshCw, Layers, ExternalLink, UserCheck, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Routes, Route, Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getMatchesByTournament } from '../services/matchService';
 import { getTournamentDetails } from '../services/tournamentService';
@@ -9,6 +9,7 @@ import TournamentMatches from './tournament/TournamentMatches';
 import OrganizerDashboard from './OrganizerDashboard';
 import TournamentRegistrationForm from '../components/tournament/TournamentRegistrationForm';
 import TactileButton from '../components/common/TactileButton';
+import LoadingSkeleton from '../components/common/LoadingSkeleton';
 
 export default function TournamentDetailsVLR({ onJoinTeam }) {
   const { id } = useParams();
@@ -56,8 +57,11 @@ export default function TournamentDetailsVLR({ onJoinTeam }) {
 
   if (loading) {
     return (
-      <div className="w-full bg-background min-h-screen text-off-white flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-red" />
+      <div className="w-full bg-background min-h-[calc(100vh-80px)] p-8 text-off-white container mx-auto max-w-7xl mt-12">
+        <div className="max-w-[1200px] mx-auto">
+          <LoadingSkeleton type="text" count={3} />
+          <div className="mt-8"><LoadingSkeleton type="card" count={3} /></div>
+        </div>
       </div>
     );
   }
@@ -280,7 +284,25 @@ export default function TournamentDetailsVLR({ onJoinTeam }) {
               onJoinTeam={onJoinTeam}
             />
           } />
-          <Route path="matches" element={<TournamentMatches internalMatches={internalMatches} />} />
+          <Route path="matches" element={
+            <TournamentMatches 
+              internalMatches={internalMatches} 
+              currentUser={currentUser} 
+              tournament={tournament} 
+              onMatchUpdate={async () => {
+                try {
+                  const [tourRes, matchRes] = await Promise.all([
+                    getTournamentDetails(id),
+                    getMatchesByTournament(id)
+                  ]);
+                  if (tourRes.success) setTournament(tourRes.data);
+                  if (matchRes.success) setInternalMatches(matchRes.data || []);
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
+            />
+          } />
           <Route path="register" element={
             <TournamentRegistrationForm
               tournament={tournament}

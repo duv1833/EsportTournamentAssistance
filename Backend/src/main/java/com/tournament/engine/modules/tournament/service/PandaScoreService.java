@@ -12,6 +12,8 @@ import java.util.*;
 @Slf4j
 public class PandaScoreService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PandaScoreService.class);
+
     @Value("${pandascore.api-key}")
     private String apiKey;
 

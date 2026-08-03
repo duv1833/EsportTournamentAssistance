@@ -42,4 +42,22 @@ public class DraftSequenceTemplate {
     public enum DraftActionType {
         BAN, PICK
     }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getFormat() { return format; }
+    public void setFormat(String format) { this.format = format; }
+
+    public Integer getStepNumber() { return stepNumber; }
+    public void setStepNumber(Integer stepNumber) { this.stepNumber = stepNumber; }
+
+    public DraftPhase getPhase() { return phase; }
+    public void setPhase(DraftPhase phase) { this.phase = phase; }
+
+    public DraftActionType getActionType() { return actionType; }
+    public void setActionType(DraftActionType actionType) { this.actionType = actionType; }
+
+    public Integer getTurnOrder() { return turnOrder; }
+    public void setTurnOrder(Integer turnOrder) { this.turnOrder = turnOrder; }
 }

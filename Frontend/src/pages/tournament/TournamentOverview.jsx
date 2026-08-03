@@ -99,6 +99,54 @@ export default function TournamentOverview({
         { name: 'Grand Final', date: 'TBD' },
       ];
 
+  const calculatePlacements = () => {
+    if (totalRounds === 0) return [
+      { place: '1st', prize: 'TBD', team: 'TBD', note: 'Champions' },
+      { place: '2nd', prize: 'TBD', team: 'TBD', note: 'Runner-up' },
+      { place: '3rd', prize: 'TBD', team: 'TBD', note: 'Play-Ins' },
+      { place: '4th', prize: 'TBD', team: 'TBD', note: 'Play-Ins' }
+    ];
+
+    const finalMatch = bracketMatches.find(m => m.roundNumber === totalRounds);
+    const semiMatches = bracketMatches.filter(m => m.roundNumber === totalRounds - 1);
+    
+    let first = 'TBD';
+    let second = 'TBD';
+    let third = 'TBD';
+    let fourth = 'TBD';
+
+    if (finalMatch && finalMatch.status === 'COMPLETED' && finalMatch.winnerId) {
+      first = finalMatch.winnerId === finalMatch.team1Id ? finalMatch.team1Name : finalMatch.team2Name;
+      second = finalMatch.winnerId === finalMatch.team1Id ? finalMatch.team2Name : finalMatch.team1Name;
+    }
+
+    const semiLosers = [];
+    semiMatches.forEach(m => {
+      if (m.status === 'COMPLETED' && m.winnerId) {
+        semiLosers.push(m.winnerId === m.team1Id ? m.team2Name : m.team1Name);
+      }
+    });
+
+    if (semiLosers.length >= 1) third = semiLosers[0];
+    if (semiLosers.length >= 2) fourth = semiLosers[1];
+
+    const totalPrize = tournament?.prizePool || 0;
+    
+    const formatPrize = (amount) => {
+       if (amount === 0) return 'TBD';
+       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount);
+    };
+
+    return [
+      { place: '1st', prize: formatPrize(totalPrize * 0.5), team: first || 'TBD', note: 'Champions' },
+      { place: '2nd', prize: formatPrize(totalPrize * 0.25), team: second || 'TBD', note: 'Runner-up' },
+      { place: '3rd', prize: formatPrize(totalPrize * 0.15), team: third || 'TBD', note: 'Play-Ins' },
+      { place: '4th', prize: formatPrize(totalPrize * 0.10), team: fourth || 'TBD', note: 'Play-Ins' },
+    ];
+  };
+
+  const placements = calculatePlacements();
+
   return (
     <div>
       <div className="flex items-end border-b border-[#333] gap-6 mb-6">
@@ -207,12 +255,7 @@ export default function TournamentOverview({
               <div className="flex-1 text-[10px] font-bold text-[#a0a0a0] uppercase">Note</div>
             </div>
             
-            {[
-              { place: '1st', prize: '$100,000', team: 'TBD', note: 'Champions' },
-              { place: '2nd', prize: '$50,000', team: 'TBD', note: 'Runner-up' },
-              { place: '3rd', prize: '$25,000', team: 'TBD', note: 'Play-Ins' },
-              { place: '4th', prize: '$15,000', team: 'TBD', note: 'Play-Ins' },
-            ].map((row, idx) => (
+            {placements.map((row, idx) => (
               <div key={idx} className="flex items-center p-3 border-t border-[#333] hover:bg-[#2a2a2a] transition-colors">
                 <div className="w-24 text-xs font-semibold text-white">{row.place}</div>
                 <div className="w-24 text-xs text-[#a0a0a0]">{row.prize}</div>

@@ -77,7 +77,7 @@ public class MatchServiceImpl implements MatchService {
                 .collect(Collectors.toList());
 
         Collections.shuffle(teams);
-        LocalDateTime baseTime = LocalDateTime.now().plusDays(7);
+        LocalDateTime baseTime = tournament.getStartDate() != null ? tournament.getStartDate() : LocalDateTime.now().plusDays(7);
 
         if (tournament.getStructure() == Tournament.TournamentStructure.GROUP_KNOCKOUT) {
             if (teams.size() < 8) {
@@ -240,6 +240,22 @@ public class MatchServiceImpl implements MatchService {
         // Update scheduled time
         if (request.getScheduledTime() != null) {
             match.setScheduledTime(request.getScheduledTime());
+            
+            Tournament tournament = match.getTournament();
+            boolean tournamentUpdated = false;
+            
+            if (tournament.getStartDate() == null || request.getScheduledTime().isBefore(tournament.getStartDate())) {
+                tournament.setStartDate(request.getScheduledTime());
+                tournamentUpdated = true;
+            }
+            if (tournament.getEndDate() == null || request.getScheduledTime().isAfter(tournament.getEndDate())) {
+                tournament.setEndDate(request.getScheduledTime());
+                tournamentUpdated = true;
+            }
+            
+            if (tournamentUpdated) {
+                tournamentRepository.save(tournament);
+            }
         }
 
         // Update status
@@ -249,32 +265,46 @@ public class MatchServiceImpl implements MatchService {
 
         // Set winner and advance to next match
         if (request.getWinnerId() != null) {
-            Team winner = null;
-            if (match.getTeam1() != null && match.getTeam1().getId().equals(request.getWinnerId())) {
-                winner = match.getTeam1();
-            } else if (match.getTeam2() != null && match.getTeam2().getId().equals(request.getWinnerId())) {
-                winner = match.getTeam2();
-            } else {
-                throw new RuntimeException("Đội được chọn không tham gia trận đấu này!");
-            }
-
-            match.setWinner(winner);
-            match.setStatus(Match.MatchStatus.COMPLETED);
-
-            // Auto-advance winner to next match
-            if (match.getNextMatch() != null) {
-                Match nextMatch = match.getNextMatch();
-                if (match.getNextMatchSlot() != null && match.getNextMatchSlot() == 1) {
-                    nextMatch.setTeam1(winner);
-                } else {
-                    nextMatch.setTeam2(winner);
+            if (request.getWinnerId() == -1L) {
+                match.setWinner(null);
+                match.setStatus(Match.MatchStatus.LIVE);
+                if (match.getNextMatch() != null) {
+                    Match nextMatch = match.getNextMatch();
+                    if (match.getNextMatchSlot() != null && match.getNextMatchSlot() == 1) {
+                        nextMatch.setTeam1(null);
+                    } else {
+                        nextMatch.setTeam2(null);
+                    }
+                    matchRepository.save(nextMatch);
                 }
-                matchRepository.save(nextMatch);
-            } else if (match.getStage() == Match.MatchStage.KNOCKOUT) {
-                // If there is no next match and stage is KNOCKOUT, this was the Final! Mark tournament as COMPLETED
-                Tournament tournament = match.getTournament();
-                tournament.setRegistrationStatus(Tournament.RegistrationStatus.COMPLETED);
-                tournamentRepository.save(tournament);
+            } else {
+                Team winner = null;
+                if (match.getTeam1() != null && match.getTeam1().getId().equals(request.getWinnerId())) {
+                    winner = match.getTeam1();
+                } else if (match.getTeam2() != null && match.getTeam2().getId().equals(request.getWinnerId())) {
+                    winner = match.getTeam2();
+                } else {
+                    throw new RuntimeException("Đội được chọn không tham gia trận đấu này!");
+                }
+    
+                match.setWinner(winner);
+                match.setStatus(Match.MatchStatus.COMPLETED);
+    
+                // Auto-advance winner to next match
+                if (match.getNextMatch() != null) {
+                    Match nextMatch = match.getNextMatch();
+                    if (match.getNextMatchSlot() != null && match.getNextMatchSlot() == 1) {
+                        nextMatch.setTeam1(winner);
+                    } else {
+                        nextMatch.setTeam2(winner);
+                    }
+                    matchRepository.save(nextMatch);
+                } else if (match.getStage() == Match.MatchStage.KNOCKOUT) {
+                    // If there is no next match and stage is KNOCKOUT, this was the Final! Mark tournament as COMPLETED
+                    Tournament tournament = match.getTournament();
+                    tournament.setRegistrationStatus(Tournament.RegistrationStatus.COMPLETED);
+                    tournamentRepository.save(tournament);
+                }
             }
         }
 
@@ -424,8 +454,16 @@ public class MatchServiceImpl implements MatchService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
 
-        // Admin has full access
-        if (user.getGlobalRole() == User.GlobalRole.ADMIN) {
+        // Admin and Referee have full access
+        if (user.getGlobalRole() == User.GlobalRole.ADMIN || user.getGlobalRole() == User.GlobalRole.REFEREE) {
+            return;
+        }
+
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
+
+        // Creator has full access
+        if (tournament.getCreator() != null && tournament.getCreator().getId().equals(userId)) {
             return;
         }
 

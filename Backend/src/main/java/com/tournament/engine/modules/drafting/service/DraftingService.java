@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DraftingService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DraftingService.class);
+
     private final DraftActionRepository draftActionRepository;
     private final MatchDraftStateRepository matchDraftStateRepository;
     private final AgentRepository agentRepository;
