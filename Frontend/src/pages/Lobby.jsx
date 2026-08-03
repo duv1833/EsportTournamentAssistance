@@ -199,7 +199,18 @@ const Lobby = () => {
             const winThreshold = matchFormat === 'BO3' ? 2 : matchFormat === 'BO5' ? 3 : 1;
             const isOver = realMatch.status === 'COMPLETED' || scoreA >= winThreshold || scoreB >= winThreshold;
             
-            const newGames = prev.games.map((g, index) => {
+            let baseGames = [...prev.games];
+            const expectedGamesCount = matchFormat === 'BO1' ? 1 : matchFormat === 'BO5' ? 5 : 3;
+            while (baseGames.length < expectedGamesCount) {
+                const nextId = baseGames.length > 0 ? baseGames[baseGames.length - 1].id + 1 : 101;
+                const nextGameNumber = baseGames.length + 1;
+                baseGames.push({
+                    id: nextId, gameNumber: nextGameNumber, map: 'CHƯA CHỌN', status: 'LOCKED', scoreA: 0, scoreB: 0,
+                    teamAPicks: [], teamABans: [], teamBPicks: [], teamBBans: [], currentTurnTeamId: 1
+                });
+            }
+
+            const newGames = baseGames.map((g, index) => {
                if (index < totalCompleted) {
                    return { ...g, status: 'COMPLETED' };
                }
