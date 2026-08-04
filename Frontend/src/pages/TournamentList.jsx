@@ -451,12 +451,6 @@ export default function TournamentList() {
               </TactileButton>
               <TactileButton type="submit" variant="primary" className="w-full justify-center" disabled={createLoading}>
                 {createLoading ? (editingId ? 'ĐANG CẬP NHẬT...' : 'ĐANG TẠO...') : (editingId ? 'LƯU THAY ĐỔI' : 'XÁC NHẬN TẠO GIẢI ĐẤU')}
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-primary-red text-off-white font-display text-sm py-3 px-6 uppercase tracking-wider font-bold hover:brightness-110 disabled:opacity-50"
-              >
-                {isLoading ? 'Đang tạo...' : 'Xác nhận tạo'}
->>>>>>> origin/tminh
               </TactileButton>
             </div>
           </form>

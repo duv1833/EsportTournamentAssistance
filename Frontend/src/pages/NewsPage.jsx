@@ -116,11 +116,6 @@ export default function NewsPage() {
             </div>
           </aside>
         </div>
-          icon={Newspaper}
-          title="Chưa có tin mới"
-          desc="Tin tức và thông báo mới nhất từ các giải đấu sẽ xuất hiện tại đây."
-        />
->>>>>>> origin/tminh
       )}
     </div>
   );

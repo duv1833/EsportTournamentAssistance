@@ -242,9 +242,6 @@ export default function ManageTeam({ currentUser: propUser }) {
                                 <X size={14} /> TỪ CHỐI
                               </TactileButton>
                             </div>
-                              <X size={14} /> TỪ CHỐI
-                            </TactileButton>
->>>>>>> origin/tminh
                           </div>
                         ))}
                       </div>

@@ -226,7 +226,6 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
                 disabled={loading}
                 className="w-full justify-center flex items-center gap-2"
               >
-              >
                 <Save size={16} /> {loading ? 'ĐANG LƯU...' : 'CẬP NHẬT HỒ SƠ'}
               </TactileButton>
             </div>

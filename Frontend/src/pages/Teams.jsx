@@ -186,6 +186,3 @@ export default function Teams({ currentUser: propUser, onJoinTeam }) {
     </div>
   );
 }
-    </div>
-  );
-}
