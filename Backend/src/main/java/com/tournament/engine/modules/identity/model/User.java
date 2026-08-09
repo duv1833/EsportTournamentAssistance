@@ -35,16 +35,16 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "full_name")
+    @Column(name = "full_name", columnDefinition = "NVARCHAR(255)")
     private String fullName;
 
-    @Column(name = "nickname")
+    @Column(name = "nickname", columnDefinition = "NVARCHAR(255)")
     private String nickname;
 
-    @Column(name = "phone_number")
+    @Column(name = "phone_number", columnDefinition = "NVARCHAR(50)")
     private String phoneNumber;
 
-    @Column(name = "avatar_url")
+    @Column(name = "avatar_url", columnDefinition = "NVARCHAR(1000)")
     private String avatarUrl;
 
     public String getDisplayName() {

@@ -20,6 +20,8 @@ public class TeamResponse {
     private String captainInGameName;
     private String logoUrl;
     private String inviteCode;
+    private Long tournamentId;
+    private String tournamentName;
     private List<TeamMemberResponse> members;
 
     public Long getId() { return id; }
@@ -46,6 +48,12 @@ public class TeamResponse {
     public String getInviteCode() { return inviteCode; }
     public void setInviteCode(String inviteCode) { this.inviteCode = inviteCode; }
 
+    public Long getTournamentId() { return tournamentId; }
+    public void setTournamentId(Long tournamentId) { this.tournamentId = tournamentId; }
+
+    public String getTournamentName() { return tournamentName; }
+    public void setTournamentName(String tournamentName) { this.tournamentName = tournamentName; }
+
     public List<TeamMemberResponse> getMembers() { return members; }
     public void setMembers(List<TeamMemberResponse> members) { this.members = members; }
 
@@ -62,6 +70,8 @@ public class TeamResponse {
         private String captainInGameName;
         private String logoUrl;
         private String inviteCode;
+        private Long tournamentId;
+        private String tournamentName;
         private List<TeamMemberResponse> members;
 
         public TeamResponseBuilder id(Long id) { this.id = id; return this; }
@@ -72,6 +82,8 @@ public class TeamResponse {
         public TeamResponseBuilder captainInGameName(String captainInGameName) { this.captainInGameName = captainInGameName; return this; }
         public TeamResponseBuilder logoUrl(String logoUrl) { this.logoUrl = logoUrl; return this; }
         public TeamResponseBuilder inviteCode(String inviteCode) { this.inviteCode = inviteCode; return this; }
+        public TeamResponseBuilder tournamentId(Long tournamentId) { this.tournamentId = tournamentId; return this; }
+        public TeamResponseBuilder tournamentName(String tournamentName) { this.tournamentName = tournamentName; return this; }
         public TeamResponseBuilder members(List<TeamMemberResponse> members) { this.members = members; return this; }
 
         public TeamResponse build() {
@@ -84,6 +96,8 @@ public class TeamResponse {
             obj.setCaptainInGameName(captainInGameName);
             obj.setLogoUrl(logoUrl);
             obj.setInviteCode(inviteCode);
+            obj.setTournamentId(tournamentId);
+            obj.setTournamentName(tournamentName);
             obj.setMembers(members);
             return obj;
         }

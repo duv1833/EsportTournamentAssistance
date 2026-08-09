@@ -231,4 +231,14 @@ public class TournamentController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @GetMapping("/{id}/agents")
+    public ResponseEntity<ApiResponse<List<com.tournament.engine.modules.tournament.dto.AgentStatResponse>>> getTournamentAgentStats(@PathVariable Long id) {
+        try {
+            List<com.tournament.engine.modules.tournament.dto.AgentStatResponse> response = tournamentService.getTournamentAgentStats(id);
+            return ResponseEntity.ok(ApiResponse.success(response, "Lấy thống kê tỉ lệ cấm/chọn thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

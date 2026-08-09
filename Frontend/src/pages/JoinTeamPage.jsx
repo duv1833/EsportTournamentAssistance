@@ -109,9 +109,24 @@ export default function JoinTeamPage() {
             <CheckCircle2 size={48} className="mx-auto text-success-cyan animate-bounce" />
             <h3 className="font-display text-xl uppercase font-bold">THAM GIA THÀNH CÔNG</h3>
             <p className="font-mono text-xs text-off-white/80">{success}</p>
-            <TactileButton variant="primary" onClick={() => navigate('/profile')} className="w-full justify-center">
-              VÀO TRANG CÁ NHÂN
-            </TactileButton>
+            
+            <div className="flex flex-col gap-3 pt-2">
+              <TactileButton 
+                variant="primary" 
+                onClick={() => navigate(team?.tournamentId ? `/tournaments/${team.tournamentId}` : '/tournaments')} 
+                className="w-full justify-center font-bold uppercase"
+              >
+                VỀ TRANG GIẢI ĐẤU {team?.tournamentName ? `(${team.tournamentName})` : ''}
+              </TactileButton>
+
+              <TactileButton 
+                variant="outline" 
+                onClick={() => navigate('/profile')} 
+                className="w-full justify-center text-xs"
+              >
+                XEM TRANG CÁ NHÂN
+              </TactileButton>
+            </div>
           </div>
         ) : team ? (
           <form onSubmit={handleJoinTeam} className="space-y-5">

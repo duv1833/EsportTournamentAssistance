@@ -6,6 +6,7 @@ import { getTournamentDetails } from '../services/tournamentService';
 import { useAuth } from '../contexts/AuthContext';
 import TournamentOverview from './tournament/TournamentOverview';
 import TournamentMatches from './tournament/TournamentMatches';
+import TournamentAgents from './tournament/TournamentAgents';
 import OrganizerDashboard from './OrganizerDashboard';
 import TournamentRegistrationForm from '../components/tournament/TournamentRegistrationForm';
 import TactileButton from '../components/common/TactileButton';
@@ -74,7 +75,7 @@ export default function TournamentDetailsVLR({ onJoinTeam }) {
     );
   }
 
-  const tabs = ['Overview', 'Matches'];
+  const tabs = ['Overview', 'Matches', 'Agents'];
 
   // Check if current user is in any team in this tournament
   const userTeamInTournament = tournament.registeredTeams?.find(team => {
@@ -112,11 +113,13 @@ export default function TournamentDetailsVLR({ onJoinTeam }) {
   const currentPath = location.pathname;
   const isOverview = currentPath.endsWith(id) || currentPath.endsWith('overview');
   const isMatches = currentPath.endsWith('matches');
+  const isAgents = currentPath.endsWith('agents');
 
   const getTabPath = (tab) => {
     const base = `/tournaments/${id}`;
     if (tab === 'Overview') return `${base}/overview`;
     if (tab === 'Matches') return `${base}/matches`;
+    if (tab === 'Agents') return `${base}/agents`;
     return base;
   };
 
@@ -232,7 +235,8 @@ export default function TournamentDetailsVLR({ onJoinTeam }) {
             <div className="flex bg-surface-charcoal">
               {tabs.map(tab => {
                 const isActive = (tab === 'Overview' && isOverview) ||
-                                 (tab === 'Matches' && isMatches);
+                                 (tab === 'Matches' && isMatches) ||
+                                 (tab === 'Agents' && isAgents);
                 return (
                   <Link
                     key={tab}
@@ -244,7 +248,7 @@ export default function TournamentDetailsVLR({ onJoinTeam }) {
                         : 'bg-surface-charcoal text-tactical-gray hover:text-off-white'}
                     `}
                   >
-                    {tab === 'Overview' ? 'Tổng Quan' : 'Trận Đấu'}
+                    {tab === 'Overview' ? 'Tổng Quan' : tab === 'Matches' ? 'Trận Đấu' : 'Thống Kê Tướng'}
                     {tab === 'Matches' && <span className="ml-1 text-[10px] text-tactical-gray">({internalMatches.length})</span>}
                   </Link>
                 );
@@ -302,6 +306,9 @@ export default function TournamentDetailsVLR({ onJoinTeam }) {
                 }
               }}
             />
+          } />
+          <Route path="agents" element={
+            <TournamentAgents />
           } />
           <Route path="register" element={
             <TournamentRegistrationForm

@@ -29,4 +29,5 @@ public interface TournamentService {
     List<com.tournament.engine.modules.tournament.dto.TournamentOrganizerResponse> getTournamentOrganizers(Long tournamentId);
     void addTournamentOrganizer(Long tournamentId, com.tournament.engine.modules.tournament.dto.AddOrganizerRequest request, Long assignerUserId);
     void removeTournamentOrganizer(Long tournamentId, Long targetUserId, Long assignerUserId);
+    List<com.tournament.engine.modules.tournament.dto.AgentStatResponse> getTournamentAgentStats(Long tournamentId);
 }

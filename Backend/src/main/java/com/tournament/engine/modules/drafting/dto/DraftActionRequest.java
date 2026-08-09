@@ -11,6 +11,7 @@ public class DraftActionRequest {
     private String actionType;
     private String agentName;
     private String mapName;
+    private String selection;
 
     public Long getMatchId() { return matchId; }
     public void setMatchId(Long matchId) { this.matchId = matchId; }
@@ -32,4 +33,7 @@ public class DraftActionRequest {
 
     public String getMapName() { return mapName; }
     public void setMapName(String mapName) { this.mapName = mapName; }
+
+    public String getSelection() { return selection; }
+    public void setSelection(String selection) { this.selection = selection; }
 }

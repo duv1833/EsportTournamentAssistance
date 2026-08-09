@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.tournament.engine.modules.tournament.model.TournamentRegistration;
+import com.tournament.engine.modules.tournament.repository.TournamentRegistrationRepository;
+
 @Service
 @RequiredArgsConstructor
 public class TeamServiceImpl implements TeamService {
@@ -22,9 +25,10 @@ public class TeamServiceImpl implements TeamService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
+    private final TournamentRegistrationRepository registrationRepository;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<TeamResponse> getAllTeams() {
         return teamRepository.findAll().stream()
                 .map(this::mapToResponse)
@@ -32,7 +36,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public TeamResponse getTeamDetails(Long teamId) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đội tuyển"));
@@ -40,7 +44,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<TeamResponse> getTeamsByCaptain(Long captainId) {
         return teamRepository.findAll().stream()
                 .filter(t -> t.getCaptain().getId().equals(captainId))
@@ -185,19 +189,38 @@ public class TeamServiceImpl implements TeamService {
         teamMemberRepository.save(member);
     }
 
+    private Team findTeamByCode(String inviteCode) {
+        String code = (inviteCode != null) ? inviteCode.trim() : "";
+        java.util.Optional<Team> teamOpt = teamRepository.findByInviteCodeIgnoreCase(code);
+        if (teamOpt.isEmpty()) {
+            List<Team> allTeams = teamRepository.findAll();
+            boolean updated = false;
+            for (Team t : allTeams) {
+                if (t.getInviteCode() == null || t.getInviteCode().isBlank()) {
+                    t.setInviteCode(java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+                    teamRepository.save(t);
+                    updated = true;
+                }
+            }
+            if (updated) {
+                teamRepository.flush();
+                teamOpt = teamRepository.findByInviteCodeIgnoreCase(code);
+            }
+        }
+        return teamOpt.orElseThrow(() -> new RuntimeException("Mã mời đội tuyển không hợp lệ hoặc không tồn tại!"));
+    }
+
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public TeamResponse getTeamByInviteCode(String inviteCode) {
-        Team team = teamRepository.findByInviteCode(inviteCode)
-                .orElseThrow(() -> new RuntimeException("Mã mời đội tuyển không hợp lệ hoặc không tồn tại!"));
+        Team team = findTeamByCode(inviteCode);
         return mapToResponse(team);
     }
 
     @Override
     @Transactional
     public void joinTeamByInviteCode(String inviteCode, com.tournament.engine.modules.tournament.dto.JoinTeamRequest request) {
-        Team team = teamRepository.findByInviteCode(inviteCode)
-                .orElseThrow(() -> new RuntimeException("Mã mời đội tuyển không hợp lệ!"));
+        Team team = findTeamByCode(inviteCode);
         joinTeam(team.getId(), request);
     }
 
@@ -225,7 +248,7 @@ public class TeamServiceImpl implements TeamService {
     private TeamResponse mapToResponse(Team targetTeam) {
         if (targetTeam.getInviteCode() == null || targetTeam.getInviteCode().isBlank()) {
             targetTeam.setInviteCode(java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-            targetTeam = teamRepository.save(targetTeam);
+            targetTeam = teamRepository.saveAndFlush(targetTeam);
         }
         final Team team = targetTeam;
 
@@ -245,6 +268,17 @@ public class TeamServiceImpl implements TeamService {
                 .map(TeamMember::getInGameName)
                 .orElse(null);
 
+        Long tournamentId = null;
+        String tournamentName = null;
+        List<TournamentRegistration> regs = registrationRepository.findByTeamId(team.getId());
+        if (!regs.isEmpty()) {
+            TournamentRegistration reg = regs.get(regs.size() - 1);
+            if (reg.getTournament() != null) {
+                tournamentId = reg.getTournament().getId();
+                tournamentName = reg.getTournament().getName();
+            }
+        }
+
         return TeamResponse.builder()
                 .id(team.getId())
                 .name(team.getName())
@@ -254,6 +288,8 @@ public class TeamServiceImpl implements TeamService {
                 .captainInGameName(captainInGameName)
                 .logoUrl(team.getLogoUrl())
                 .inviteCode(team.getInviteCode())
+                .tournamentId(tournamentId)
+                .tournamentName(tournamentName)
                 .members(memberResponses)
                 .build();
     }

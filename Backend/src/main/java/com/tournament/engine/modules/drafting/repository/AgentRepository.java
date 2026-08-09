@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface AgentRepository extends JpaRepository<Agent, Long> {
     Optional<Agent> findByName(String name);
+    Optional<Agent> findByNameIgnoreCase(String name);
     List<Agent> findByIsActiveTrue();
     List<Agent> findByRoleType(String roleType);
 }

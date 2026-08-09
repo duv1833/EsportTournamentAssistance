@@ -78,24 +78,23 @@ const Lobby = () => {
   const { autoRole, currentTurnTeamId } = React.useMemo(() => {
     let role = 'PLAYER';
     let teamId = 0;
-    const username = (currentUser.username || '').toLowerCase();
-    const email = (currentUser.email || '').toLowerCase();
+    const userId = currentUser.id ? Number(currentUser.id) : null;
 
     if (currentUser.globalRole === 'ADMIN' || currentUser.globalRole === 'REFEREE' || currentUser.globalRole === 'ORGANIZER') {
       role = 'ADMIN';
     } 
-    else if (currentUser.id === seriesData.teamA.captainId || (seriesData.teamA.short && (username.includes(seriesData.teamA.short.toLowerCase()) || email.includes(seriesData.teamA.short.toLowerCase())))) {
+    else if (userId && (userId === Number(seriesData.teamA.captainId) || userId === Number(seriesData.teamA.id))) {
       role = 'TEAM_A';
       teamId = 1;
     } 
-    else if (currentUser.id === seriesData.teamB.captainId || (seriesData.teamB.short && (username.includes(seriesData.teamB.short.toLowerCase()) || email.includes(seriesData.teamB.short.toLowerCase())))) {
+    else if (userId && (userId === Number(seriesData.teamB.captainId) || userId === Number(seriesData.teamB.id))) {
       role = 'TEAM_B';
       teamId = 2;
     }
     return { autoRole: role, currentTurnTeamId: teamId };
   }, [currentUser, seriesData.teamA, seriesData.teamB]);
 
-  const currentUserRole = autoRole === 'ADMIN' ? 'ADMIN' : 'PLAYER';
+  const currentUserRole = autoRole;
   const currentUserId = currentTurnTeamId; 
   const isTeamAPresent = onlineUsers.has('TEAM_A');
   const isTeamBPresent = onlineUsers.has('TEAM_B');
@@ -239,8 +238,8 @@ const Lobby = () => {
 
             return {
               ...prev, id: realMatch.id, format: matchFormat,
-              teamA: { ...prev.teamA, id: realMatch.team1Id, name: realMatch.team1Name || 'SAIGON PHANTOM', short: realMatch.team1Tag || 'SGP', score: scoreA },
-              teamB: { ...prev.teamB, id: realMatch.team2Id, name: realMatch.team2Name || 'PAPER REX', short: realMatch.team2Tag || 'PRX', score: scoreB },
+              teamA: { ...prev.teamA, id: realMatch.team1Id, name: realMatch.team1Name || 'SAIGON PHANTOM', short: realMatch.team1Tag || 'SGP', score: scoreA, captainId: realMatch.team1CaptainId },
+              teamB: { ...prev.teamB, id: realMatch.team2Id, name: realMatch.team2Name || 'PAPER REX', short: realMatch.team2Tag || 'PRX', score: scoreB, captainId: realMatch.team2CaptainId },
               games: newGames
             };
           });
@@ -360,8 +359,17 @@ const Lobby = () => {
         const phaseType = isMapVeto ? 'MAP' : 'AGENT';
         const actionType = isMapVeto ? currentMapAction?.action : currentAgentAction?.action;
 
+        const realTeamId = currentTurnTeamIdForDraft === 1 ? seriesData.teamA.id : seriesData.teamB.id;
         const payload = { 
-           type: 'DRAFT_ACTION', matchId: activeGameSafe.id, teamId: currentTurnTeamIdForDraft, actionType, phase: phaseType, selection: randomPick
+           type: 'DRAFT_ACTION', 
+           matchId: activeGameSafe.id, 
+           teamId: realTeamId,
+           userId: currentUser.id,
+           actionType, 
+           phase: phaseType, 
+           selection: randomPick,
+           agentName: randomPick,
+           mapName: randomPick
         };
         
         try {
@@ -665,8 +673,17 @@ const Lobby = () => {
     const phaseType = isMapVeto ? 'MAP' : 'AGENT';
     const actionType = isMapVeto ? currentMapAction?.action : currentAgentAction?.action;
     
+    const realTeamId = currentTurnTeamId === 1 ? seriesData.teamA.id : seriesData.teamB.id;
     const payload = { 
-      type: 'DRAFT_ACTION', matchId: activeGameSafe.id, teamId: currentUserId, actionType, phase: phaseType, selection: selectedHover
+      type: 'DRAFT_ACTION', 
+      matchId: activeGameSafe.id, 
+      teamId: realTeamId, 
+      userId: currentUser.id,
+      actionType, 
+      phase: phaseType, 
+      selection: selectedHover,
+      agentName: selectedHover,
+      mapName: selectedHover
     };
 
     stompClient.publish({ destination: `/topic/room/${matchId}`, body: JSON.stringify(payload) });

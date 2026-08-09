@@ -10,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface GameMapRepository extends JpaRepository<GameMap, Long> {
     Optional<GameMap> findByName(String name);
+    Optional<GameMap> findByNameIgnoreCase(String name);
     List<GameMap> findByIsActiveTrue();
 }

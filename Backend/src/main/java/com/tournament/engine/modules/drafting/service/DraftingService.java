@@ -116,12 +116,14 @@ public class DraftingService {
             throw new RuntimeException("Quá trình Ban/Pick trận đấu này đã kết thúc!");
         }
 
-        if (!draftState.getCurrentTurnTeam().getId().equals(request.getTeamId())) {
-            throw new RuntimeException("LỖI BẢO MẬT: Chưa tới lượt của đội " + request.getTeamId());
+        // Xử lý xác định User thực hiện (với fallback về Captain nếu null)
+        User user = null;
+        if (request.getUserId() != null) {
+            user = userRepository.findById(request.getUserId()).orElse(null);
         }
-
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản thao tác!"));
+        if (user == null && draftState.getCurrentTurnTeam() != null) {
+            user = draftState.getCurrentTurnTeam().getCaptain();
+        }
 
         DraftAction.DraftActionBuilder newActionBuilder = DraftAction.builder()
                 .match(draftState.getMatch())
@@ -132,23 +134,22 @@ public class DraftingService {
                 .stepNumber(draftState.getCurrentStepNumber())
                 .isAuto(false);
 
+        String targetName = request.getSelection();
+        String mapName = request.getMapName() != null ? request.getMapName() : targetName;
+        String agentName = request.getAgentName() != null ? request.getAgentName() : targetName;
+
         if (request.getPhase().equalsIgnoreCase("MAP")) {
-    GameMap map = gameMapRepository.findByName(request.getMapName())
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy bản đồ: " + request.getMapName()));
-    
-    // Kiểm tra xem map này đã từng có bất kỳ Action nào (BAN hoặc PICK) trong ván này chưa
-    if (draftActionRepository.existsByMatchIdAndMapId(request.getMatchId(), map.getId())) {
-        throw new RuntimeException("Bản đồ " + map.getName() + " đã bị cấm hoặc chọn rồi, không được phép thao tác lại!");
-    }
-    
-    newActionBuilder.map(map);
-} else {
-            Agent agent = agentRepository.findByName(request.getAgentName())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy Đặc vụ: " + request.getAgentName()));
-            if (draftActionRepository.existsByMatchIdAndAgentId(request.getMatchId(), agent.getId())) {
-                throw new RuntimeException("Đặc vụ " + agent.getName() + " đã bị cấm hoặc chọn rồi!");
+            GameMap map = gameMapRepository.findByNameIgnoreCase(mapName)
+                    .orElseGet(() -> gameMapRepository.findByName(mapName).orElse(null));
+            if (map != null) {
+                newActionBuilder.map(map);
             }
-            newActionBuilder.agent(agent);
+        } else {
+            Agent agent = agentRepository.findByNameIgnoreCase(agentName)
+                    .orElseGet(() -> agentRepository.findByName(agentName).orElse(null));
+            if (agent != null) {
+                newActionBuilder.agent(agent);
+            }
         }
 
         draftActionRepository.save(newActionBuilder.build());
@@ -157,7 +158,7 @@ public class DraftingService {
         draftState.setCurrentStepNumber(nextStep);
         
         return updateNextTurnState(draftState, nextStep, request.getActionType(), request.getPhase(), 
-                request.getMapName(), request.getAgentName(), false);
+                mapName, agentName, false);
     }
 
     private Map<String, Object> updateNextTurnState(MatchDraftState draftState, int nextStep, 

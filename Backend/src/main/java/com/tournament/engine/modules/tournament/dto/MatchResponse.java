@@ -23,12 +23,14 @@ public class MatchResponse {
     private String team1Name;
     private String team1Tag;
     private String team1LogoUrl;
+    private Long team1CaptainId;
 
     // Team 2
     private Long team2Id;
     private String team2Name;
     private String team2Tag;
     private String team2LogoUrl;
+    private Long team2CaptainId;
 
     // Score
     private Integer scoreTeam1;
@@ -74,6 +76,9 @@ public class MatchResponse {
     public String getTeam1LogoUrl() { return team1LogoUrl; }
     public void setTeam1LogoUrl(String team1LogoUrl) { this.team1LogoUrl = team1LogoUrl; }
 
+    public Long getTeam1CaptainId() { return team1CaptainId; }
+    public void setTeam1CaptainId(Long team1CaptainId) { this.team1CaptainId = team1CaptainId; }
+
     public Long getTeam2Id() { return team2Id; }
     public void setTeam2Id(Long team2Id) { this.team2Id = team2Id; }
 
@@ -85,6 +90,9 @@ public class MatchResponse {
 
     public String getTeam2LogoUrl() { return team2LogoUrl; }
     public void setTeam2LogoUrl(String team2LogoUrl) { this.team2LogoUrl = team2LogoUrl; }
+
+    public Long getTeam2CaptainId() { return team2CaptainId; }
+    public void setTeam2CaptainId(Long team2CaptainId) { this.team2CaptainId = team2CaptainId; }
 
     public Integer getScoreTeam1() { return scoreTeam1; }
     public void setScoreTeam1(Integer scoreTeam1) { this.scoreTeam1 = scoreTeam1; }
@@ -133,10 +141,12 @@ public class MatchResponse {
         private String team1Name;
         private String team1Tag;
         private String team1LogoUrl;
+        private Long team1CaptainId;
         private Long team2Id;
         private String team2Name;
         private String team2Tag;
         private String team2LogoUrl;
+        private Long team2CaptainId;
         private Integer scoreTeam1;
         private Integer scoreTeam2;
         private Long winnerId;
@@ -158,10 +168,12 @@ public class MatchResponse {
         public MatchResponseBuilder team1Name(String team1Name) { this.team1Name = team1Name; return this; }
         public MatchResponseBuilder team1Tag(String team1Tag) { this.team1Tag = team1Tag; return this; }
         public MatchResponseBuilder team1LogoUrl(String team1LogoUrl) { this.team1LogoUrl = team1LogoUrl; return this; }
+        public MatchResponseBuilder team1CaptainId(Long team1CaptainId) { this.team1CaptainId = team1CaptainId; return this; }
         public MatchResponseBuilder team2Id(Long team2Id) { this.team2Id = team2Id; return this; }
         public MatchResponseBuilder team2Name(String team2Name) { this.team2Name = team2Name; return this; }
         public MatchResponseBuilder team2Tag(String team2Tag) { this.team2Tag = team2Tag; return this; }
         public MatchResponseBuilder team2LogoUrl(String team2LogoUrl) { this.team2LogoUrl = team2LogoUrl; return this; }
+        public MatchResponseBuilder team2CaptainId(Long team2CaptainId) { this.team2CaptainId = team2CaptainId; return this; }
         public MatchResponseBuilder scoreTeam1(Integer scoreTeam1) { this.scoreTeam1 = scoreTeam1; return this; }
         public MatchResponseBuilder scoreTeam2(Integer scoreTeam2) { this.scoreTeam2 = scoreTeam2; return this; }
         public MatchResponseBuilder winnerId(Long winnerId) { this.winnerId = winnerId; return this; }
@@ -185,10 +197,12 @@ public class MatchResponse {
             obj.setTeam1Name(team1Name);
             obj.setTeam1Tag(team1Tag);
             obj.setTeam1LogoUrl(team1LogoUrl);
+            obj.setTeam1CaptainId(team1CaptainId);
             obj.setTeam2Id(team2Id);
             obj.setTeam2Name(team2Name);
             obj.setTeam2Tag(team2Tag);
             obj.setTeam2LogoUrl(team2LogoUrl);
+            obj.setTeam2CaptainId(team2CaptainId);
             obj.setScoreTeam1(scoreTeam1);
             obj.setScoreTeam2(scoreTeam2);
             obj.setWinnerId(winnerId);

@@ -20,15 +20,42 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (currentUser) {
-      setFormData({
-        fullName: currentUser.fullName || '',
-        nickname: currentUser.nickname || '',
-        phoneNumber: currentUser.phoneNumber || '',
-        avatarUrl: currentUser.avatarUrl || ''
-      });
-    }
-  }, [currentUser]);
+    const loadProfile = async () => {
+      if (currentUser?.id) {
+        try {
+          const res = await userService.getUserProfile(currentUser.id);
+          if (res.success && res.data) {
+            setFormData({
+              fullName: res.data.fullName || '',
+              nickname: res.data.nickname || '',
+              phoneNumber: res.data.phoneNumber || '',
+              avatarUrl: res.data.avatarUrl || ''
+            });
+            const updatedUserData = {
+              ...currentUser,
+              fullName: res.data.fullName,
+              nickname: res.data.nickname,
+              phoneNumber: res.data.phoneNumber,
+              avatarUrl: res.data.avatarUrl,
+              displayName: res.data.displayName
+            };
+            updateUser(updatedUserData);
+          }
+        } catch (err) {
+          console.error("Lỗi khi tải thông tin cá nhân từ server:", err);
+          if (currentUser) {
+            setFormData({
+              fullName: currentUser.fullName || '',
+              nickname: currentUser.nickname || '',
+              phoneNumber: currentUser.phoneNumber || '',
+              avatarUrl: currentUser.avatarUrl || ''
+            });
+          }
+        }
+      }
+    };
+    loadProfile();
+  }, [currentUser?.id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

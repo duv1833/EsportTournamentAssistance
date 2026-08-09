@@ -15,6 +15,12 @@ import com.tournament.engine.modules.tournament.repository.TeamMemberRepository;
 import com.tournament.engine.modules.tournament.repository.TournamentOrganizerRepository;
 import com.tournament.engine.modules.tournament.repository.TournamentRegistrationRepository;
 import com.tournament.engine.modules.tournament.repository.TournamentRepository;
+import com.tournament.engine.modules.tournament.dto.AgentStatResponse;
+import com.tournament.engine.modules.drafting.model.Agent;
+import com.tournament.engine.modules.drafting.model.DraftAction;
+import com.tournament.engine.modules.drafting.model.DraftSequenceTemplate;
+import com.tournament.engine.modules.drafting.repository.AgentRepository;
+import com.tournament.engine.modules.drafting.repository.DraftActionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +42,8 @@ public class TournamentServiceImpl implements TournamentService {
     private final TournamentRegistrationRepository registrationRepository;
     private final TournamentOrganizerRepository tournamentOrganizerRepository;
     private final UserRepository userRepository;
+    private final AgentRepository agentRepository;
+    private final DraftActionRepository draftActionRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -280,6 +288,7 @@ public class TournamentServiceImpl implements TournamentService {
                     .tag(request.getTeamTag())
                     .logoUrl(request.getLogoUrl())
                     .captain(user)
+                    .inviteCode(java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                     .isActive(true)
                     .build();
             team = teamRepository.save(team);
@@ -537,5 +546,50 @@ public class TournamentServiceImpl implements TournamentService {
                 .orElseThrow(() -> new RuntimeException("Người dùng không nằm trong danh sách Trọng tài/BTC của giải đấu này"));
 
         tournamentOrganizerRepository.delete(organizer);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AgentStatResponse> getTournamentAgentStats(Long tournamentId) {
+        List<Agent> allAgents = agentRepository.findAll();
+        List<DraftAction> draftActions = draftActionRepository.findByTournamentIdAndPhase(tournamentId, DraftSequenceTemplate.DraftPhase.AGENT);
+        
+        long matchesWithDrafting = draftActions.stream()
+                .map(d -> d.getMatch().getId())
+                .distinct()
+                .count();
+
+        return allAgents.stream().map(agent -> {
+            int pickCount = (int) draftActions.stream()
+                    .filter(d -> d.getAgent() != null && d.getAgent().getId().equals(agent.getId()) && d.getActionType() == DraftSequenceTemplate.DraftActionType.PICK)
+                    .count();
+            
+            int banCount = (int) draftActions.stream()
+                    .filter(d -> d.getAgent() != null && d.getAgent().getId().equals(agent.getId()) && d.getActionType() == DraftSequenceTemplate.DraftActionType.BAN)
+                    .count();
+
+            int winCount = (int) draftActions.stream()
+                    .filter(d -> d.getAgent() != null && d.getAgent().getId().equals(agent.getId()) && d.getActionType() == DraftSequenceTemplate.DraftActionType.PICK)
+                    .filter(d -> d.getMatch().getWinner() != null && d.getTeam().getId().equals(d.getMatch().getWinner().getId()))
+                    .count();
+
+            long totalTeamComps = matchesWithDrafting * 2;
+            double pickRate = totalTeamComps > 0 ? (double) pickCount / totalTeamComps * 100 : 0;
+            double banRate = totalTeamComps > 0 ? (double) banCount / totalTeamComps * 100 : 0;
+            double winRate = pickCount > 0 ? (double) winCount / pickCount * 100 : 0;
+
+            return AgentStatResponse.builder()
+                    .agentId(agent.getId())
+                    .agentName(agent.getName())
+                    .roleType(agent.getRoleType())
+                    .imageUrl(agent.getImageUrl())
+                    .pickCount(pickCount)
+                    .banCount(banCount)
+                    .pickRate(pickRate)
+                    .banRate(banRate)
+                    .winCount(winCount)
+                    .winRate(winRate)
+                    .build();
+        }).collect(Collectors.toList());
     }
 }
