@@ -89,17 +89,17 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Đã khởi tạo tài khoản Admin mặc định (username: admin, password: 123)");
         }
 
-        // Helper method logic để tạo các tài khoản demo
-        createDemoUserIfNotExist("organizer", "organizer@eta.com", "Ban Tổ Chức Giải", User.GlobalRole.ORGANIZER);
-        createDemoUserIfNotExist("referee1", "referee1@eta.com", "Trọng Tài 01", User.GlobalRole.REFEREE);
-        createDemoUserIfNotExist("sgp_captain", "sgp@eta.com", "SGP Leader (Saigon Phantom)", User.GlobalRole.USER);
-        createDemoUserIfNotExist("prx_captain", "prx@eta.com", "PRX Leader (Paper Rex)", User.GlobalRole.USER);
-        createDemoUserIfNotExist("ts_captain", "ts@eta.com", "TS Leader (Team Secret)", User.GlobalRole.USER);
-        createDemoUserIfNotExist("t1_captain", "t1@eta.com", "T1 Leader (T1 Esports)", User.GlobalRole.USER);
-        createDemoUserIfNotExist("user1", "user1@eta.com", "Player One", User.GlobalRole.USER);
-        createDemoUserIfNotExist("user2", "user2@eta.com", "Player Two", User.GlobalRole.USER);
+        // Helper method logic để tạo các tài khoản demo chuẩn nếu chưa tồn tại trong DB
+        createDemoUserIfNotExist("sgp_captain", "sgp@eta.com", "Trần Đức Khánh", "SGP.Bâng#123", "", User.GlobalRole.USER);
+        createDemoUserIfNotExist("prx_captain", "prx@eta.com", "Jason Susanto", "PRX.f0rsakeN#001", "", User.GlobalRole.USER);
+        createDemoUserIfNotExist("ts_captain", "ts@eta.com", "Adrian Reyes", "TS.Invy#007", "", User.GlobalRole.USER);
+        createDemoUserIfNotExist("t1_captain", "t1@eta.com", "Kim Jung-min", "T1.stax#999", "", User.GlobalRole.USER);
+        createDemoUserIfNotExist("organizer", "organizer@eta.com", "Ban Tổ Chức Giải", "BTC.ETA#2026", "", User.GlobalRole.ORGANIZER);
+        createDemoUserIfNotExist("referee1", "referee1@eta.com", "Trọng Tài 01", "Referee#001", "", User.GlobalRole.REFEREE);
+        createDemoUserIfNotExist("user1", "user1@eta.com", "Player One", "PlayerOne#1001", "", User.GlobalRole.USER);
+        createDemoUserIfNotExist("user2", "user2@eta.com", "Player Two", "PlayerTwo#1002", "", User.GlobalRole.USER);
 
-        // 2. Đồng bộ role cho tất cả người dùng hiện có trong database nếu roles trống hoặc globalRole null
+        // 2. Đồng bộ role, nickname, avatarUrl cho tất cả người dùng hiện có trong database
         List<User> allUsers = userRepository.findAll();
         for (User user : allUsers) {
             boolean updated = false;
@@ -116,9 +116,14 @@ public class DataInitializer implements CommandLineRunner {
                 updated = true;
             }
 
+            if (user.getNickname() == null || user.getNickname().isBlank()) {
+                user.setNickname(user.getUsername().toUpperCase() + "#" + String.format("%04d", user.getId() != null ? user.getId() : 1));
+                updated = true;
+            }
+
             if (updated) {
                 userRepository.save(user);
-                log.info("Cập nhật vai trò thành công cho user: {}", user.getUsername());
+                log.info("Cập nhật thông tin thành công cho user: {}", user.getUsername());
             }
         }
 
@@ -260,13 +265,15 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private void createDemoUserIfNotExist(String username, String email, String fullName, User.GlobalRole role) {
+    private void createDemoUserIfNotExist(String username, String email, String fullName, String nickname, String avatarUrl, User.GlobalRole role) {
         if (!userRepository.existsByUsername(username)) {
             User user = User.builder()
                     .username(username)
                     .email(email)
                     .password(passwordEncoder.encode("123"))
                     .fullName(fullName)
+                    .nickname(nickname)
+                    .avatarUrl(avatarUrl)
                     .globalRole(role)
                     .roles(Set.of(role))
                     .isActive(true)

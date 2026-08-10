@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Pause, Play, ArrowRight, MonitorPlay, Bell, Trophy, Shield, Users, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pause, Play, ArrowRight, MonitorPlay, Bell, Trophy, Shield, Users, Zap, Crown, Medal, User, Sparkles } from 'lucide-react';
 import TactileButton from '../components/common/TactileButton';
 import { getAllTournaments } from '../services/tournamentService';
+import { userService } from '../services/userService';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 
 // ─── Hero Slider ──────────────────────────────────────────
@@ -154,29 +155,29 @@ function MatchCard({ tournament, status, statusColor, team1, team1Short, team2, 
       </div>
       <div className="flex justify-between items-center gap-4 opacity-90">
         <div className="flex-1 text-center">
-          <div className="w-16 h-16 mx-auto bg-surface-bright flex items-center justify-center mb-2 border border-outline-variant">
-            <span className="font-display text-xl text-off-white">{team1Short}</span>
+          <div className="w-14 h-14 mx-auto bg-surface-bright flex items-center justify-center mb-2 border border-outline-variant">
+            <span className="font-display text-lg text-off-white">{team1Short}</span>
           </div>
-          <h4 className="font-body font-semibold text-sm text-off-white uppercase truncate">{team1}</h4>
+          <h4 className="font-body font-semibold text-xs text-off-white uppercase truncate">{team1}</h4>
         </div>
-        <div className="flex flex-col items-center justify-center px-4">
-          <div className="flex items-center gap-4">
-            <span className="font-display text-4xl text-tactical-gray">0</span>
-            <span className="font-mono text-sm text-tactical-gray">-</span>
-            <span className="font-display text-4xl text-tactical-gray">0</span>
+        <div className="flex flex-col items-center justify-center px-2">
+          <div className="flex items-center gap-3">
+            <span className="font-display text-3xl text-tactical-gray">0</span>
+            <span className="font-mono text-xs text-tactical-gray">-</span>
+            <span className="font-display text-3xl text-tactical-gray">0</span>
           </div>
-          <span className="font-body text-xs text-off-white/70 mt-2 whitespace-nowrap">{time}</span>
+          <span className="font-body text-[11px] text-off-white/70 mt-1 whitespace-nowrap">{time}</span>
         </div>
         <div className="flex-1 text-center">
-          <div className="w-16 h-16 mx-auto bg-surface-bright flex items-center justify-center mb-2 border border-outline-variant">
-            <span className="font-display text-xl text-off-white">{team2Short}</span>
+          <div className="w-14 h-14 mx-auto bg-surface-bright flex items-center justify-center mb-2 border border-outline-variant">
+            <span className="font-display text-lg text-off-white">{team2Short}</span>
           </div>
-          <h4 className="font-body font-semibold text-sm text-off-white uppercase truncate">{team2}</h4>
+          <h4 className="font-body font-semibold text-xs text-off-white uppercase truncate">{team2}</h4>
         </div>
       </div>
-      <div className="mt-6 flex justify-center">
-        <TactileButton variant="outline" className="text-xs flex items-center gap-2">
-          <Bell size={14} /> XEM CHI TIẾT
+      <div className="mt-4 flex justify-center">
+        <TactileButton variant="outline" className="text-xs flex items-center gap-2 py-1.5">
+          <Bell size={13} /> XEM CHI TIẾT
         </TactileButton>
       </div>
     </div>
@@ -188,10 +189,10 @@ function RealTournamentCard({ tournament, onSelect }) {
   return (
     <div
       onClick={() => onSelect(tournament.id)}
-      className="bg-surface-charcoal border border-outline-variant p-6 hover:border-primary-red transition-all group relative overflow-hidden clip-corner flex flex-col h-full cursor-pointer hover:-translate-y-1"
+      className="bg-surface-charcoal border border-outline-variant p-5 hover:border-primary-red transition-all group relative overflow-hidden clip-corner flex flex-col h-full cursor-pointer hover:-translate-y-1"
     >
-      <div className="flex justify-between items-start mb-4">
-        <span className="bg-surface-bright text-off-white/80 font-mono text-[10px] px-2.5 py-1 uppercase rounded-sm border border-outline-variant/30">
+      <div className="flex justify-between items-start mb-3">
+        <span className="bg-surface-bright text-off-white/80 font-mono text-[10px] px-2 py-0.5 uppercase rounded-sm border border-outline-variant/30">
           {tournament.startDate ? new Date(tournament.startDate).toLocaleDateString('vi-VN') : 'SẮP DIỄN RA'}
         </span>
         <span className="font-mono text-[10px] px-2 py-0.5 uppercase font-bold bg-success-cyan/10 text-success-cyan border border-success-cyan/20">
@@ -199,19 +200,19 @@ function RealTournamentCard({ tournament, onSelect }) {
         </span>
       </div>
 
-      <h3 className="font-display text-2xl text-off-white uppercase mb-2 group-hover:text-primary-red transition-colors line-clamp-1">
+      <h3 className="font-display text-xl text-off-white uppercase mb-2 group-hover:text-primary-red transition-colors line-clamp-1">
         {tournament.name}
       </h3>
 
-      <p className="font-body text-sm text-off-white/70 mb-6 flex-grow line-clamp-2 leading-relaxed">
+      <p className="font-body text-xs text-off-white/70 mb-4 flex-grow line-clamp-2 leading-relaxed">
         {tournament.rulesDescription || `Giải đấu ${tournament.name} do @${tournament.creatorUsername} tổ chức. Thể thức ${tournament.structure === 'GROUP_KNOCKOUT' ? 'Vòng Bảng + Knockout' : 'Loại Trực Tiếp'}.`}
       </p>
 
-      <div className="flex justify-between items-center border-t border-outline-variant/30 pt-4 mt-auto">
+      <div className="flex justify-between items-center border-t border-outline-variant/30 pt-3 mt-auto">
         <div className="font-mono text-xs text-tactical-gray">
           <span>Đội: <strong className="text-off-white">{tournament.registeredTeams?.length || 0}/{tournament.maxTeams}</strong></span>
         </div>
-        <TactileButton variant="ghost" className="text-xs uppercase text-primary-red flex items-center gap-1">
+        <TactileButton variant="ghost" className="text-xs uppercase text-primary-red flex items-center gap-1 p-0">
           THAM GIA <ArrowRight size={12} />
         </TactileButton>
       </div>
@@ -219,6 +220,137 @@ function RealTournamentCard({ tournament, onSelect }) {
   );
 }
 
+// ─── User Leaderboard Sidebar Widget ───────────────────────
+function UserLeaderboardWidget() {
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const res = await userService.getUserLeaderboard();
+        if (res.success && res.data) {
+          setLeaderboard(res.data);
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải Bảng xếp hạng:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLeaderboard();
+  }, []);
+
+  const top1 = leaderboard[0];
+  const topList = leaderboard.slice(0, 8);
+
+  return (
+    <div className="bg-surface-charcoal border border-outline-variant p-6 clip-corner space-y-5 shadow-2xl sticky top-24">
+      {/* Widget Header */}
+      <div className="flex items-center justify-between border-b border-outline-variant/40 pb-4">
+        <div className="flex items-center gap-2">
+          <Trophy size={20} className="text-warning-amber" />
+          <h3 className="font-display text-xl uppercase text-off-white tracking-wide">
+            BẢNG XẾP HẠNG
+          </h3>
+        </div>
+        <span className="font-mono text-[10px] bg-primary-red/10 text-primary-red border border-primary-red/30 px-2 py-0.5 uppercase clip-corner font-bold flex items-center gap-1">
+          <Sparkles size={10} /> TOP TUYỂN THỦ
+        </span>
+      </div>
+
+      {loading ? (
+        <LoadingSkeleton count={5} />
+      ) : topList.length === 0 ? (
+        <p className="font-mono text-xs text-tactical-gray text-center py-6">Chưa có thông tin xếp hạng</p>
+      ) : (
+        <div className="space-y-4">
+          {/* Top 1 Champion Box */}
+          {top1 && (
+            <div className="bg-gradient-to-r from-amber-950/70 via-surface-bright/50 to-surface-bright/20 border-2 border-amber-400/80 p-3.5 clip-corner flex items-center gap-3 relative overflow-hidden group hover:border-amber-300 transition-colors shadow-lg">
+              <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-amber-400" />
+              <div className="relative shrink-0">
+                <div className="w-12 h-12 rounded-full border-2 border-amber-400 overflow-hidden bg-surface-bright flex items-center justify-center shadow-md">
+                  {top1.avatarUrl ? (
+                    <img src={top1.avatarUrl} alt={top1.displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={24} className="text-amber-400" />
+                  )}
+                </div>
+                <span className="absolute -top-1 -right-1 bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded font-mono shadow">
+                  👑 #1
+                </span>
+              </div>
+              <div className="flex-grow min-w-0">
+                <div className="font-display font-bold text-amber-300 text-sm truncate">
+                  {top1.displayName || top1.username}
+                </div>
+                <div className="font-mono text-[11px] text-tactical-gray flex items-center gap-2">
+                  <span className="text-success-cyan font-bold">{top1.winRate}% WR</span>
+                  <span>•</span>
+                  <span>{top1.matchesWon}W - {top1.matchesLost}L</span>
+                </div>
+              </div>
+              <div className="text-right shrink-0 font-mono">
+                <span className="font-display text-amber-400 font-extrabold text-sm block">{top1.points}</span>
+                <span className="text-[9px] text-tactical-gray uppercase">ELO</span>
+              </div>
+            </div>
+          )}
+
+          {/* Ranks #2 to #8 */}
+          <div className="space-y-2 font-mono text-xs">
+            {topList.slice(1).map((player, idx) => {
+              const rank = idx + 2;
+              return (
+                <div
+                  key={player.id || idx}
+                  className="flex items-center justify-between p-2.5 bg-surface-bright/30 border border-outline-variant/30 hover:border-primary-red/50 hover:bg-surface-bright/60 transition-all clip-corner group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`font-display font-bold text-xs w-5 text-center shrink-0 ${
+                      rank === 2 ? 'text-slate-300' : rank === 3 ? 'text-amber-600' : 'text-tactical-gray'
+                    }`}>
+                      {rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
+                    </span>
+
+                    <div className="w-8 h-8 rounded-full bg-surface-bright border border-outline-variant overflow-hidden shrink-0 flex items-center justify-center">
+                      {player.avatarUrl ? (
+                        <img src={player.avatarUrl} alt={player.displayName} className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={15} className="text-tactical-gray" />
+                      )}
+                    </div>
+
+                    <div className="truncate min-w-0">
+                      <p className="font-body font-semibold text-off-white text-xs truncate group-hover:text-primary-red transition-colors">
+                        {player.displayName || player.username}
+                      </p>
+                      <p className="text-[10px] text-tactical-gray truncate">
+                        @{player.username}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0 font-mono pl-2">
+                    <span className="font-display font-bold text-primary-red text-xs block">
+                      {player.points} ELO
+                    </span>
+                    <span className="text-[10px] text-success-cyan">
+                      {player.winRate}% WR
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Home Component ──────────────────────────────────
 export default function Home() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -297,7 +429,7 @@ export default function Home() {
   }, [isPlaying]);
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in space-y-0">
       <HeroSlider
         slides={slides}
         currentSlide={currentSlide}
@@ -337,82 +469,98 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Matches Section */}
-      <section className="py-16 bg-surface-container-low border-b border-outline-variant" id="featured">
+      {/* Main Content Area (Layout Grid with Sidebar on Right) */}
+      <section className="py-12 bg-background">
         <div className="container mx-auto max-w-7xl px-6 md:px-12">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h2 className="font-display text-3xl uppercase text-off-white">NỔI BẬT LÚC NÀY</h2>
-              <p className="font-mono text-xs text-tactical-gray mt-1 uppercase">// CÁC TRẬN ĐẤU ĐÁNG CHÚ Ý</p>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left Column: Featured Matches & Real Tournaments (8 cols) */}
+            <div className="lg:col-span-8 space-y-12">
+              
+              {/* Featured Matches Section */}
+              <div id="featured">
+                <div className="flex justify-between items-end mb-6">
+                  <div>
+                    <h2 className="font-display text-2xl md:text-3xl uppercase text-off-white">NỔI BẬT LÚC NÀY</h2>
+                    <p className="font-mono text-xs text-tactical-gray mt-1 uppercase">// CÁC TRẬN ĐẤU ĐÁNG CHÚ Ý</p>
+                  </div>
+                  <TactileButton onClick={() => navigate('/matches')} variant="outline" size="sm" className="flex items-center gap-1">
+                    XEM TẤT CẢ <ArrowRight size={12} />
+                  </TactileButton>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <MatchCard
+                    tournament="GIẢI ĐẤU CỘNG ĐỒNG - CHUNG KẾT"
+                    status="SẮP DIỄN RA"
+                    statusColor="text-warning-amber border-warning-amber"
+                    team1="VIKING ESPORTS"
+                    team1Short="VK"
+                    team2="FANCY UNITED"
+                    team2Short="FC"
+                    time="19:00 HÔM NAY"
+                    onClick={() => navigate('/matches')}
+                  />
+                  <MatchCard
+                    tournament="VCT CHALLENGERS VN - VÒNG BẢNG"
+                    status="ĐANG DIỄN RA"
+                    statusColor="text-primary-red border-primary-red"
+                    team1="TEAM FLASH"
+                    team1Short="FL"
+                    team2="CERBERUS"
+                    team2Short="CB"
+                    time="LIVE"
+                    onClick={() => navigate('/matches')}
+                  />
+                </div>
+              </div>
+
+              {/* Real Tournaments Section */}
+              <div id="upcoming">
+                <div className="flex justify-between items-end mb-6">
+                  <div>
+                    <h2 className="font-display text-2xl md:text-3xl uppercase text-off-white">GIẢI ĐẤU TRÊN HỆ THỐNG</h2>
+                    <p className="font-mono text-xs text-tactical-gray mt-1 uppercase">// ĐĂNG KÝ THAM GIA HOẶC THEO DÕI REALTIME</p>
+                  </div>
+                  <TactileButton onClick={() => navigate('/tournaments')} variant="outline" size="sm" className="flex items-center gap-1">
+                    XEM TẤT CẢ GIẢI ĐẤU <ArrowRight size={12} />
+                  </TactileButton>
+                </div>
+
+                {loadingTournaments ? (
+                  <LoadingSkeleton type="card" count={2} />
+                ) : realTournaments.length === 0 ? (
+                  <div className="text-center py-12 border border-outline-variant/30 bg-surface-charcoal">
+                    <Trophy size={40} className="mx-auto text-tactical-gray mb-3" />
+                    <p className="font-display text-xl text-off-white uppercase">Chưa có giải đấu nào</p>
+                    <p className="font-mono text-xs text-tactical-gray mt-1">Hãy đăng nhập và tạo giải đấu đầu tiên!</p>
+                    <TactileButton variant="primary" onClick={() => navigate('/tournaments')} className="mt-4">
+                      TẠO GIẢI ĐẤU NGAY
+                    </TactileButton>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {realTournaments.slice(0, 6).map((t) => (
+                      <RealTournamentCard
+                        key={t.id}
+                        tournament={t}
+                        onSelect={(id) => navigate(`/tournaments/${id}`)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </div>
-            <TactileButton onClick={() => navigate('/matches')} variant="outline" size="sm" className="flex items-center gap-1">
-              XEM TẤT CẢ <ArrowRight size={12} />
-            </TactileButton>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <MatchCard
-              tournament="GIẢI ĐẤU CỘNG ĐỒNG - CHUNG KẾT"
-              status="SẮP DIỄN RA"
-              statusColor="text-warning-amber border-warning-amber"
-              team1="VIKING ESPORTS"
-              team1Short="VK"
-              team2="FANCY UNITED"
-              team2Short="FC"
-              time="19:00 HÔM NAY"
-              onClick={() => navigate('/matches')}
-            />
-            <MatchCard
-              tournament="VCT CHALLENGERS VN - VÒNG BẢNG"
-              status="ĐANG DIỄN RA"
-              statusColor="text-primary-red border-primary-red"
-              team1="TEAM FLASH"
-              team1Short="FL"
-              team2="CERBERUS"
-              team2Short="CB"
-              time="LIVE"
-              onClick={() => navigate('/matches')}
-            />
+
+            {/* Right Column: User Leaderboard Sidebar Widget (4 cols) */}
+            <div className="lg:col-span-4">
+              <UserLeaderboardWidget />
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* Real Tournaments Section (Fetched from Backend) */}
-      <section className="py-16 bg-background" id="upcoming">
-        <div className="container mx-auto max-w-7xl px-6 md:px-12">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h2 className="font-display text-3xl uppercase text-off-white">GIẢI ĐẤU TRÊN HỆ THỐNG</h2>
-              <p className="font-mono text-xs text-tactical-gray mt-1 uppercase">// ĐĂNG KÝ THAM GIA HOẶC THEO DÕI REALTIME</p>
-            </div>
-            <TactileButton onClick={() => navigate('/tournaments')} variant="outline" size="sm" className="flex items-center gap-1">
-              XEM TẤT CẢ GIẢI ĐẤU <ArrowRight size={12} />
-            </TactileButton>
-          </div>
-
-          {loadingTournaments ? (
-            <LoadingSkeleton type="card" count={3} />
-          ) : realTournaments.length === 0 ? (
-            <div className="text-center py-12 border border-outline-variant/30 bg-surface-charcoal">
-              <Trophy size={40} className="mx-auto text-tactical-gray mb-3" />
-              <p className="font-display text-xl text-off-white uppercase">Chưa có giải đấu nào</p>
-              <p className="font-mono text-xs text-tactical-gray mt-1">Hãy đăng nhập và tạo giải đấu đầu tiên!</p>
-              <TactileButton variant="primary" onClick={() => navigate('/tournaments')} className="mt-4">
-                TẠO GIẢI ĐẤU NGAY
-              </TactileButton>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {realTournaments.slice(0, 6).map((t) => (
-                <RealTournamentCard
-                  key={t.id}
-                  tournament={t}
-                  onSelect={(id) => navigate(`/tournaments/${id}`)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
     </div>
   );
 }

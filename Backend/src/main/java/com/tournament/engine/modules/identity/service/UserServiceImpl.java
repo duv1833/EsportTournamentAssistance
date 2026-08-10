@@ -282,9 +282,6 @@ public class UserServiceImpl implements UserService {
             double winRate = matchesPlayed > 0 ? Math.round(((double) matchesWon / matchesPlayed * 100) * 10.0) / 10.0 : 0.0;
             
             int points = (matchesWon * 50) + (tournamentsCount * 30) + (matchesPlayed * 10);
-            if (points == 0 && u.getId() != null) {
-                points = Math.max(10, 100 - (int)(u.getId() * 5));
-            }
 
             UserLeaderboardDto dto = UserLeaderboardDto.builder()
                     .id(u.getId())

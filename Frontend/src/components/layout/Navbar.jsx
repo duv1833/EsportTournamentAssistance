@@ -34,7 +34,6 @@ export default function Navbar() {
     { path: '/', label: 'TRANG CHỦ', icon: Home },
     { path: '/matches', label: 'LỊCH THI ĐẤU', icon: Swords },
     { path: '/tournaments', label: 'GIẢI ĐẤU', icon: Trophy },
-    { path: '/leaderboard', label: 'BXH NGƯỜI DÙNG', icon: Medal },
     { path: '/teams', label: 'ĐỘI TUYỂN', icon: Shield },
     { path: '/manage-team', label: 'QUẢN LÝ ĐỘI', icon: ShieldCheck },
     { path: '/news', label: 'TIN TỨC', icon: Newspaper },

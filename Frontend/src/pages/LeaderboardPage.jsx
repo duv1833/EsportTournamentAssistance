@@ -26,15 +26,8 @@ export default function LeaderboardPage() {
       }
     } catch (err) {
       console.error('Lỗi khi tải bảng xếp hạng:', err);
-      // Fallback mock data if server isn't running or endpoint empty
-      setLeaderboard([
-        { id: 1, rank: 1, displayName: 'TenZ#NA1', username: 'tenz', email: 'tenz@sentinels.gg', nickname: 'TenZ#NA1', globalRole: 'USER', points: 1450, winRate: 78.5, matchesWon: 36, matchesLost: 10, matchesPlayed: 46, tournamentsCount: 5, avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150' },
-        { id: 2, rank: 2, displayName: 'Faker#KR1', username: 'faker', email: 'faker@t1.gg', nickname: 'Faker#KR1', globalRole: 'ORGANIZER', points: 1320, winRate: 74.2, matchesWon: 28, matchesLost: 10, matchesPlayed: 38, tournamentsCount: 4, avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150' },
-        { id: 3, rank: 3, displayName: 'Derke#EU1', username: 'derke', email: 'derke@fnatic.gg', nickname: 'Derke#EU1', globalRole: 'USER', points: 1180, winRate: 69.0, matchesWon: 22, matchesLost: 10, matchesPlayed: 32, tournamentsCount: 3, avatarUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150' },
-        { id: 4, rank: 4, displayName: 'Aspas#BR1', username: 'aspas', email: 'aspas@leviatan.gg', nickname: 'Aspas#BR1', globalRole: 'USER', points: 980, winRate: 65.4, matchesWon: 17, matchesLost: 9, matchesPlayed: 26, tournamentsCount: 3, avatarUrl: '' },
-        { id: 5, rank: 5, displayName: 'Chronicle#EU1', username: 'chronicle', email: 'chronicle@fnatic.gg', nickname: 'Chronicle#EU1', globalRole: 'REFEREE', points: 890, winRate: 62.5, matchesWon: 15, matchesLost: 9, matchesPlayed: 24, tournamentsCount: 2, avatarUrl: '' },
-        { id: 6, rank: 6, displayName: 'ScreaM#EDG', username: 'scream', email: 'scream@edg.gg', nickname: 'ScreaM#EDG', globalRole: 'USER', points: 760, winRate: 58.3, matchesWon: 12, matchesLost: 9, matchesPlayed: 21, tournamentsCount: 2, avatarUrl: '' }
-      ]);
+      setError('Lỗi kết nối khi tải bảng xếp hạng từ cơ sở dữ liệu');
+      setLeaderboard([]);
     } finally {
       setLoading(false);
     }
