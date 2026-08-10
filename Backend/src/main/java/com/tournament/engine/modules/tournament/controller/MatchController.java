@@ -60,6 +60,33 @@ public class MatchController {
         }
     }
 
+    @GetMapping("/tournament/{tournamentId}/standings")
+    public ResponseEntity<ApiResponse<List<com.tournament.engine.modules.tournament.dto.TournamentGroupStanding>>> getGroupStandings(@PathVariable Long tournamentId) {
+        try {
+            List<com.tournament.engine.modules.tournament.dto.TournamentGroupStanding> standings = matchService.getGroupStandings(tournamentId);
+            return ResponseEntity.ok(ApiResponse.success(standings, "Lấy bảng xếp hạng vòng bảng thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/tournament/{tournamentId}/advance-knockout")
+    public ResponseEntity<ApiResponse<Void>> advanceToKnockout(
+            @PathVariable Long tournamentId,
+            @RequestHeader(value = "user-id", required = false) Long userIdParam,
+            @RequestParam(value = "userId", required = false) Long userIdQuery) {
+        try {
+            Long userId = userIdParam != null ? userIdParam : userIdQuery;
+            if (userId == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Thiếu thông tin người dùng!"));
+            }
+            matchService.advanceToKnockout(tournamentId, userId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Chốt danh sách vào vòng Tứ kết thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @PutMapping("/{matchId}/score")
     public ResponseEntity<ApiResponse<MatchResponse>> updateMatchResult(
             @PathVariable Long matchId,

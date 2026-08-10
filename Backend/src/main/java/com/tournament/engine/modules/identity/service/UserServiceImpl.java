@@ -229,42 +229,48 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public List<UserLeaderboardDto> getUserLeaderboard() {
         List<User> users = userRepository.findAll();
-        List<UserLeaderboardDto> dtos = new ArrayList<>();
 
-        List<com.tournament.engine.modules.tournament.model.TeamMember> allMembers = teamMemberRepository.findAll();
+        List<Object[]> userTeamTuples = teamMemberRepository.findAllUserTeamIds();
         Map<Long, Set<Long>> userTeamMap = new HashMap<>();
-        for (com.tournament.engine.modules.tournament.model.TeamMember tm : allMembers) {
-            if (tm.getUser() != null && tm.getTeam() != null) {
-                userTeamMap.computeIfAbsent(tm.getUser().getId(), k -> new HashSet<>()).add(tm.getTeam().getId());
-            }
+        for (Object[] tuple : userTeamTuples) {
+            Long userId = (Long) tuple[0];
+            Long teamId = (Long) tuple[1];
+            userTeamMap.computeIfAbsent(userId, k -> new HashSet<>()).add(teamId);
         }
 
-        List<com.tournament.engine.modules.tournament.model.TournamentRegistration> registrations = tournamentRegistrationRepository.findAll();
+        List<Object[]> teamTourTuples = tournamentRegistrationRepository.findAllTeamTournamentIds();
         Map<Long, Set<Long>> teamTournamentMap = new HashMap<>();
-        for (com.tournament.engine.modules.tournament.model.TournamentRegistration tr : registrations) {
-            if (tr.getTeam() != null && tr.getTournament() != null) {
-                teamTournamentMap.computeIfAbsent(tr.getTeam().getId(), k -> new HashSet<>()).add(tr.getTournament().getId());
-            }
+        for (Object[] tuple : teamTourTuples) {
+            Long teamId = (Long) tuple[0];
+            Long tourId = (Long) tuple[1];
+            teamTournamentMap.computeIfAbsent(teamId, k -> new HashSet<>()).add(tourId);
         }
 
-        List<com.tournament.engine.modules.tournament.model.Match> matches = matchRepository.findAll();
+        List<Object[]> matchTuples = matchRepository.findAllMatchSummaryTuples();
         Map<Long, Integer> teamMatchesPlayed = new HashMap<>();
         Map<Long, Integer> teamMatchesWon = new HashMap<>();
 
-        for (com.tournament.engine.modules.tournament.model.Match m : matches) {
-            if ("COMPLETED".equals(m.getStatus()) || m.getWinner() != null) {
-                if (m.getTeam1() != null) {
-                    teamMatchesPlayed.put(m.getTeam1().getId(), teamMatchesPlayed.getOrDefault(m.getTeam1().getId(), 0) + 1);
+        for (Object[] tuple : matchTuples) {
+            Long team1Id = (Long) tuple[0];
+            Long team2Id = (Long) tuple[1];
+            Long winnerId = (Long) tuple[2];
+            Object statusObj = tuple[3];
+            String statusName = statusObj != null ? statusObj.toString() : "";
+
+            if ("COMPLETED".equals(statusName) || winnerId != null) {
+                if (team1Id != null) {
+                    teamMatchesPlayed.put(team1Id, teamMatchesPlayed.getOrDefault(team1Id, 0) + 1);
                 }
-                if (m.getTeam2() != null) {
-                    teamMatchesPlayed.put(m.getTeam2().getId(), teamMatchesPlayed.getOrDefault(m.getTeam2().getId(), 0) + 1);
+                if (team2Id != null) {
+                    teamMatchesPlayed.put(team2Id, teamMatchesPlayed.getOrDefault(team2Id, 0) + 1);
                 }
-                if (m.getWinner() != null) {
-                    teamMatchesWon.put(m.getWinner().getId(), teamMatchesWon.getOrDefault(m.getWinner().getId(), 0) + 1);
+                if (winnerId != null) {
+                    teamMatchesWon.put(winnerId, teamMatchesWon.getOrDefault(winnerId, 0) + 1);
                 }
             }
         }
 
+        List<UserLeaderboardDto> dtos = new ArrayList<>();
         for (User u : users) {
             Set<Long> teamIds = userTeamMap.getOrDefault(u.getId(), Collections.emptySet());
             Set<Long> tourIds = new HashSet<>();
@@ -280,7 +286,6 @@ public class UserServiceImpl implements UserService {
             int tournamentsCount = tourIds.size();
             int matchesLost = Math.max(0, matchesPlayed - matchesWon);
             double winRate = matchesPlayed > 0 ? Math.round(((double) matchesWon / matchesPlayed * 100) * 10.0) / 10.0 : 0.0;
-            
             int points = (matchesWon * 50) + (tournamentsCount * 30) + (matchesPlayed * 10);
 
             UserLeaderboardDto dto = UserLeaderboardDto.builder()

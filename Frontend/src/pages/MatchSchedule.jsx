@@ -574,7 +574,8 @@ export default function MatchSchedule({ currentUser: propUser }) {
       }
     } catch (err) {
       console.error('Lỗi tải danh sách trận đấu nội bộ:', err);
-      setError('Không thể kết nối đến máy chủ backend (Port 8081). Vui lòng kiểm tra lại dịch vụ Backend.');
+      const errMsg = err.response?.data?.message || err.message || 'Không thể kết nối đến máy chủ backend (Port 8081). Vui lòng kiểm tra lại dịch vụ Backend.';
+      setError(errMsg);
     } finally {
       setLoading(false);
     }

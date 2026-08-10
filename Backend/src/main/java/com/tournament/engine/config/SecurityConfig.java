@@ -75,6 +75,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/tournaments", "/api/v1/tournaments/**").permitAll()
                 .requestMatchers("/api/v1/teams", "/api/v1/teams/**").permitAll()
                 .requestMatchers("/api/v1/matches", "/api/v1/matches/**").permitAll()
+                .requestMatchers("/api/v1/external", "/api/v1/external/**").permitAll()
                 .requestMatchers("/api/v1/users", "/api/v1/users/**").permitAll()
                 .anyRequest().authenticated()
             );

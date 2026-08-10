@@ -20,7 +20,14 @@ public class PandaScoreService {
     @Value("${pandascore.base-url}")
     private String baseUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+
+    public PandaScoreService() {
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(2000);
+        factory.setReadTimeout(3000);
+        this.restTemplate = new RestTemplate(factory);
+    }
 
     /**
      * Get upcoming Valorant matches from PandaScore API

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -21,13 +21,28 @@
   --color-status-open: #00FF94;
   --color-status-ended: #666666;
 
-  --font-display: "Anton", sans-serif;
-  --font-body: "Hanken Grotesk", "Inter", sans-serif;
+  --font-display: "Outfit", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 }
 
 html {
   scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  color: #ECE8E1;
+  background-color: #0a141e;
+  line-height: 1.5;
+}
+
+.font-display {
+  font-family: "Outfit", "Inter", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 /* Base styles & Scrollbar */

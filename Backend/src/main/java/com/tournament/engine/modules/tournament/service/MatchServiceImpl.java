@@ -49,7 +49,7 @@ public class MatchServiceImpl implements MatchService {
         List<Match.MatchStatus> statuses = Arrays.asList(
                 Match.MatchStatus.PENDING,
                 Match.MatchStatus.LIVE,
-                Match.MatchStatus.COMPLETED
+                Match.MatchStatus.DRAFTING
         );
         List<Match> matches = matchRepository.findByStatusInOrderByScheduledTimeAsc(statuses);
         return matches.stream().map(m -> mapToResponse(m, m.getTournament().getName())).collect(Collectors.toList());

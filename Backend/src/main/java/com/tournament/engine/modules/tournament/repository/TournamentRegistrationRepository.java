@@ -2,6 +2,7 @@ package com.tournament.engine.modules.tournament.repository;
 
 import com.tournament.engine.modules.tournament.model.TournamentRegistration;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,4 +14,8 @@ public interface TournamentRegistrationRepository extends JpaRepository<Tourname
     List<TournamentRegistration> findByTeamId(Long teamId);
     Optional<TournamentRegistration> findByTournamentIdAndTeamId(Long tournamentId, Long teamId);
     boolean existsByTournamentIdAndTeamId(Long tournamentId, Long teamId);
+
+    @Query("SELECT tr.team.id, tr.tournament.id FROM TournamentRegistration tr WHERE tr.team IS NOT NULL AND tr.tournament IS NOT NULL")
+    List<Object[]> findAllTeamTournamentIds();
 }
+

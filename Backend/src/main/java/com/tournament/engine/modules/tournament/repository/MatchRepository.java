@@ -35,7 +35,6 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
            "LEFT JOIN FETCH m.team2 t2 " +
            "LEFT JOIN FETCH t2.captain " +
            "LEFT JOIN FETCH m.winner " +
-           "LEFT JOIN FETCH m.nextMatch " +
            "WHERE m.status IN :statuses " +
            "ORDER BY m.scheduledTime ASC")
     List<Match> findByStatusInOrderByScheduledTimeAsc(@Param("statuses") List<Match.MatchStatus> statuses);
@@ -43,5 +42,8 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findByTournamentIdAndStatus(Long tournamentId, Match.MatchStatus status);
 
     boolean existsByTournamentId(Long tournamentId);
+
+    @Query("SELECT m.team1.id, m.team2.id, m.winner.id, m.status FROM Match m")
+    List<Object[]> findAllMatchSummaryTuples();
 }
 

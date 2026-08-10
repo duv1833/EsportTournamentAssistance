@@ -71,6 +71,7 @@ const Lobby = () => {
   
   const [startCountdown, setStartCountdown] = useState(null); 
   const [tempScores, setTempScores] = useState({});
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState('ALL');
 
   const [stompClient, setStompClient] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState(new Set()); 
@@ -257,7 +258,7 @@ const Lobby = () => {
 
                      history.forEach(action => {
                          const { phase, actionType, teamId, mapName, agentName } = action;
-                         const isTeamA = teamId === prev.teamA.id;
+                         const isTeamA = String(teamId) === String(prev.teamA.id) || String(teamId) === '1';
                          
                          if (phase === 'MAP') {
                              if (actionType === 'BAN') {
@@ -501,7 +502,7 @@ const Lobby = () => {
               const targetGame = newGames.find(g => g.id === incomingMatchId);
               if (!targetGame) return prev;
               
-              const isTeamA = actedTeamId === 1;
+              const isTeamA = String(actedTeamId) === '1' || String(actedTeamId) === String(prev.teamA.id);
 
               if (phase === 'MAP' && game1) {
                 if (actionType === 'BAN') {
@@ -596,14 +597,21 @@ const Lobby = () => {
               const targetGame = prev.games.find(g => g.id === gameId);
               if (targetGame && targetGame.status === 'COMPLETED') return prev; // Already updated locally
 
-              let newScoreA = prev.teamA.score; let newScoreB = prev.teamB.score;
-              if (scoreA > scoreB) newScoreA += 1; else newScoreB += 1;
               const winThreshold = prev.format === 'BO3' ? 2 : prev.format === 'BO5' ? 3 : 1;
-              const over = newScoreA >= winThreshold || newScoreB >= winThreshold;
               let nextGameUnlocked = false;
 
               const newGames = prev.games.map((g) => {
                 if (g.id === gameId) return { ...g, status: 'COMPLETED', scoreA, scoreB };
+                return g;
+              });
+
+              // Derive scores from completed games to avoid double-counting
+              const newScoreA = newGames.filter(g => g.status === 'COMPLETED' && g.scoreA > g.scoreB).length;
+              const newScoreB = newGames.filter(g => g.status === 'COMPLETED' && g.scoreB > g.scoreA).length;
+              const over = newScoreA >= winThreshold || newScoreB >= winThreshold;
+
+              const finalGames = newGames.map((g) => {
+                if (g.id === gameId) return g; // already updated
                 if (over && (g.status === 'LOCKED' || g.status === 'WAITING')) return { ...g, status: 'CANCELED' };
                 if (!over && g.status === 'LOCKED' && !nextGameUnlocked && g.id > gameId) {
                   nextGameUnlocked = true; return { ...g, status: 'WAITING' };
@@ -611,7 +619,7 @@ const Lobby = () => {
                 return g;
               });
               
-              return { ...prev, teamA: { ...prev.teamA, score: newScoreA }, teamB: { ...prev.teamB, score: newScoreB }, games: newGames };
+              return { ...prev, teamA: { ...prev.teamA, score: newScoreA }, teamB: { ...prev.teamB, score: newScoreB }, games: finalGames };
             });
           }
           if (data.type === 'UNDO_SCORE') {
@@ -705,9 +713,58 @@ const Lobby = () => {
     }
   };
 
+  const validateValorantScore = (scoreA, scoreB) => {
+    const sA = parseInt(scoreA, 10);
+    const sB = parseInt(scoreB, 10);
+
+    if (isNaN(sA) || isNaN(sB) || sA < 0 || sB < 0) {
+      return { valid: false, message: '⚠️ Tỉ số phải là số nguyên không âm!' };
+    }
+    
+    if (sA === sB) {
+      return { valid: false, message: '⚠️ Trong thi đấu Valorant không có tỷ số hòa trong một ván!' };
+    }
+
+    const winnerScore = Math.max(sA, sB);
+    const loserScore = Math.min(sA, sB);
+    const diff = winnerScore - loserScore;
+
+    if (winnerScore < 13) {
+      return { 
+        valid: false, 
+        message: `⚠️ Tỉ số không hợp lệ! Đội thắng ván đấu phải đạt tối thiểu 13 round (Hiện tại: ${winnerScore} round).` 
+      };
+    }
+
+    if (winnerScore > 13 && diff < 2) {
+      return { 
+        valid: false, 
+        message: `⚠️ Tỉ số Overtime không hợp lệ! Khi thi đấu Overtime (trên 12 round), đội thắng (${winnerScore}) phải cách biệt ít nhất 2 round so với đội thua (${loserScore}). Ví dụ: 14-12, 15-13, 16-14.` 
+      };
+    }
+
+    if (winnerScore === 13 && loserScore > 11) {
+      return { 
+        valid: false, 
+        message: `⚠️ Tỉ số không hợp lệ! Khi tỷ số hòa 12-12, ván đấu phải bước vào Overtime (Đội thắng phải đạt từ 14 round trở lên và cách biệt 2 round, VD: 14-12).` 
+      };
+    }
+
+    return { valid: true };
+  };
+
   const handleAdminSaveScore = async (gameId) => {
-    const scoreA = parseInt(tempScores[`${gameId}_A`] || 0); const scoreB = parseInt(tempScores[`${gameId}_B`] || 0);
-    if (scoreA === scoreB) { alert("⚠️ Tỷ số không hợp lệ!"); return; }
+    const game = seriesData.games.find(g => g.id === gameId);
+    const rawA = tempScores[`${gameId}_A`];
+    const rawB = tempScores[`${gameId}_B`];
+    const scoreA = rawA !== undefined ? parseInt(rawA, 10) : (game ? parseInt(game.scoreA, 10) : 0);
+    const scoreB = rawB !== undefined ? parseInt(rawB, 10) : (game ? parseInt(game.scoreB, 10) : 0);
+
+    const check = validateValorantScore(scoreA, scoreB);
+    if (!check.valid) {
+      alert(check.message);
+      return;
+    }
 
     let currentSeriesScoreA = seriesData.teamA.score; 
     let currentSeriesScoreB = seriesData.teamB.score;
@@ -737,20 +794,33 @@ const Lobby = () => {
     }
     
     setSeriesData(prev => {
-      let newScoreA = prev.teamA.score; let newScoreB = prev.teamB.score;
-      if (scoreA > scoreB) newScoreA += 1; else newScoreB += 1;
-      const over = newScoreA >= winThreshold || newScoreB >= winThreshold;
       let nextGameUnlocked = false;
 
       const newGames = prev.games.map((g) => {
         if (g.id === gameId) return { ...g, status: 'COMPLETED', scoreA, scoreB };
+        return g;
+      });
+
+      // Derive scores from completed games to avoid double-counting
+      const newScoreA = newGames.filter(g => g.status === 'COMPLETED' && g.scoreA > g.scoreB).length;
+      const newScoreB = newGames.filter(g => g.status === 'COMPLETED' && g.scoreB > g.scoreA).length;
+      const over = newScoreA >= winThreshold || newScoreB >= winThreshold;
+
+      const finalGames = newGames.map((g) => {
+        if (g.id === gameId) return g; // already updated
         if (over && (g.status === 'LOCKED' || g.status === 'WAITING')) return { ...g, status: 'CANCELED' };
         if (!over && g.status === 'LOCKED' && !nextGameUnlocked && g.id > gameId) {
           nextGameUnlocked = true; return { ...g, status: 'WAITING' };
         }
         return g;
       });
-      return { ...prev, teamA: { ...prev.teamA, score: newScoreA }, teamB: { ...prev.teamB, score: newScoreB }, games: newGames };
+      if (over) {
+        const winnerName = newScoreA >= winThreshold ? prev.teamA.name : prev.teamB.name;
+        setTimeout(() => {
+          alert(`🏆 CHÚC MỪNG! Đội ${winnerName} đã chính thức giành chiến thắng chung cuộc loạt trận (${prev.format}) với tỷ số ${newScoreA} - ${newScoreB}!`);
+        }, 100);
+      }
+      return { ...prev, teamA: { ...prev.teamA, score: newScoreA }, teamB: { ...prev.teamB, score: newScoreB }, games: finalGames };
     });
   };
 
@@ -800,12 +870,92 @@ const Lobby = () => {
     });
   };
 
-  const AgentImage = ({ agentName, className }) => {
+  const VALORANT_AGENT_ICONS = {
+    'JETT': 'https://media.valorant-api.com/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/displayicon.png',
+    'RAZE': 'https://media.valorant-api.com/agents/f94c3b30-42be-e959-889c-5aa313dba261/displayicon.png',
+    'BREACH': 'https://media.valorant-api.com/agents/5f8d3a7f-467b-97f3-062c-13acf203c006/displayicon.png',
+    'OMEN': 'https://media.valorant-api.com/agents/8e253930-4c05-31dd-1b6c-968525494517/displayicon.png',
+    'SOVA': 'https://media.valorant-api.com/agents/320b2a48-4d9b-a075-30f1-1f93a9b638fa/displayicon.png',
+    'SAGE': 'https://media.valorant-api.com/agents/569fdd95-4d10-43ab-ca70-79becc718b46/displayicon.png',
+    'PHOENIX': 'https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f7921d69/displayicon.png',
+    'CYPHER': 'https://media.valorant-api.com/agents/117ed9e3-49f3-6512-3ccf-0cada7e3823b/displayicon.png',
+    'REYNA': 'https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4f1-ad90e9e46bcc/displayicon.png',
+    'KILLJOY': 'https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a0aee9f98746/displayicon.png',
+    'VIPER': 'https://media.valorant-api.com/agents/707eab51-4836-f488-046a-cda6bf494859/displayicon.png',
+    'BRIMSTONE': 'https://media.valorant-api.com/agents/9f0d8ba9-4140-b941-57d3-a7ad57c6b417/displayicon.png',
+    'YORU': 'https://media.valorant-api.com/agents/7f94d92c-4234-0a36-9646-3a87eb8b5c89/displayicon.png',
+    'ASTRA': 'https://media.valorant-api.com/agents/41fb69c1-4189-7b37-f117-bcaf1e96f1bf/displayicon.png',
+    'KAY/O': 'https://media.valorant-api.com/agents/601dbbe7-43ce-be57-2a40-4abd24953621/displayicon.png',
+    'KAYO': 'https://media.valorant-api.com/agents/601dbbe7-43ce-be57-2a40-4abd24953621/displayicon.png',
+    'CHAMBER': 'https://media.valorant-api.com/agents/22697a3d-45bf-8dd7-4fec-84a9e28c69d7/displayicon.png',
+    'NEON': 'https://media.valorant-api.com/agents/bb2a4828-46eb-8cd1-e765-15848195d751/displayicon.png',
+    'FADE': 'https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1facd6/displayicon.png',
+    'HARBOR': 'https://media.valorant-api.com/agents/95b78ed7-4637-86d9-7e41-71ba8c293152/displayicon.png',
+    'GEKKO': 'https://media.valorant-api.com/agents/e370fa57-4757-3604-3648-499e1f642d3f/displayicon.png',
+    'DEADLOCK': 'https://media.valorant-api.com/agents/cc8b64c8-4b25-4ff9-6e7f-37b4da43d235/displayicon.png',
+    'ISO': 'https://media.valorant-api.com/agents/0e38b510-41a8-5780-5e8f-568b2a4f2d6c/displayicon.png',
+    'CLOVE': 'https://media.valorant-api.com/agents/1dbf2edd-4729-0984-3115-daa5eed44993/displayicon.png',
+    'VYSE': 'https://media.valorant-api.com/agents/efba5359-4016-a1e5-7626-b1ae76895940/displayicon.png',
+    'SKYE': 'https://media.valorant-api.com/agents/6f2a04ca-43e0-be17-7f36-b3908627744d/displayicon.png',
+  };
+
+  const VALORANT_MAP_IMAGES = {
+    'ASCENT': 'https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6ab9-04b8f06b3319/splash.png',
+    'BIND': 'https://media.valorant-api.com/maps/2c9d57ec-4431-9c5e-2939-8f9ef6dd5cba/splash.png',
+    'HAVEN': 'https://media.valorant-api.com/maps/2bee0dc9-4ffe-519b-1cbd-7fbe763a6047/splash.png',
+    'SPLIT': 'https://media.valorant-api.com/maps/d960549e-485c-e861-8d71-aa9d1aed12a2/splash.png',
+    'ICEBOX': 'https://media.valorant-api.com/maps/e2ad5c54-4114-a870-9641-8ea21279579a/splash.png',
+    'BREEZE': 'https://media.valorant-api.com/maps/2fb9a4fd-47b8-4e7d-a969-74b4046ebd53/splash.png',
+    'FRACTURE': 'https://media.valorant-api.com/maps/b529448b-4d60-346e-e89e-00a4c527a405/splash.png',
+    'PEARL': 'https://media.valorant-api.com/maps/fd267378-4d1d-484f-ff52-77821ed10dc2/splash.png',
+    'LOTUS': 'https://media.valorant-api.com/maps/2fe4ed3a-450a-948b-6d6b-e89a78e680a9/splash.png',
+    'SUNSET': 'https://media.valorant-api.com/maps/92584fbe-486a-b1b2-9faa-39b0f486b498/splash.png',
+    'ABYSS': 'https://media.valorant-api.com/maps/224b0a95-48b9-f703-1bd8-67aca101a61f/splash.png',
+  };
+
+  const getAgentShortName = (name) => {
+    if (!name) return '';
+    const upper = name.toUpperCase().trim();
+    const map = {
+      'KILLJOY': 'KJ',
+      'ASTRA': 'AST',
+      'PHOENIX': 'PHX',
+      'CHAMBER': 'CHM',
+      'DEADLOCK': 'DDL',
+      'HARBOR': 'HBR',
+      'KAY/O': 'KAYO',
+      'KAYO': 'KAYO',
+      'REYNA': 'REY',
+      'VIPER': 'VIP',
+      'CYPHER': 'CYP',
+      'CLOVE': 'CLV',
+      'VYSE': 'VYS',
+      'BREACH': 'BRCH',
+    };
+    return map[upper] || upper;
+  };
+
+  const AgentImage = ({ agentName, className = '' }) => {
     const [imgError, setImgError] = useState(false);
     if (!agentName) return null;
+    const upperName = agentName.toUpperCase().trim();
+    const cdnUrl = VALORANT_AGENT_ICONS[upperName] || `/assets/agents/${agentName.toLowerCase()}.png`;
+    const shortName = getAgentShortName(agentName);
+
     return (
-      <div className={`relative w-full h-full flex items-center justify-center bg-[#1a242d] ${className}`}>
-        {!imgError ? <img src={`/assets/agents/${agentName}.png`} alt={agentName} className="w-full h-full object-cover" onError={() => setImgError(true)} /> : <span className="text-[9px] font-bold text-gray-300 tracking-wider truncate px-1">{agentName}</span>}
+      <div className={`relative w-full h-full flex items-center justify-center bg-[#1a242d] ${className}`} title={agentName}>
+        {!imgError ? (
+          <img 
+            src={cdnUrl} 
+            alt={agentName} 
+            className="w-full h-full object-cover" 
+            onError={() => setImgError(true)} 
+          />
+        ) : (
+          <span className="text-[10px] xl:text-[11px] font-extrabold text-gray-200 tracking-wider px-0.5 text-center leading-none uppercase whitespace-nowrap">
+            {shortName}
+          </span>
+        )}
       </div>
     );
   };
@@ -813,20 +963,110 @@ const Lobby = () => {
   const renderAgentSlots = (agents, type = 'pick', count = 5, size = 'sm') => {
     const slots = [];
     const isSmall = size === 'sm';
-    const pickClass = isSmall ? 'w-8 h-8 xl:w-9 xl:h-9' : 'w-20 h-20';
-    const banClass = isSmall ? 'w-5 h-5 xl:w-6 xl:h-6' : 'w-12 h-12';
+    const pickClass = isSmall ? 'min-w-[36px] h-9 px-1 xl:min-w-[42px] xl:h-10' : 'w-20 h-20';
+    const banClass = isSmall ? 'min-w-[28px] h-7 px-0.5 xl:min-w-[32px] xl:h-8' : 'w-12 h-12';
 
     for (let i = 0; i < count; i++) {
       const agentName = agents[i];
       if (type === 'pick') {
-        slots.push(<div key={i} className={`${pickClass} border flex items-center justify-center flex-shrink-0 bg-[#0f1923] ${agentName ? 'border-gray-500' : 'border-gray-700 border-dashed'}`}>{agentName && <AgentImage agentName={agentName} />}</div>);
+        slots.push(
+          <div key={i} title={agentName || 'Chưa chọn'} className={`${pickClass} border rounded flex items-center justify-center flex-shrink-0 bg-[#0f1923] ${agentName ? 'border-blue-400/80 bg-[#162432]' : 'border-gray-700 border-dashed'}`}>
+            {agentName ? <AgentImage agentName={agentName} /> : <span className="text-[8px] text-gray-600 font-bold">PICK</span>}
+          </div>
+        );
       } else {
         slots.push(
-          <div key={i} className={`${banClass} bg-red-950/40 border border-red-900/50 flex items-center justify-center flex-shrink-0 relative overflow-hidden opacity-80`}>
-            {agentName ? (<><AgentImage agentName={agentName} className="opacity-40 grayscale" /><div className="absolute inset-0 flex items-center justify-center"><div className="w-full h-[1px] bg-red-500 rotate-45 absolute"></div></div></>) : (<span className={`text-red-500/30 font-bold ${isSmall ? 'text-[6px]' : 'text-[10px]'}`}>BAN</span>)}
+          <div key={i} title={agentName ? `Ban: ${agentName}` : 'Chưa ban'} className={`${banClass} bg-red-950/50 border border-red-800/80 rounded flex items-center justify-center flex-shrink-0 relative overflow-hidden opacity-90`}>
+            {agentName ? (
+              <>
+                <AgentImage agentName={agentName} className="opacity-50" />
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-full h-[2px] bg-red-500 rotate-45 absolute shadow-[0_0_4px_rgba(239,68,68,0.9)]"></div>
+                </div>
+              </>
+            ) : (
+              <span className={`text-red-500/40 font-bold ${isSmall ? 'text-[7px]' : 'text-[10px]'}`}>BAN</span>
+            )}
           </div>
         );
       }
+    }
+    return slots;
+  };
+
+  const handleRandomSelect = () => {
+    if (!isMyTurn) return;
+
+    if (isMapVeto) {
+      if (currentMapAction?.action === 'PICK_SIDE') {
+        const sides = ['ATTACK', 'DEFENSE'];
+        const randomSide = sides[Math.floor(Math.random() * sides.length)];
+        setSelectedHover(randomSide);
+        return;
+      }
+      const availableMaps = MAP_POOL.filter(m => mapStatus(m) === 'AVAILABLE');
+      if (availableMaps.length > 0) {
+        const randomMap = availableMaps[Math.floor(Math.random() * availableMaps.length)];
+        setSelectedHover(randomMap);
+      }
+    } else {
+      let pool = AGENT_POOL.filter(a => agentStatus(a.name) === 'AVAILABLE');
+      if (selectedRoleFilter !== 'ALL') {
+        const roleFiltered = pool.filter(a => a.role === selectedRoleFilter);
+        if (roleFiltered.length > 0) {
+          pool = roleFiltered;
+        }
+      }
+      if (pool.length > 0) {
+        const randomAgent = pool[Math.floor(Math.random() * pool.length)];
+        setSelectedHover(randomAgent.name);
+      }
+    }
+  };
+
+  const renderVerticalRoster = (picks, teamPrefix = 'A', isTurn = false) => {
+    const slots = [];
+    for (let i = 0; i < 5; i++) {
+      const agentName = picks[i];
+      const isCurrentSlot = isTurn && picks.length === i;
+      const agentObj = AGENT_POOL.find(a => a.name.toUpperCase() === (agentName || '').toUpperCase());
+      const role = agentObj ? agentObj.role : null;
+
+      slots.push(
+        <div 
+          key={i} 
+          className={`relative w-full h-14 bg-[#101822] border rounded-lg p-2 flex items-center justify-between transition-all duration-300 ${agentName ? 'border-blue-500/60 bg-[#162332]' : isCurrentSlot ? 'border-amber-400 bg-amber-950/30 shadow-[0_0_15px_rgba(251,191,36,0.3)] animate-pulse' : 'border-gray-800 opacity-60'}`}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-gray-500 font-mono text-xs font-bold w-4">#{i + 1}</span>
+            <div className="w-10 h-10 rounded border border-gray-700 overflow-hidden bg-[#0d141d] shrink-0">
+              {agentName ? (
+                <AgentImage agentName={agentName} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-600 font-bold">
+                  {isCurrentSlot ? '⌛' : '—'}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col text-left">
+              {role ? (
+                <span className={`text-[9px] font-extrabold uppercase tracking-wider ${role === 'Duelist' ? 'text-red-400' : role === 'Controller' ? 'text-purple-400' : role === 'Initiator' ? 'text-green-400' : 'text-yellow-400'}`}>
+                  {role}
+                </span>
+              ) : (
+                <span className="text-[9px] text-gray-500 font-extrabold uppercase tracking-wider">CHƯA CHỌN</span>
+              )}
+              <span className={`font-display text-xs font-extrabold tracking-wide uppercase ${agentName ? 'text-white' : 'text-gray-500'}`}>
+                {agentName || (isCurrentSlot ? 'ĐANG CHỜ...' : 'CHƯA CHỌN')}
+              </span>
+            </div>
+          </div>
+
+          <div className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${teamPrefix === 'A' ? 'bg-blue-950/60 border-blue-800 text-blue-400' : 'bg-red-950/60 border-red-800 text-red-400'}`}>
+            {teamPrefix}{i + 1}
+          </div>
+        </div>
+      );
     }
     return slots;
   };
@@ -844,6 +1084,28 @@ const Lobby = () => {
           </div>
 
           <h1 className="text-gray-400 text-sm tracking-widest mb-2 uppercase pt-8">TRẬN ĐẤU ID: {matchId} - {seriesData.format}</h1>
+
+          {(() => {
+            const winThreshold = seriesData.format === 'BO3' ? 2 : seriesData.format === 'BO5' ? 3 : 1;
+            const isSeriesOver = seriesData.teamA.score >= winThreshold || seriesData.teamB.score >= winThreshold;
+            const seriesWinner = seriesData.teamA.score >= winThreshold ? seriesData.teamA : (seriesData.teamB.score >= winThreshold ? seriesData.teamB : null);
+
+            return isSeriesOver && seriesWinner && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-amber-950/90 via-yellow-900/70 to-amber-950/90 border-2 border-yellow-500 rounded-xl shadow-[0_0_30px_rgba(234,179,8,0.4)] text-center">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-3xl">🏆</span>
+                  <h2 className="text-2xl xl:text-3xl font-display font-extrabold text-yellow-400 tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                    ĐỘI {seriesWinner.name} CHIẾN THẮNG CHUNG CUỘC!
+                  </h2>
+                  <span className="text-3xl">🏆</span>
+                </div>
+                <p className="text-yellow-200/90 text-xs font-bold tracking-widest uppercase mt-1">
+                  TỈ SỐ LOẠT TRẬN ({seriesData.format}): <span className="text-white font-extrabold text-sm mx-1">{seriesData.teamA.score} - {seriesData.teamB.score}</span> • ĐỘI {seriesWinner.name} GIÀNH CHIẾN THẮNG!
+                </p>
+              </div>
+            );
+          })()}
+
           <div className="flex justify-center items-center gap-12 font-display text-4xl mb-4 relative">
             <span className="text-blue-400 w-48 text-right">{seriesData.teamA.name}</span>
             <div className="bg-[#1b1b1b] px-6 py-3 rounded-lg border border-gray-800 tracking-[0.2em] shadow-lg flex items-center justify-center relative">
@@ -1007,33 +1269,169 @@ const Lobby = () => {
           VÁN {activeGameSafe.gameNumber} - {isMapVeto ? (currentMapAction?.action === 'PICK_SIDE' ? 'ĐANG CHỜ CHỌN PHE' : (currentMapAction?.action === 'BAN' ? 'ĐANG CHỜ CẤM MAP' : 'ĐANG CHỜ CHỌN MAP')) : (isAgentDraftComplete ? 'ĐÃ HOÀN TẤT' : currentAgentAction?.action === 'BAN' ? 'ĐANG CHỜ CẤM TƯỚNG' : 'ĐANG CHỜ CHỌN TƯỚNG')}
         </h2>
         
-        <div className="w-full max-w-[1400px] grid grid-cols-[1fr_auto_1fr] gap-8 items-center mb-12">
-          {/* ĐỘI A */}
-          <div className={`flex flex-col border-2 p-8 rounded-lg bg-[#121a23] transition-all duration-300 ${!isAgentDraftComplete && activeGameSafe.currentTurnTeamId === 1 ? 'border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.2)]' : 'border-[#1f2933]'}`}>
-            <h3 className="text-3xl font-display font-bold text-blue-400 mb-6 text-left">{seriesData.teamA.name}</h3>
-            <div className="mb-8"><div className="grid grid-cols-5 gap-3">{!isMapVeto && renderAgentSlots(activeGameSafe.teamAPicks, 'pick', 5, 'lg')}</div></div>
-            <div className="flex justify-end gap-2">{!isMapVeto && renderAgentSlots(activeGameSafe.teamABans, 'ban', 3, 'lg')}</div>
+        <div className="w-full max-w-[1550px] grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6 items-start mb-12">
+          {/* ĐỘI A (DỌC BÊN TRÁI) */}
+          <div className={`flex flex-col border-2 p-5 rounded-xl bg-[#121c27] transition-all duration-300 ${!isAgentDraftComplete && activeGameSafe.currentTurnTeamId === 1 ? 'border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : 'border-gray-800'}`}>
+            <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
+              <h3 className="text-xl font-display font-extrabold text-blue-400 uppercase tracking-wide truncate">{seriesData.teamA.name}</h3>
+              <span className="text-xs text-blue-400 font-mono font-bold bg-blue-950/80 px-2 py-0.5 rounded border border-blue-800">TEAM A</span>
+            </div>
+            
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2 block text-left">ĐỘI HÌNH THI ĐẤU (5 SLOT)</span>
+            <div className="flex flex-col gap-2.5 mb-6">
+              {renderVerticalRoster(activeGameSafe.teamAPicks, 'A', !isAgentDraftComplete && activeGameSafe.currentTurnTeamId === 1)}
+            </div>
+
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2 block text-left">LƯỢT CẤM (BANS)</span>
+            <div className="flex gap-2 justify-start">
+              {renderAgentSlots(activeGameSafe.teamABans, 'ban', 3, 'sm')}
+            </div>
           </div>
           
-          {/* ĐỒNG HỒ */}
-          <div className="flex flex-col items-center justify-center w-48 relative">
-             <span className="text-xs text-gray-400 tracking-widest mb-2 font-bold uppercase">Thời Gian</span>
-             <span className={`font-display text-7xl font-bold transition-all duration-300 ${!isAgentDraftComplete && timeLeft <= 10 ? 'text-[#ff4655] scale-110 animate-pulse drop-shadow-[0_0_15px_rgba(255,70,85,0.6)]' : (isAgentDraftComplete ? 'text-success-cyan' : 'text-white')}`}>
-                {isAgentDraftComplete ? 'OK' : timeLeft}
-             </span>
-             
-             <div className="absolute -bottom-16 w-[300px] text-center">
-                 <span className={`text-sm uppercase font-bold tracking-widest px-6 py-2 rounded-full border shadow-lg ${isAgentDraftComplete ? 'bg-green-900/40 text-success-cyan border-success-cyan' : currentTurnTeamIdForDraft === 1 ? 'bg-blue-900/40 text-blue-400 border-blue-500' : 'bg-red-900/40 text-[#ff4655] border-[#ff4655]'}`}>
-                    {isAgentDraftComplete ? 'CHỜ ADMIN VÀO TRẬN' : `Đang đợi ${currentTurnTeamIdForDraft === 1 ? seriesData.teamA.short : seriesData.teamB.short} ${isMapVeto ? (currentMapAction?.action === 'BAN' ? 'CẤM MAP' : currentMapAction?.action === 'PICK_SIDE' ? 'CHỌN PHE' : 'CHỌN MAP') : (currentAgentAction?.action === 'BAN' ? 'CẤM TƯỚNG' : 'CHỌN TƯỚNG')}...`}
+          {/* CỘT GIỮA: ĐIỀU KHIỂN & BẢN ĐỒ AGENT / MAP POOL */}
+          <div className="flex flex-col items-center w-full">
+             {/* THỜI GIAN & THÔNG BÁO LƯỢT */}
+             <div className="w-full bg-[#121c27] border border-gray-800 rounded-xl p-4 text-center mb-4 relative overflow-hidden">
+               <div className="flex items-center justify-between mb-2">
+                 <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">LƯỢT HIỆN TẠI</span>
+                 <span className={`text-2xl font-display font-bold ${!isAgentDraftComplete && timeLeft <= 10 ? 'text-[#ff4655] animate-pulse' : (isAgentDraftComplete ? 'text-success-cyan' : 'text-amber-400')}`}>
+                   ⏱️ {isAgentDraftComplete ? 'HOÀN TẤT' : `${timeLeft}s`}
                  </span>
+               </div>
+               
+               <h3 className="font-display text-base xl:text-lg font-bold uppercase tracking-wider text-white">
+                 LƯỢT #{isMapVeto ? mapDraftStep + 1 : totalAgentActions + 1}: <span className={currentTurnTeamIdForDraft === 1 ? 'text-blue-400' : 'text-[#ff4655]'}>{currentTurnTeamIdForDraft === 1 ? seriesData.teamA.name : seriesData.teamB.name}</span> {isMapVeto ? (currentMapAction?.action === 'BAN' ? 'CẤM MAP' : currentMapAction?.action === 'PICK_SIDE' ? 'CHỌN PHE' : 'CHỌN MAP') : (currentAgentAction?.action === 'BAN' ? 'CẤM TƯỚNG' : 'CHỌN TƯỚNG')}
+               </h3>
+             </div>
+
+             {/* 1. CHỌN VAI TRÒ (ROLE) FILTER TABS */}
+             {!isMapVeto && (
+               <div className="w-full bg-[#121c27] border border-gray-800 rounded-xl p-4 mb-4">
+                 <span className="text-xs text-gray-400 uppercase tracking-widest font-bold block mb-3 text-left">1. CHỌN VAI TRÒ (ROLE)</span>
+                 <div className="grid grid-cols-5 gap-2">
+                   {[
+                     { id: 'ALL', label: 'BẤT KỲ', color: 'border-gray-600 text-gray-200' },
+                     { id: 'Duelist', label: 'DUELIST', color: 'border-red-500 text-red-400' },
+                     { id: 'Controller', label: 'CONTROLLER', color: 'border-purple-500 text-purple-400' },
+                     { id: 'Sentinel', label: 'SENTINEL', color: 'border-yellow-500 text-yellow-400' },
+                     { id: 'Initiator', label: 'INITIATOR', color: 'border-green-500 text-green-400' },
+                   ].map(role => (
+                     <button
+                       key={role.id}
+                       onClick={() => setSelectedRoleFilter(role.id)}
+                       className={`py-2 px-1 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all duration-200 ${selectedRoleFilter === role.id ? `${role.color} bg-white/10 ring-2 shadow-lg scale-105` : 'border-gray-800 text-gray-500 hover:border-gray-600'}`}
+                     >
+                       {role.label}
+                     </button>
+                   ))}
+                 </div>
+               </div>
+             )}
+
+             {/* 2. NÚT QUAY RANDOM & KHÓA TƯỚNG */}
+             <div className="w-full flex gap-3 mb-4">
+               <button
+                 onClick={handleRandomSelect}
+                 disabled={!isMyTurn}
+                 className={`flex-1 py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs xl:text-sm transition-all duration-300 flex items-center justify-center gap-2 border shadow-lg ${isMyTurn ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black border-yellow-400 hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.4)] cursor-pointer active:scale-95' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
+               >
+                 <span className="text-base">🎲</span> 2. BẮT ĐẦU QUAY RANDOM
+               </button>
+
+               <button
+                 onClick={handleLockSelection}
+                 disabled={!selectedHover || !isMyTurn}
+                 className={`flex-1 py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs xl:text-sm transition-all duration-300 flex items-center justify-center gap-2 border shadow-lg ${selectedHover && isMyTurn ? 'bg-[#ff4655] text-white border-red-400 hover:bg-red-500 shadow-[0_0_20px_rgba(255,70,85,0.5)] cursor-pointer active:scale-95' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
+               >
+                 {selectedHover ? `🔒 KHÓA: ${selectedHover}` : `VUI LÒNG CHỌN ${isMapVeto ? 'MAP' : 'TƯỚNG'}`}
+               </button>
+             </div>
+
+             {/* BẢN ĐỒ AGENT / MAP POOL GRID */}
+             <div className="w-full bg-[#121c27] border border-gray-800 rounded-xl p-4">
+               <span className="text-xs text-gray-400 uppercase tracking-widest font-bold block mb-3 text-left">
+                 {isMapVeto ? 'BẢN ĐỒ MAP POOL VALORANT' : `BẢN ĐỒ AGENT VALORANT (${selectedRoleFilter === 'ALL' ? 'TẤT CẢ VAI TRÒ' : selectedRoleFilter.toUpperCase()})`}
+               </span>
+
+               {currentMapAction?.action === 'PICK_SIDE' ? (
+                 <div className="flex justify-center gap-6 py-4">
+                   <button
+                     onClick={() => setSelectedHover('ATTACK')}
+                     className={`w-48 py-6 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${selectedHover === 'ATTACK' ? 'border-red-500 bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'border-gray-700 hover:border-red-500'}`}
+                   >
+                     <span className="text-4xl mb-2">🗡️</span>
+                     <span className="text-lg font-bold text-red-400">ATTACK (CÔNG)</span>
+                   </button>
+                   <button
+                     onClick={() => setSelectedHover('DEFENSE')}
+                     className={`w-48 py-6 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${selectedHover === 'DEFENSE' ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'border-gray-700 hover:border-blue-500'}`}
+                   >
+                     <span className="text-4xl mb-2">🛡️</span>
+                     <span className="text-lg font-bold text-blue-400">DEFENSE (THỦ)</span>
+                   </button>
+                 </div>
+               ) : (
+                 <div className="flex flex-wrap justify-center gap-2.5 max-h-[360px] overflow-y-auto pr-1">
+                   {(isMapVeto ? MAP_POOL : (selectedRoleFilter === 'ALL' ? AGENT_POOL : AGENT_POOL.filter(a => a.role === selectedRoleFilter))).map((item) => {
+                      const itemName = isMapVeto ? item : item.name;
+                      const isSelected = selectedHover === itemName;
+                      
+                      const status = isMapVeto ? mapStatus(itemName) : agentStatus(itemName);
+                      const disabled = status === 'BANNED' || status === 'PICKED' || status === 'PICKED_BY_ME' || !isMyTurn;
+                      const label = status === 'BANNED' ? 'BỊ CẤM' : (status === 'PICKED' || status === 'PICKED_BY_ME') ? 'ĐÃ CHỌN' : '';
+                      
+                      if (isMapVeto) {
+                        const mapImg = VALORANT_MAP_IMAGES[itemName.toUpperCase()];
+                        return (
+                           <button key={itemName}
+                             onClick={() => !disabled && setSelectedHover(itemName)}
+                             disabled={disabled}
+                             className={`relative w-32 h-20 bg-[#0a1118] border-2 flex items-center justify-center rounded-lg overflow-hidden group transition-all duration-200 shadow-md ${isSelected ? 'border-[#ff4655] scale-105 z-10 shadow-[0_0_20px_rgba(255,70,85,0.6)] ring-2 ring-[#ff4655]' : disabled ? 'border-gray-800 opacity-40 cursor-not-allowed grayscale' : 'border-gray-700 hover:border-gray-400'}`}>
+                               {mapImg && (
+                                 <img src={mapImg} alt={itemName} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-500" />
+                               )}
+                               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-2 text-center">
+                                 <span className="font-display font-extrabold tracking-widest text-sm text-white uppercase">{itemName}</span>
+                               </div>
+                               {label && <div className="absolute inset-0 bg-black/75 flex items-center justify-center z-10"><span className="text-white text-[10px] font-extrabold tracking-widest uppercase border border-red-500 bg-red-950/80 px-2 py-1 rounded">{label}</span></div>}
+                           </button>
+                        );
+                      } else {
+                        return (
+                           <button key={itemName}
+                             onClick={() => !disabled && setSelectedHover(itemName)}
+                             disabled={disabled}
+                             className={`relative w-16 h-16 xl:w-20 xl:h-20 bg-[#0a1118] border-2 flex items-center justify-center rounded-lg overflow-hidden group transition-all duration-200 ${isSelected ? 'border-[#ff4655] scale-110 z-10 shadow-[0_0_15px_rgba(255,70,85,0.6)] ring-2 ring-[#ff4655]' : 'border-transparent hover:border-gray-500'} ${disabled ? 'opacity-40 cursor-not-allowed grayscale' : ''}`}> 
+                             <AgentImage agentName={itemName} className="group-hover:scale-110 transition-transform duration-300" />
+                             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-0.5 pt-3 text-center">
+                                <span className={`text-[9px] font-bold tracking-wider ${item.role === 'Duelist' ? 'text-red-300' : item.role === 'Controller' ? 'text-purple-300' : item.role === 'Initiator' ? 'text-green-300' : 'text-yellow-300'}`}>{itemName}</span>
+                             </div>
+                             {label && <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-10"><span className="text-white text-[9px] font-bold tracking-widest uppercase border border-gray-500 bg-black/60 px-1 py-0.5 rounded">{label}</span></div>}
+                           </button>
+                        );
+                      }
+                   })}
+                 </div>
+               )}
              </div>
           </div>
           
-          {/* ĐỘI B */}
-          <div className={`flex flex-col border-2 p-8 rounded-lg bg-[#121a23] transition-all duration-300 text-right ${!isAgentDraftComplete && activeGameSafe.currentTurnTeamId === 2 ? 'border-[#ff4655] shadow-[0_0_30px_rgba(255,70,85,0.2)]' : 'border-[#1f2933]'}`}>
-             <h3 className="text-3xl font-display font-bold text-[#ff4655] mb-6 text-right">{seriesData.teamB.name}</h3>
-            <div className="mb-8"><div className="grid grid-cols-5 gap-3 flex-row-reverse">{!isMapVeto && renderAgentSlots(activeGameSafe.teamBPicks, 'pick', 5, 'lg')}</div></div>
-            <div className="flex justify-start gap-2">{!isMapVeto && renderAgentSlots(activeGameSafe.teamBBans, 'ban', 3, 'lg')}</div>
+          {/* ĐỘI B (DỌC BÊN PHẢI) */}
+          <div className={`flex flex-col border-2 p-5 rounded-xl bg-[#121c27] transition-all duration-300 ${!isAgentDraftComplete && activeGameSafe.currentTurnTeamId === 2 ? 'border-[#ff4655] shadow-[0_0_30px_rgba(255,70,85,0.3)]' : 'border-gray-800'}`}>
+            <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
+              <span className="text-xs text-[#ff4655] font-mono font-bold bg-red-950/80 px-2 py-0.5 rounded border border-red-800">TEAM B</span>
+              <h3 className="text-xl font-display font-extrabold text-[#ff4655] uppercase tracking-wide truncate">{seriesData.teamB.name}</h3>
+            </div>
+            
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2 block text-right">ĐỘI HÌNH THI ĐẤU (5 SLOT)</span>
+            <div className="flex flex-col gap-2.5 mb-6">
+              {renderVerticalRoster(activeGameSafe.teamBPicks, 'B', !isAgentDraftComplete && activeGameSafe.currentTurnTeamId === 2)}
+            </div>
+
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2 block text-right">LƯỢT CẤM (BANS)</span>
+            <div className="flex gap-2 justify-end">
+              {renderAgentSlots(activeGameSafe.teamBBans, 'ban', 3, 'sm')}
+            </div>
           </div>
         </div>
 
@@ -1086,79 +1484,7 @@ const Lobby = () => {
                 </div>
              )}
           </div>
-        ) : (
-          <div className={`w-full max-w-[1000px] mt-10 bg-[#1f2933] p-8 rounded border border-gray-700 text-center transition-all duration-300 shadow-2xl ${(!isMyTurn) ? 'opacity-50 pointer-events-none grayscale-[30%]' : ''}`}>
-            <h4 className="text-gray-400 text-sm mb-6 uppercase tracking-widest flex items-center justify-center gap-2 font-bold">
-              {!isMyTurn && <span className="text-[#ff4655] border border-[#ff4655] px-2 py-0.5 rounded">🔒 CHƯA TỚI LƯỢT CHỌN CỦA ĐỘI BẠN</span>} 
-              {isMapVeto ? 'DANH SÁCH BẢN ĐỒ (MAP POOL)' : 'DANH SÁCH ĐẶC VỤ'}
-            </h4>
-            
-            {currentMapAction?.action === 'PICK_SIDE' ? (
-              <div className="flex justify-center gap-8 mt-8">
-                <button
-                  onMouseEnter={() => setSelectedHover('ATTACK')}
-                  onMouseLeave={() => setSelectedHover(null)}
-                  onClick={() => setSelectedHover('ATTACK')}
-                  className={`w-64 py-8 rounded-lg border-2 flex flex-col items-center justify-center transition-all duration-300 ${selectedHover === 'ATTACK' ? 'border-red-500 bg-red-500/20' : 'border-gray-700 hover:border-red-500 hover:bg-red-500/10'}`}
-                >
-                  <span className="text-6xl mb-4">🗡️</span>
-                  <span className="text-2xl font-bold font-display uppercase tracking-widest text-red-400">ATTACK (CÔNG)</span>
-                </button>
-                <button
-                  onMouseEnter={() => setSelectedHover('DEFENSE')}
-                  onMouseLeave={() => setSelectedHover(null)}
-                  onClick={() => setSelectedHover('DEFENSE')}
-                  className={`w-64 py-8 rounded-lg border-2 flex flex-col items-center justify-center transition-all duration-300 ${selectedHover === 'DEFENSE' ? 'border-blue-500 bg-blue-500/20' : 'border-gray-700 hover:border-blue-500 hover:bg-blue-500/10'}`}
-                >
-                  <span className="text-6xl mb-4">🛡️</span>
-                  <span className="text-2xl font-bold font-display uppercase tracking-widest text-blue-400">DEFENSE (THỦ)</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-wrap justify-center gap-3">
-                {POOL_DATA.map((item) => {
-                   const itemName = isMapVeto ? item : item.name;
-                   const isSelected = selectedHover === itemName;
-                   
-                   const status = isMapVeto ? mapStatus(itemName) : agentStatus(itemName);
-                   const disabled = status === 'BANNED' || status === 'PICKED' || status === 'PICKED_BY_ME' || !isMyTurn;
-                   const label = status === 'BANNED' ? 'BỊ CẤM' : (status === 'PICKED' || status === 'PICKED_BY_ME') ? 'ĐÃ CHỌN' : '';
-                   
-                   if (isMapVeto) {
-                     return (
-                        <button key={itemName}
-                          onClick={() => !disabled && setSelectedHover(itemName)}
-                          disabled={disabled}
-                          className={`relative w-32 h-20 bg-[#0a1118] border-2 flex items-center justify-center rounded overflow-hidden group transition-all duration-200 ${isSelected ? 'border-[#ff4655] scale-110 z-10 shadow-[0_0_15px_rgba(255,70,85,0.5)]' : disabled ? 'border-gray-800 bg-gray-900/80 cursor-not-allowed' : 'border-gray-600 hover:border-gray-400'}`}>
-                            <span className="font-display font-bold tracking-widest text-lg transition-transform">{itemName}</span>
-                            {label && <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-[10px] uppercase tracking-[0.2em] font-bold text-white py-1">{label}</div>}
-                        </button>
-                     );
-                   } else {
-                     return (
-                        <button key={itemName}
-                          onClick={() => !disabled && setSelectedHover(itemName)}
-                          disabled={disabled}
-                          className={`relative w-20 h-20 md:w-24 md:h-24 bg-[#0a1118] border-2 flex items-center justify-center rounded overflow-hidden group transition-all duration-200 ${isSelected ? 'border-[#ff4655] scale-110 z-10 shadow-[0_0_15px_rgba(255,70,85,0.5)]' : 'border-transparent hover:border-gray-400'} ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}> 
-                          <AgentImage agentName={itemName} className="group-hover:scale-110 transition-transform duration-300" />
-                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-1 pt-4 text-center">
-                             <span className={`text-[10px] font-bold tracking-wider ${item.role === 'Duelist' ? 'text-red-300' : item.role === 'Controller' ? 'text-purple-300' : item.role === 'Initiator' ? 'text-green-300' : 'text-yellow-300'}`}>{itemName}</span>
-                          </div>
-                          {label && <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-10"><span className="text-white text-[10px] font-bold tracking-widest uppercase border border-gray-500 bg-black/50 px-1 py-0.5 rounded">{label}</span></div>}
-                        </button>
-                     );
-                   }
-                })}
-              </div>
-            )}
-
-            <button onClick={handleLockSelection} className={`mt-10 px-16 py-4 font-bold tracking-widest rounded uppercase transition-all duration-300 shadow-lg
-              ${selectedHover ? 'bg-[#ff4655] text-white hover:bg-red-500 hover:shadow-[0_0_20px_rgba(255,70,85,0.6)] cursor-pointer' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}
-            `}>
-              {selectedHover ? `KHÓA: ${selectedHover}` : `VUI LÒNG CHỌN ${isMapVeto ? 'MAP' : 'TƯỚNG'}`}
-            </button>
-          </div>
-        )}
+        ) : null}
 
       </div>
     </div>
