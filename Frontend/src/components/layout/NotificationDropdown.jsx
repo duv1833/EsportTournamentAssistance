@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Shield, Swords, Check, X, CheckCheck, RefreshCw, Zap, Clock, Info } from 'lucide-react';
+import { Bell, Shield, Swords, Check, X, CheckCheck, RefreshCw, Zap, Clock, Info, Trophy } from 'lucide-react';
 import { useNotifications } from '../../contexts/NotificationContext';
 
 export default function NotificationDropdown() {
@@ -17,7 +17,7 @@ export default function NotificationDropdown() {
   } = useNotifications();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [filter, setFilter] = useState('ALL'); // 'ALL' | 'INVITE' | 'MATCH'
+  const [filter, setFilter] = useState('ALL'); // 'ALL' | 'TOURNAMENT' | 'INVITE' | 'MATCH'
   const [actionLoading, setActionLoading] = useState({});
   const dropdownRef = useRef(null);
 
@@ -67,7 +67,8 @@ export default function NotificationDropdown() {
   };
 
   const filteredNotifications = notifications.filter(n => {
-    if (filter === 'INVITE') return n.type === 'TEAM_INVITE' || n.type === 'JOIN_REQUEST';
+    if (filter === 'TOURNAMENT') return n.type === 'TOURNAMENT_REGISTRATION' || n.type === 'TOURNAMENT_REGISTRATION_USER';
+    if (filter === 'INVITE') return n.type === 'TEAM_INVITE' || n.type === 'JOIN_REQUEST' || n.type === 'TEAM_CREATED' || n.type === 'TEAM_CREATED_ADMIN' || n.type === 'TEAM_JOINED';
     if (filter === 'MATCH') return n.type === 'MATCH_LIVE' || n.type === 'MATCH_UPCOMING';
     return true;
   });
@@ -120,9 +121,10 @@ export default function NotificationDropdown() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex border-b border-outline-variant/40 bg-background/30 font-mono text-[11px]">
+          <div className="flex border-b border-outline-variant/40 bg-background/30 font-mono text-[10px]">
             {[
               { key: 'ALL', label: 'TẤT CẢ' },
+              { key: 'TOURNAMENT', label: 'GIẢI ĐẤU' },
               { key: 'INVITE', label: 'ĐỘI TUYỂN' },
               { key: 'MATCH', label: 'THI ĐẤU' },
             ].map(tab => (
@@ -151,6 +153,7 @@ export default function NotificationDropdown() {
               filteredNotifications.map(notif => {
                 const isInvite = notif.type === 'TEAM_INVITE' || notif.type === 'JOIN_REQUEST';
                 const isLive = notif.type === 'MATCH_LIVE';
+                const isTournament = notif.type === 'TOURNAMENT_REGISTRATION' || notif.type === 'TOURNAMENT_REGISTRATION_USER';
 
                 return (
                   <div
@@ -168,7 +171,11 @@ export default function NotificationDropdown() {
                     <div className="flex items-start gap-3">
                       {/* Icon */}
                       <div className="mt-0.5 shrink-0">
-                        {isInvite ? (
+                        {isTournament ? (
+                          <div className="w-8 h-8 rounded bg-warning-amber/20 border border-warning-amber/50 flex items-center justify-center text-warning-amber">
+                            <Trophy size={16} />
+                          </div>
+                        ) : isInvite ? (
                           <div className="w-8 h-8 rounded bg-warning-amber/15 border border-warning-amber/40 flex items-center justify-center text-warning-amber">
                             <Shield size={16} />
                           </div>

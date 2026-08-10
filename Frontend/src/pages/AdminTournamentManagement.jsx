@@ -28,7 +28,8 @@ export default function AdminTournamentManagement({ currentUser }) {
     try {
       const res = await getAdminTournaments(currentUser.id);
       if (res.success) {
-        setTournaments(res.data);
+        const sorted = (res.data || []).sort((a, b) => (b.id || 0) - (a.id || 0));
+        setTournaments(sorted);
       } else {
         setErrorMessage(res.message || 'Không thể tải danh sách giải đấu');
       }

@@ -12,7 +12,8 @@ const AdminUserManagement = ({ currentUser }) => {
     try {
       const res = await getAllUsers();
       if (res.success) {
-        setUsers(res.data);
+        const sorted = (res.data || []).sort((a, b) => (b.id || 0) - (a.id || 0));
+        setUsers(sorted);
       }
     } catch (err) {
       console.error(err);

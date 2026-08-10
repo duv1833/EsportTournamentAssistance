@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { X, CheckCircle2, AlertCircle, Loader2, Upload } from 'lucide-react';
 import { registerForTournament } from '../../services/tournamentService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import TactileButton from '../common/TactileButton';
 
 export default function TournamentRegistrationForm({ tournament, onCancel, onSuccess }) {
   const { currentUser } = useAuth();
+  const { refreshNotifications } = useNotifications();
   const [formData, setFormData] = useState({
     teamName: '',
     teamTag: '',
@@ -51,6 +53,9 @@ export default function TournamentRegistrationForm({ tournament, onCancel, onSuc
 
       if (res.success) {
         setSuccess('Đăng ký tham gia giải đấu thành công! Đang chờ Ban Tổ Chức duyệt.');
+        if (refreshNotifications) {
+          refreshNotifications();
+        }
         setTimeout(() => {
           if (onSuccess) onSuccess();
         }, 1500);

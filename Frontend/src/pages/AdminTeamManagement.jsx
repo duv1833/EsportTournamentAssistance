@@ -12,7 +12,8 @@ const AdminTeamManagement = () => {
     try {
       const res = await getAllTeamsAdmin();
       if (res.success) {
-        setTeams(res.data);
+        const sorted = (res.data || []).sort((a, b) => (b.id || 0) - (a.id || 0));
+        setTeams(sorted);
       }
     } catch (err) {
       console.error(err);

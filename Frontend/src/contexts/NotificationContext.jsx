@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useAuth } from './AuthContext';
 import { teamService } from '../services/teamService';
 import { getAllUpcomingMatches } from '../services/matchService';
+import { getAllTournaments } from '../services/tournamentService';
 
 const NotificationContext = createContext(null);
 
@@ -61,10 +62,25 @@ export const NotificationProvider = ({ children }) => {
       const allTeams = (resTeams?.success && resTeams?.data) ? resTeams.data : (Array.isArray(resTeams) ? resTeams : []);
 
       allTeams.forEach(team => {
-        const isCaptain = team.captainId === currentUser.id;
+        const isCaptain = (team.captainId && team.captainId === currentUser.id) ||
+                          (team.captainUsername && team.captainUsername === currentUser.username);
+        const isAdminOrOrg = ['ADMIN', 'ORGANIZER'].includes(currentUser.globalRole);
 
         if (isCaptain) {
-          // If captain, check for pending requests from others
+          // Notification for Team Captain about team creation
+          newNotifications.push({
+            id: `team-created-self-${team.id}`,
+            type: 'TEAM_CREATED',
+            title: '🛡️ TẠO ĐỘI TUYỂN THÀNH CÔNG',
+            message: `Bạn đã khởi tạo thành công đội tuyển ${team.name} (${team.tag || 'TEAM'}). Hãy mời các thành viên tham gia!`,
+            timestamp: team.createdAt || new Date().toISOString(),
+            teamId: team.id,
+            teamName: team.name,
+            link: '/manage-team',
+            actionLabel: 'QUẢN LÝ ĐỘI'
+          });
+
+          // Check for pending join requests from others
           const pendingMembers = team.members?.filter(
             m => (m.status === 'INVITED' || m.status === 'PENDING') && m.userId !== currentUser.id
           ) || [];
@@ -86,7 +102,7 @@ export const NotificationProvider = ({ children }) => {
             });
           });
         } else {
-          // If member, check if current user is invited to this team
+          // If member, check if current user is invited or joined
           const myMembership = team.members?.find(
             m => m.userId === currentUser.id && (m.status === 'INVITED' || m.status === 'PENDING')
           );
@@ -107,6 +123,38 @@ export const NotificationProvider = ({ children }) => {
               hasActions: true
             });
           }
+
+          const acceptedMembership = team.members?.find(
+            m => m.userId === currentUser.id && (m.status === 'ACCEPTED' || m.status === 'APPROVED')
+          );
+          if (acceptedMembership) {
+            newNotifications.push({
+              id: `team-joined-${team.id}-${currentUser.id}`,
+              type: 'TEAM_JOINED',
+              title: '🛡️ THÀNH VIÊN ĐỘI TUYỂN',
+              message: `Bạn hiện là thành viên chính thức của đội tuyển ${team.name} (${team.tag || 'TEAM'}).`,
+              timestamp: new Date().toISOString(),
+              teamId: team.id,
+              teamName: team.name,
+              link: '/manage-team',
+              actionLabel: 'XEM ĐỘI'
+            });
+          }
+        }
+
+        // Notification for Admin / Organizers when any user creates a team
+        if (isAdminOrOrg && !isCaptain) {
+          newNotifications.push({
+            id: `team-created-admin-${team.id}`,
+            type: 'TEAM_CREATED_ADMIN',
+            title: '🛡️ ĐỘI TUYỂN MỚI ĐƯỢC TẠO',
+            message: `Game thủ ${team.captainUsername || 'Captain'} vừa tạo đội tuyển mới "${team.name}" (${team.tag || 'TEAM'}).`,
+            timestamp: team.createdAt || new Date().toISOString(),
+            teamId: team.id,
+            teamName: team.name,
+            link: '/teams',
+            actionLabel: 'XEM ĐỘI TUYỂN'
+          });
         }
       });
 
@@ -151,7 +199,68 @@ export const NotificationProvider = ({ children }) => {
         }
       });
 
-      // 3. Load custom system action notifications (Disband, Kick, Invite, etc.)
+      // 3. Fetch Tournaments for Registration Notifications
+      try {
+        const resTournaments = await getAllTournaments();
+        const allTournaments = (resTournaments?.success && resTournaments?.data) 
+          ? resTournaments.data 
+          : (Array.isArray(resTournaments) ? resTournaments : []);
+
+        allTournaments.forEach(tour => {
+          const isCreator = (tour.creatorId && tour.creatorId === currentUser.id) ||
+                            (tour.creatorUsername && tour.creatorUsername === currentUser.username);
+          const isOrganizerRole = ['ADMIN', 'ORGANIZER'].includes(currentUser.globalRole);
+
+          if (tour.registeredTeams && Array.isArray(tour.registeredTeams)) {
+            tour.registeredTeams.forEach(registeredTeam => {
+              // Notification for Tournament Creator / Organizer when a team registers
+              if (isCreator || isOrganizerRole) {
+                const regStatusText = registeredTeam.registrationStatus === 'APPROVED' ? 'Đã duyệt' :
+                                      registeredTeam.registrationStatus === 'REJECTED' ? 'Đã từ chối' : 'Chờ duyệt';
+                
+                newNotifications.push({
+                  id: `tour-reg-${tour.id}-${registeredTeam.id || registeredTeam.teamId}`,
+                  type: 'TOURNAMENT_REGISTRATION',
+                  title: '🏆 ĐĂNG KÝ GIẢI ĐẤU MỚI',
+                  message: `Đội tuyển ${registeredTeam.name || registeredTeam.teamName} (${registeredTeam.tag || 'TEAM'}) đã đăng ký tham gia giải đấu "${tour.name}". Trạng thái: ${regStatusText}.`,
+                  timestamp: registeredTeam.registeredAt || tour.createdAt || new Date().toISOString(),
+                  tournamentId: tour.id,
+                  tournamentName: tour.name,
+                  teamName: registeredTeam.name || registeredTeam.teamName,
+                  link: `/tournaments/${tour.id}`,
+                  actionLabel: 'XEM CHI TIẾT'
+                });
+              }
+
+              // Notification for Team Captain / Members about their team's registration
+              const isUserInTeam = (registeredTeam.captainId && registeredTeam.captainId === currentUser.id) ||
+                                   (registeredTeam.captainUsername && registeredTeam.captainUsername === currentUser.username) ||
+                                   (registeredTeam.members && registeredTeam.members.some(m => m.userId === currentUser.id));
+
+              if (isUserInTeam) {
+                const statusLabel = registeredTeam.registrationStatus === 'APPROVED' ? 'đã được Ban Tổ Chức DUYỆT!' :
+                                    registeredTeam.registrationStatus === 'REJECTED' ? 'đã bị Ban Tổ Chức TỪ CHỐI.' :
+                                    'đã gửi thành công và đang chờ duyệt.';
+                newNotifications.push({
+                  id: `tour-user-reg-${tour.id}-${registeredTeam.id || registeredTeam.teamId}-${registeredTeam.registrationStatus || 'PENDING'}`,
+                  type: 'TOURNAMENT_REGISTRATION_USER',
+                  title: '📢 TRẠNG THÁI ĐĂNG KÝ GIẢI ĐẤU',
+                  message: `Đăng ký của đội ${registeredTeam.name || registeredTeam.teamName} tại giải đấu "${tour.name}" ${statusLabel}`,
+                  timestamp: registeredTeam.registeredAt || tour.createdAt || new Date().toISOString(),
+                  tournamentId: tour.id,
+                  tournamentName: tour.name,
+                  link: `/tournaments/${tour.id}`,
+                  actionLabel: 'XEM GIẢI ĐẤU'
+                });
+              }
+            });
+          }
+        });
+      } catch (errTour) {
+        console.warn("Lỗi lấy giải đấu cho thông báo:", errTour);
+      }
+
+      // 4. Load custom system action notifications (Disband, Kick, Invite, etc.)
       const customKey = `custom_notifications_${currentUser.id}`;
       const savedCustom = localStorage.getItem(customKey);
       if (savedCustom) {
@@ -171,6 +280,8 @@ export const NotificationProvider = ({ children }) => {
       setLoading(false);
     }
 
+    // Sort all notifications by newest timestamp first
+    newNotifications.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
     setNotifications(newNotifications);
   }, [currentUser?.id, currentUser?.globalRole]);
 
