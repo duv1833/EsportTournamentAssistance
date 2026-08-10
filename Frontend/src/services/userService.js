@@ -9,5 +9,10 @@ export const userService = {
   updateUserProfile: async (userId, data) => {
     const response = await api.put(`/users/${userId}/profile`, data);
     return response.data;
+  },
+
+  searchUsers: async (query) => {
+    const response = await api.get('/users/search', { params: { query } });
+    return response.data;
   }
 };

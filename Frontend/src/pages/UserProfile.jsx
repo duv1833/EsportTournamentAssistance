@@ -12,7 +12,8 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
     fullName: currentUser?.fullName || '',
     nickname: currentUser?.nickname || '',
     phoneNumber: currentUser?.phoneNumber || '',
-    avatarUrl: currentUser?.avatarUrl || ''
+    avatarUrl: currentUser?.avatarUrl || '',
+    email: currentUser?.email || ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,8 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
               fullName: res.data.fullName || '',
               nickname: res.data.nickname || '',
               phoneNumber: res.data.phoneNumber || '',
-              avatarUrl: res.data.avatarUrl || ''
+              avatarUrl: res.data.avatarUrl || '',
+              email: res.data.email || ''
             });
             const updatedUserData = {
               ...currentUser,
@@ -37,7 +39,8 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
               nickname: res.data.nickname,
               phoneNumber: res.data.phoneNumber,
               avatarUrl: res.data.avatarUrl,
-              displayName: res.data.displayName
+              displayName: res.data.displayName,
+              email: res.data.email
             };
             updateUser(updatedUserData);
           }
@@ -48,7 +51,8 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
               fullName: currentUser.fullName || '',
               nickname: currentUser.nickname || '',
               phoneNumber: currentUser.phoneNumber || '',
-              avatarUrl: currentUser.avatarUrl || ''
+              avatarUrl: currentUser.avatarUrl || '',
+              email: currentUser.email || ''
             });
           }
         }
@@ -60,6 +64,60 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentUser) return;
+
+    // 1. Validate Email
+    if (formData.email && formData.email.trim()) {
+      const emailStr = formData.email.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailStr)) {
+        setError('Địa chỉ Email không hợp lệ!');
+        return;
+      }
+    }
+
+    // 2. Validate Nickname / In-Game Name (#Tag format)
+    if (formData.nickname && formData.nickname.trim()) {
+      const nick = formData.nickname.trim();
+      const nickRegex = /^[a-zA-Z0-9_\s]{2,20}#[a-zA-Z0-9]{2,6}$/;
+      if (!nickRegex.test(nick)) {
+        setError('Tên In-Game phải đúng định dạng "Tên ingame + #Tag" (Ví dụ: TenZ#NA1, Faker#KR1, Dux#0006)');
+        return;
+      }
+    }
+
+    // 3. Validate Full Name
+    if (formData.fullName && formData.fullName.trim()) {
+      const name = formData.fullName.trim();
+      if (name.length < 2 || name.length > 50) {
+        setError('Họ và tên phải có độ dài từ 2 đến 50 ký tự!');
+        return;
+      }
+      const nameRegex = /^[a-zA-ZÀ-ỹ\s'-]+$/;
+      if (!nameRegex.test(name)) {
+        setError('Họ và tên chỉ được chứa chữ cái và khoảng trắng, không chứa số hoặc ký tự đặc biệt!');
+        return;
+      }
+    }
+
+    // 4. Validate Phone Number (VN format)
+    if (formData.phoneNumber && formData.phoneNumber.trim()) {
+      const phone = formData.phoneNumber.trim();
+      const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
+      if (!phoneRegex.test(phone)) {
+        setError('Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số (Ví dụ: 0912345678, 0387654321)');
+        return;
+      }
+    }
+
+    // 5. Validate Avatar URL
+    if (formData.avatarUrl && formData.avatarUrl.trim()) {
+      const url = formData.avatarUrl.trim();
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        setError('URL Ảnh đại diện phải bắt đầu bằng http:// hoặc https://');
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
@@ -74,7 +132,8 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
           nickname: res.data.nickname,
           phoneNumber: res.data.phoneNumber,
           avatarUrl: res.data.avatarUrl,
-          displayName: res.data.displayName
+          displayName: res.data.displayName,
+          email: res.data.email
         };
         updateUser(updatedUserData);
         if (onUserUpdated) {
@@ -180,32 +239,35 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
                 />
               </div>
 
-              {/* Email (Disabled) */}
+              {/* Email (Editable) */}
               <div>
-                <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5">Email (Cố định)</label>
+                <label className="block font-mono text-xs uppercase text-tactical-gray mb-1.5 flex items-center gap-1">
+                  <Mail size={12} /> Địa Chỉ Email
+                </label>
                 <input
-                  type="text"
-                  value={currentUser?.email || ''}
-                  disabled
-                  className="w-full bg-background/50 border border-outline-variant/40 p-3 text-tactical-gray font-mono text-sm cursor-not-allowed"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="VD: user@example.com"
+                  className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
                 />
               </div>
             </div>
 
-            {/* Nickname */}
+            {/* Nickname / In-Game Name */}
             <div>
-              <label className="block font-mono text-xs uppercase text-warning-amber mb-1.5 flex items-center gap-1.5">
-                <Sparkles size={14} /> Nickname / Biệt Danh Hiển Thị Giải Đấu
+              <label className="block font-mono text-xs uppercase text-warning-amber mb-1.5 flex items-center gap-1.5 font-bold">
+                <Sparkles size={14} /> Tên In-Game Cố Định (Định dạng: Tên ingame + #Tag)
               </label>
               <input
                 type="text"
                 value={formData.nickname}
                 onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
-                placeholder="VD: Faker, Cap, SGP_Pro..."
-                className="w-full bg-background border border-outline-variant p-3 text-off-white font-body text-sm focus:outline-none focus:border-primary-red"
+                placeholder="VD: TenZ#NA1, Faker#KR1, SGP_Pro#VN..."
+                className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
               />
-              <p className="font-mono text-[10px] text-tactical-gray mt-1.5">
-                * Ưu tiên hiển thị Nickname nếu được cài đặt. Nếu để trống sẽ hiển thị Họ và Tên.
+              <p className="font-mono text-[10px] text-warning-amber mt-1.5">
+                * Yêu cầu nhập đúng định dạng <b>Tên ingame + #Tag</b> (Ví dụ: <b>TenZ#NA1</b>, <b>Faker#KR1</b>). Tên này sẽ cố định khi bạn thi đấu bất kỳ giải đấu nào.
               </p>
             </div>
 

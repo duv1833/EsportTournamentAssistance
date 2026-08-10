@@ -65,14 +65,14 @@ function InternalMatchCard({ match, currentUser, userTeamIds, onUpdateScore }) {
   }
 
   const RoleIcon = roleBadge.icon;
-  const isLive = match.status === 'LIVE';
-  const isCompleted = match.status === 'COMPLETED';
+  const isLive = match.status === 'LIVE' || match.status === 'running';
+  const isCompleted = match.status === 'COMPLETED' || match.status === 'FINISHED' || match.status === 'finished';
 
   const score1 = match.scoreTeam1 ?? 0;
   const score2 = match.scoreTeam2 ?? 0;
 
   return (
-    <div className={`bg-surface-charcoal border ${isLive ? 'border-primary-red/80 shadow-lg shadow-primary-red/15' : isPlayer ? 'border-warning-amber/50' : 'border-outline-variant'} p-5 clip-corner hover:border-primary-red/50 transition-all flex flex-col justify-between`}>
+    <div className={`bg-surface-charcoal border ${isLive ? 'border-primary-red/80 shadow-lg shadow-primary-red/15' : isCompleted ? 'border-success-cyan/30' : isPlayer ? 'border-warning-amber/50' : 'border-outline-variant'} p-5 clip-corner hover:border-primary-red/50 transition-all flex flex-col justify-between`}>
       <div>
         {/* Top bar: Tournament name & Match status */}
         <div className="flex items-center justify-between gap-2 mb-3">
@@ -152,13 +152,23 @@ function InternalMatchCard({ match, currentUser, userTeamIds, onUpdateScore }) {
         {/* Main Ban/Pick Button */}
         <TactileButton
           type="button"
-          variant={isLive ? "cyan" : isPlayer ? "primary" : "secondary"}
+          variant={isCompleted ? "secondary" : isLive ? "cyan" : isPlayer ? "primary" : "secondary"}
           onClick={() => navigate(`/lobby/${match.id}`)}
           className="w-full justify-center flex items-center gap-2 py-2.5 font-display text-xs uppercase tracking-wider"
         >
-          <Swords size={15} />
-          {isPlayer ? 'VÀO BAN/PICK THI ĐẤU' : isRefOrAdmin ? 'VÀO BAN/PICK GIÁM SÁT' : 'XEM TRỰC TIẾP BAN/PICK'}
-          <ArrowRight size={14} />
+          {isCompleted ? (
+            <>
+              <Eye size={15} />
+              XEM LẠI BAN/PICK & KẾT QUẢ
+              <ArrowRight size={14} />
+            </>
+          ) : (
+            <>
+              <Swords size={15} />
+              {isPlayer ? 'VÀO BAN/PICK THI ĐẤU' : isRefOrAdmin ? 'VÀO BAN/PICK GIÁM SÁT' : 'XEM TRỰC TIẾP BAN/PICK'}
+              <ArrowRight size={14} />
+            </>
+          )}
         </TactileButton>
 
         {/* Organizer Score Update Button */}
@@ -261,8 +271,8 @@ function ExternalMatchCard({ match }) {
 // ─── Internal Bracket Node ───────────────
 function BracketMatchNode({ match, isOrganizer, currentUser, onUpdateScore }) {
   const navigate = useNavigate();
-  const isCompleted = match.status === 'COMPLETED';
-  const isLive = match.status === 'LIVE';
+  const isCompleted = match.status === 'COMPLETED' || match.status === 'FINISHED' || match.status === 'finished';
+  const isLive = match.status === 'LIVE' || match.status === 'running';
   const team1Wins = match.winnerId && match.winnerId === match.team1Id;
   const team2Wins = match.winnerId && match.winnerId === match.team2Id;
 
@@ -304,7 +314,8 @@ function BracketMatchNode({ match, isOrganizer, currentUser, onUpdateScore }) {
           onClick={() => navigate(`/lobby/${match.id}`)}
           className="flex-1 bg-surface-bright/40 hover:bg-primary-red hover:text-off-white text-tactical-gray font-mono text-[9px] py-1 text-center uppercase tracking-wider flex items-center justify-center gap-1 transition-colors"
         >
-          <Swords size={10} /> Phân Phòng Ban/Pick
+          {isCompleted ? <Eye size={10} /> : <Swords size={10} />}
+          {isCompleted ? 'Xem Lại Ban/Pick' : 'Vào Ban/Pick'}
         </button>
 
         {/* Organizer actions */}
@@ -537,15 +548,19 @@ export default function MatchSchedule({ currentUser: propUser }) {
     try {
       // 1. Fetch internal matches
       const resMatches = await getAllUpcomingMatches();
-      if (resMatches.success) {
+      if (resMatches?.success) {
         setInternalMatches(resMatches.data || []);
+      } else if (Array.isArray(resMatches)) {
+        setInternalMatches(resMatches);
+      } else if (resMatches?.message) {
+        setError(resMatches.message);
       }
 
       // 2. Fetch user's team IDs to filter "My Matches"
-      if (currentUser) {
+      if (currentUser?.id) {
         try {
           const resTeams = await teamService.getAllTeams();
-          if (resTeams.success && resTeams.data) {
+          if (resTeams?.success && resTeams?.data) {
             const myTeams = resTeams.data.filter(team => {
               const isCaptain = team.captainId === currentUser.id;
               const isMember = team.members?.some(m => m.userId === currentUser.id && m.status === 'ACCEPTED');
@@ -559,11 +574,11 @@ export default function MatchSchedule({ currentUser: propUser }) {
       }
     } catch (err) {
       console.error('Lỗi tải danh sách trận đấu nội bộ:', err);
-      setError('Không thể tải lịch thi đấu hệ thống.');
+      setError('Không thể kết nối đến máy chủ backend (Port 8081). Vui lòng kiểm tra lại dịch vụ Backend.');
     } finally {
       setLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser?.id]);
 
   // Fetch external VCT matches
   const fetchExternalMatches = useCallback(async () => {

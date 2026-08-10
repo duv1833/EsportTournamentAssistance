@@ -49,12 +49,15 @@ public class User implements UserDetails {
 
     public String getDisplayName() {
         if (nickname != null && !nickname.isBlank()) {
-            return nickname;
+            if (nickname.contains("#")) {
+                return nickname;
+            }
+            return nickname + "#" + (id != null ? String.format("%04d", id) : "0001");
         }
         if (fullName != null && !fullName.isBlank()) {
-            return fullName;
+            return fullName.replaceAll("\\s+", "") + "#" + (id != null ? String.format("%04d", id) : "0001");
         }
-        return username;
+        return username + "#" + (id != null ? String.format("%04d", id) : "0001");
     }
 
     @Enumerated(EnumType.STRING)

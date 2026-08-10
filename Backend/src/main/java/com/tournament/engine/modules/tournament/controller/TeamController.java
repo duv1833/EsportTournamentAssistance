@@ -130,4 +130,16 @@ public class TeamController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @PostMapping("/{teamId}/disband")
+    public ResponseEntity<ApiResponse<Void>> disbandTeam(
+            @PathVariable Long teamId,
+            @RequestParam Long captainId) {
+        try {
+            teamService.disbandTeam(teamId, captainId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Giải tán đội tuyển thành công! Lịch sử giải đấu đã được bảo lưu."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, Swords, Trophy, Shield, Newspaper, Layers, LogOut, Menu, X, ShieldCheck, User, ChevronDown, Settings } from 'lucide-react';
 import TactileButton from '../common/TactileButton';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -49,7 +50,7 @@ export default function Navbar() {
       <div className="flex items-center gap-8">
         <NavLink to="/" className="flex items-center gap-3 cursor-pointer">
           <Layers className="w-8 h-8 text-primary-red" strokeWidth={2.5} />
-          <span className="font-display text-2xl tracking-tighter text-primary-red">TACTICAL EDGE</span>
+          <span className="font-display text-2xl tracking-tighter text-primary-red">ETA</span>
         </NavLink>
 
         <nav className="hidden md:flex gap-6">
@@ -68,6 +69,7 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-center gap-4">
+        {currentUser && <NotificationDropdown />}
         {currentUser ? (
           <div className="relative" ref={dropdownRef}>
             <button 

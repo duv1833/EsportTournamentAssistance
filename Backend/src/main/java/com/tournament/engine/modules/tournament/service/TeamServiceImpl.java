@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.tournament.engine.modules.tournament.model.Tournament;
 import com.tournament.engine.modules.tournament.model.TournamentRegistration;
 import com.tournament.engine.modules.tournament.repository.TournamentRegistrationRepository;
 
@@ -31,6 +32,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public List<TeamResponse> getAllTeams() {
         return teamRepository.findAll().stream()
+                .filter(t -> t.getIsActive() == null || t.getIsActive())
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -47,7 +49,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public List<TeamResponse> getTeamsByCaptain(Long captainId) {
         return teamRepository.findAll().stream()
-                .filter(t -> t.getCaptain().getId().equals(captainId))
+                .filter(t -> t.getCaptain().getId().equals(captainId) && (t.getIsActive() == null || t.getIsActive()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -164,7 +166,8 @@ public class TeamServiceImpl implements TeamService {
 
         User user = userRepository.findByUsername(query)
                 .orElseGet(() -> userRepository.findByEmail(query)
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng có Username/Email: " + query)));
+                        .orElseGet(() -> userRepository.findTop10ByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(query, query, query).stream().findFirst()
+                                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng phù hợp với Username/Email: " + query))));
 
         if (user.getId().equals(captainId)) {
             throw new RuntimeException("Bạn là đội trưởng của đội này rồi!");
@@ -183,8 +186,8 @@ public class TeamServiceImpl implements TeamService {
         TeamMember member = TeamMember.builder()
                 .team(team)
                 .user(user)
-                .inGameName(request.getInGameName() != null ? request.getInGameName() : user.getUsername())
-                .status(TeamMember.MembershipStatus.ACCEPTED) // Captain inviting directly adds them or pending
+                .inGameName(request.getInGameName() != null ? request.getInGameName() : user.getDisplayName())
+                .status(TeamMember.MembershipStatus.INVITED)
                 .build();
         teamMemberRepository.save(member);
     }
@@ -222,6 +225,41 @@ public class TeamServiceImpl implements TeamService {
     public void joinTeamByInviteCode(String inviteCode, com.tournament.engine.modules.tournament.dto.JoinTeamRequest request) {
         Team team = findTeamByCode(inviteCode);
         joinTeam(team.getId(), request);
+    }
+
+    @Override
+    @Transactional
+    public void disbandTeam(Long teamId, Long captainId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đội tuyển"));
+
+        if (!team.getCaptain().getId().equals(captainId)) {
+            throw new RuntimeException("Chỉ đội trưởng mới có quyền giải tán đội tuyển!");
+        }
+
+        List<TournamentRegistration> regs = registrationRepository.findByTeamId(teamId);
+        boolean inOngoingTournament = regs.stream().anyMatch(r -> 
+            r.getStatus() == TournamentRegistration.RegistrationStatus.APPROVED &&
+            r.getTournament() != null &&
+            (r.getTournament().getRegistrationStatus() == Tournament.RegistrationStatus.IN_PROGRESS ||
+             r.getTournament().getRegistrationStatus() == Tournament.RegistrationStatus.LOCKED)
+        );
+
+        if (inOngoingTournament) {
+            throw new RuntimeException("Không thể giải tán đội tuyển khi đang tham gia giải đấu đang diễn ra!");
+        }
+
+        team.setIsActive(false);
+
+        if (team.getMembers() != null) {
+            for (TeamMember m : team.getMembers()) {
+                if (m.getStatus() != TeamMember.MembershipStatus.REMOVED) {
+                    m.setStatus(TeamMember.MembershipStatus.REMOVED);
+                }
+            }
+        }
+
+        teamRepository.save(team);
     }
 
     @Override
@@ -270,12 +308,14 @@ public class TeamServiceImpl implements TeamService {
 
         Long tournamentId = null;
         String tournamentName = null;
+        String tournamentStatus = null;
         List<TournamentRegistration> regs = registrationRepository.findByTeamId(team.getId());
         if (!regs.isEmpty()) {
             TournamentRegistration reg = regs.get(regs.size() - 1);
             if (reg.getTournament() != null) {
                 tournamentId = reg.getTournament().getId();
                 tournamentName = reg.getTournament().getName();
+                tournamentStatus = reg.getStatus() != null ? reg.getStatus().name() : "APPROVED";
             }
         }
 
@@ -290,6 +330,7 @@ public class TeamServiceImpl implements TeamService {
                 .inviteCode(team.getInviteCode())
                 .tournamentId(tournamentId)
                 .tournamentName(tournamentName)
+                .tournamentStatus(tournamentStatus)
                 .members(memberResponses)
                 .build();
     }

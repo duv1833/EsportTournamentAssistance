@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { teamService } from '../services/teamService';
-import { Shield, Check, X, UserMinus, AlertTriangle } from 'lucide-react';
+import { Shield, Check, X, UserMinus, AlertTriangle, Trash2, Trophy, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import TactileButton from '../components/common/TactileButton';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
+import UserAutocompleteInput from '../components/team/UserAutocompleteInput';
 
 export default function ManageTeam({ currentUser: propUser }) {
   const { currentUser: authUser } = useAuth();
+  const { addNotification } = useNotifications();
   const currentUser = propUser || authUser;
 
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [inviteUserMap, setInviteUserMap] = useState({});
 
   const fetchManagedTeams = async () => {
     if (!currentUser) return;
@@ -35,6 +40,34 @@ export default function ManageTeam({ currentUser: propUser }) {
     fetchManagedTeams();
   }, [currentUser]);
 
+  const handleDisbandTeam = async (teamId, teamName) => {
+    const confirmed = window.confirm(
+      `⚠️ BẠN CÓ CHẮC CHẮN MUỐN GIẢI TÁN ĐỘI TUYỂN [${teamName}]?\n\n- Tất cả thành viên sẽ rời khỏi đội.\n- Đội tuyển sẽ ngưng hoạt động.\n- Dữ liệu và lịch sử giải đấu cũ vẫn được hệ thống bảo lưu 100%.`
+    );
+    if (!confirmed) return;
+
+    setError('');
+    setSuccess('');
+    try {
+      const res = await teamService.disbandTeam(teamId, currentUser.id);
+      if (res.success) {
+        const msg = res.message || `Đã giải tán đội tuyển ${teamName} thành công!`;
+        setSuccess(msg);
+        addNotification({
+          type: 'SYSTEM',
+          title: '⚠️ ĐÃ GIẢI TÁN ĐỘI TUYỂN',
+          message: `Đội tuyển ${teamName} đã được giải tán thành công! Lịch sử giải đấu cũ được bảo lưu 100%.`,
+          link: '/manage-team'
+        });
+        fetchManagedTeams();
+      } else {
+        setError(res.message);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Lỗi khi giải tán đội tuyển');
+    }
+  };
+
   const handleAction = async (action, teamId, memberId) => {
     setError('');
     setSuccess('');
@@ -50,7 +83,14 @@ export default function ManageTeam({ currentUser: propUser }) {
       }
 
       if (res && res.success) {
-        setSuccess(res.message || 'Thao tác thành công!');
+        const msg = res.message || 'Thao tác thành công!';
+        setSuccess(msg);
+        addNotification({
+          type: 'SYSTEM',
+          title: action === 'kick' ? '🚫 ĐÃ KÍCH THÀNH VIÊN KHỎI ĐỘI' : action === 'approve' ? '✓ ĐÃ DUYỆT THÀNH VIÊN' : '🗑️ ĐÃ HỦY / TỪ CHỐI LỜI MỜI',
+          message: msg,
+          link: '/manage-team'
+        });
         fetchManagedTeams();
       } else if (res) {
         setError(res.message);
@@ -117,7 +157,7 @@ export default function ManageTeam({ currentUser: propUser }) {
           const totalMembers = 1 + approvedMembers.length;
 
           return (
-            <div key={team.id} className="bg-surface-charcoal border border-outline-variant clip-corner-top overflow-hidden">
+            <div key={team.id} className="bg-surface-charcoal border border-outline-variant clip-corner-top relative">
               <div className="bg-surface-bright px-6 py-4 flex justify-between items-center border-b border-outline-variant">
                 <div className="flex items-center gap-4">
                   <Shield size={28} className="text-primary-red" />
@@ -140,70 +180,134 @@ export default function ManageTeam({ currentUser: propUser }) {
                       {totalMembers} / 7
                     </span>
                   </div>
-                  {team.inviteCode && (
+                  <div className="flex items-center gap-2">
+                    {team.inviteCode && (
+                      <button
+                        onClick={() => {
+                          const inviteUrl = `${window.location.origin}/join-team?code=${team.inviteCode}`;
+                          navigator.clipboard.writeText(inviteUrl);
+                          alert(`Đã sao chép link mời tham gia đội ${team.name}:\n\n${inviteUrl}`);
+                        }}
+                        className="font-mono text-[10px] bg-primary-red/10 hover:bg-primary-red text-primary-red hover:text-off-white border border-primary-red/40 px-3 py-1.5 transition-colors uppercase font-bold tracking-wider flex items-center gap-1.5"
+                      >
+                        🔗 LINK MỜI
+                      </button>
+                    )}
                     <button
-                      onClick={() => {
-                        const inviteUrl = `${window.location.origin}/join-team?code=${team.inviteCode}`;
-                        navigator.clipboard.writeText(inviteUrl);
-                        alert(`Đã sao chép link mời tham gia đội ${team.name}:\n\n${inviteUrl}`);
-                      }}
-                      className="font-mono text-[10px] bg-primary-red/10 hover:bg-primary-red text-primary-red hover:text-off-white border border-primary-red/40 px-3 py-1.5 transition-colors uppercase font-bold tracking-wider flex items-center gap-1.5"
+                      onClick={() => handleDisbandTeam(team.id, team.name)}
+                      className="font-mono text-[10px] bg-primary-red/20 hover:bg-primary-red text-primary-red hover:text-off-white border border-primary-red px-3 py-1.5 transition-colors uppercase font-bold tracking-wider flex items-center gap-1"
+                      title="Giải tán đội tuyển (Vẫn bảo lưu lịch sử thi đấu cũ)"
                     >
-                      🔗 COPIED LINK MỜI THAM GIA
+                      <Trash2 size={12} /> GIẢI TÁN ĐỘI
                     </button>
-                  )}
+                  </div>
                 </div>
+              </div>
+
+              {/* GIẢI ĐẤU ĐANG THAM GIA BANNER */}
+              <div className="bg-background/80 px-6 py-2.5 border-b border-outline-variant/60 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+                {team.tournamentName ? (
+                  <div className="flex items-center gap-2">
+                    <Trophy size={15} className="text-warning-amber" />
+                    <span className="text-tactical-gray uppercase font-bold">GIẢI ĐẤU ĐANG THAM GIA:</span>
+                    <Link
+                      to={team.tournamentId ? `/tournaments/${team.tournamentId}` : '/tournaments'}
+                      className="text-off-white hover:text-primary-red font-display text-sm font-bold flex items-center gap-1 transition-colors"
+                    >
+                      {team.tournamentName} <ExternalLink size={12} />
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-tactical-gray">
+                    <Trophy size={15} className="text-tactical-gray/60" />
+                    <span>Chưa đăng ký tham gia giải đấu nào.</span>
+                  </div>
+                )}
+
+                {team.tournamentName ? (
+                  <span className="px-2.5 py-0.5 border border-success-cyan/50 text-success-cyan bg-success-cyan/10 font-mono text-[10px] uppercase font-bold tracking-wider">
+                    {team.tournamentStatus === 'APPROVED' ? '✓ ĐÃ DUYỆT THAM GIA' : team.tournamentStatus === 'PENDING' ? '⌛ ĐANG CHỜ DUYỆT' : 'CHÍNH THỨC'}
+                  </span>
+                ) : (
+                  <Link
+                    to="/tournaments"
+                    className="text-primary-red hover:underline font-mono text-[11px] uppercase font-bold flex items-center gap-1"
+                  >
+                    + ĐĂNG KÝ THAM GIA GIẢI ĐẤU
+                  </Link>
+                )}
               </div>
 
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Form Mời Thành Viên Mới & Yêu cầu chờ duyệt */}
                 <div className="space-y-6">
                   {/* Form Mời */}
-                  <div className="bg-background border border-outline-variant p-4 clip-corner">
+                  <div className="bg-background border border-outline-variant p-4 rounded relative">
                     <h4 className="font-mono text-xs text-primary-red uppercase font-bold mb-3 flex items-center gap-1.5">
                       <UserMinus className="rotate-180" size={16} /> MỜI THÀNH VIÊN VÀO ĐỘI
                     </h4>
-                    <form onSubmit={async (e) => {
-                      e.preventDefault();
-                      const formData = new FormData(e.target);
-                      const usernameOrEmail = formData.get('usernameOrEmail');
-                      const inGameName = formData.get('inGameName');
-                      if (!usernameOrEmail) return;
-                      try {
-                        setError(''); setSuccess('');
-                        const res = await teamService.inviteMember(team.id, currentUser.id, usernameOrEmail, inGameName);
-                        if (res.success) {
-                          setSuccess(res.message || 'Mời thành viên thành công!');
-                          e.target.reset();
-                          fetchManagedTeams();
-                        } else {
-                          setError(res.message);
-                        }
-                      } catch (err) {
-                        setError(err.response?.data?.message || 'Không thể mời thành viên này');
-                      }
-                    }} className="space-y-3">
-                      <div>
-                        <input
-                          type="text"
-                          name="usernameOrEmail"
-                          placeholder="Username hoặc Email người chơi..."
-                          required
-                          className="w-full bg-surface-charcoal border border-outline-variant px-3 py-2 text-xs text-off-white focus:border-primary-red outline-none font-mono"
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="text"
-                          name="inGameName"
-                          placeholder="In-Game Name (Ví dụ: TenZ#NA1)..."
-                          className="w-full bg-surface-charcoal border border-outline-variant px-3 py-2 text-xs text-off-white focus:border-primary-red outline-none font-mono"
-                        />
-                      </div>
-                      <TactileButton variant="primary" size="sm" type="submit" disabled={totalMembers >= 7} className="w-full justify-center">
-                        GỬI LỜI MỜI
-                      </TactileButton>
-                    </form>
+                    {(() => {
+                      const selectedList = Array.isArray(inviteUserMap[team.id]) ? inviteUserMap[team.id] : [];
+                      return (
+                        <form onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (selectedList.length === 0) {
+                            setError('Vui lòng tìm và chọn ít nhất 1 người chơi để gửi lời mời!');
+                            return;
+                          }
+                          try {
+                            setError(''); setSuccess('');
+                            let successCount = 0;
+                            let failMsg = '';
+                            for (const userObj of selectedList) {
+                              const targetQuery = userObj.username || userObj.email;
+                              try {
+                                const res = await teamService.inviteMember(team.id, currentUser.id, targetQuery);
+                                if (res.success) {
+                                  successCount++;
+                                } else {
+                                  failMsg = res.message;
+                                }
+                              } catch (errSingle) {
+                                failMsg = errSingle.response?.data?.message || errSingle.message || 'Có lỗi xảy ra với người chơi này';
+                              }
+                            }
+                            if (successCount > 0) {
+                              const msg = `Đã gửi lời mời tham gia thành công tới ${successCount} thành viên!`;
+                              setSuccess(msg);
+                              addNotification({
+                                type: 'SYSTEM',
+                                title: '📩 ĐÃ GỬI LỜI MỜI GIA NHẬP',
+                                message: msg,
+                                link: '/manage-team'
+                              });
+                              setInviteUserMap(prev => ({ ...prev, [team.id]: [] }));
+                              fetchManagedTeams();
+                            } else {
+                              setError(failMsg || 'Không thể gửi lời mời cho các thành viên đã chọn.');
+                            }
+                          } catch (err) {
+                            setError(err.response?.data?.message || 'Không thể mời các thành viên này');
+                          }
+                        }} className="space-y-3">
+                          <div>
+                            <UserAutocompleteInput
+                              selectedUsers={selectedList}
+                              onSelectedUsersChange={(newList) => setInviteUserMap(prev => ({ ...prev, [team.id]: newList }))}
+                            />
+                          </div>
+                          <TactileButton 
+                            variant="primary" 
+                            size="sm" 
+                            type="submit" 
+                            disabled={totalMembers >= 7 || selectedList.length === 0} 
+                            className="w-full justify-center"
+                          >
+                            GỬI LỜI MỜI {selectedList.length > 0 ? `(${selectedList.length})` : ''}
+                          </TactileButton>
+                        </form>
+                      );
+                    })()}
                   </div>
 
                   {/* Yêu cầu chờ duyệt */}
@@ -218,29 +322,47 @@ export default function ManageTeam({ currentUser: propUser }) {
                         {pendingMembers.map(req => (
                           <div key={req.id} className="bg-background border border-outline-variant p-3 flex justify-between items-center">
                             <div>
-                              <span className="font-body text-sm font-semibold text-off-white">@{req.username}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-body text-sm font-semibold text-off-white">@{req.username}</span>
+                                <span className={`font-mono text-[9px] uppercase px-1.5 py-0.5 border ${req.status === 'INVITED' ? 'border-warning-amber/50 text-warning-amber bg-warning-amber/10' : 'border-success-cyan/50 text-success-cyan bg-success-cyan/10'}`}>
+                                  {req.status === 'INVITED' ? 'ĐÃ GỬI LỜI MỜI' : 'XIN VÀO ĐỘI'}
+                                </span>
+                              </div>
                               {req.inGameName && (
-                                <p className="font-mono text-[10px] text-success-cyan">IGN: {req.inGameName}</p>
+                                <p className="font-mono text-[10px] text-tactical-gray mt-0.5">IGN: {req.inGameName}</p>
                               )}
                             </div>
                             <div className="flex gap-2">
-                              <TactileButton
-                                variant="cyan"
-                                size="sm"
-                                onClick={() => handleAction('approve', team.id, req.id)}
-                                disabled={totalMembers >= 7}
-                                className="flex items-center gap-1"
-                              >
-                                <Check size={14} /> DUYỆT
-                              </TactileButton>
-                              <TactileButton
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleAction('reject', team.id, req.id)}
-                                className="flex items-center gap-1"
-                              >
-                                <X size={14} /> TỪ CHỐI
-                              </TactileButton>
+                              {req.status === 'INVITED' ? (
+                                <TactileButton
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleAction('reject', team.id, req.id)}
+                                  className="flex items-center gap-1 text-[10px]"
+                                >
+                                  <X size={12} /> HỦY LỜI MỜI
+                                </TactileButton>
+                              ) : (
+                                <>
+                                  <TactileButton
+                                    variant="cyan"
+                                    size="sm"
+                                    onClick={() => handleAction('approve', team.id, req.id)}
+                                    disabled={totalMembers >= 7}
+                                    className="flex items-center gap-1 text-[10px]"
+                                  >
+                                    <Check size={12} /> DUYỆT
+                                  </TactileButton>
+                                  <TactileButton
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleAction('reject', team.id, req.id)}
+                                    className="flex items-center gap-1 text-[10px]"
+                                  >
+                                    <X size={12} /> TỪ CHỐI
+                                  </TactileButton>
+                                </>
+                              )}
                             </div>
                           </div>
                         ))}

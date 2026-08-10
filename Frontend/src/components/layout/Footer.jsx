@@ -20,7 +20,7 @@ export default function Footer() {
                 <div className="absolute inset-0 bg-primary-red blur-md opacity-40 group-hover:opacity-80 transition-opacity"></div>
               </div>
               <span className="font-display font-bold text-2xl tracking-wider uppercase text-off-white group-hover:text-primary-red transition-colors">
-                Tourney<span className="text-primary-red group-hover:text-off-white transition-colors">Hub</span>
+                E<span className="text-primary-red group-hover:text-off-white transition-colors">TA</span>
               </span>
             </Link>
             <p className="font-body text-tactical-gray text-sm leading-relaxed mb-6">
@@ -64,7 +64,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-3 text-off-white/70">
                 <Mail size={18} className="text-primary-red shrink-0" />
-                <a href="mailto:contact@tacticaledge.vn" className="font-mono text-sm hover:text-primary-red transition-colors">contact@tacticaledge.vn</a>
+                <a href="mailto:contact@eta.vn" className="font-mono text-sm hover:text-primary-red transition-colors">contact@eta.vn</a>
               </div>
             </div>
           </div>
@@ -73,7 +73,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-outline-variant/30 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="font-mono text-xs text-tactical-gray uppercase">
-            © {currentYear} TACTICAL EDGE. BẢN QUYỀN ĐƯỢC BẢO LƯU.
+            © {currentYear} ETA. BẢN QUYỀN ĐƯỢC BẢO LƯU.
           </p>
           <div className="flex items-center gap-6">
             <span className="font-mono text-xs text-tactical-gray uppercase">VALORANT IS A REGISTERED TRADEMARK OF RIOT GAMES, INC.</span>

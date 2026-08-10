@@ -14,6 +14,7 @@ public class UserProfileRequest {
     private String nickname;
     private String phoneNumber;
     private String avatarUrl;
+    private String email;
 
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
@@ -26,4 +27,7 @@ public class UserProfileRequest {
 
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 }

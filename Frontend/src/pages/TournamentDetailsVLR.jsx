@@ -173,7 +173,7 @@ export default function TournamentDetailsVLR({ onJoinTeam }) {
               {tournament.name}
             </h1>
             <p className="text-tactical-gray text-sm font-body">
-              {tournament.rulesDescription || "Giải đấu Esports chính thức trên hệ thống Tactical Edge Engine."}
+              {tournament.rulesDescription || "Giải đấu Esports chính thức trên hệ thống ETA Engine."}
             </p>
 
             <div className="flex flex-wrap gap-x-12 gap-y-4 pt-2 font-mono text-xs">

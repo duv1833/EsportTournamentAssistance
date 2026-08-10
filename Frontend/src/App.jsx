@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import PageTransition from './components/layout/PageTransition';
@@ -70,7 +71,9 @@ function AppLayout() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppLayout />
+      <NotificationProvider>
+        <AppLayout />
+      </NotificationProvider>
     </AuthProvider>
   );
 }

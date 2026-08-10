@@ -17,6 +17,7 @@ public interface UserService {
 
     // Admin features
     List<UserResponse> getAllUsers();
+    List<UserResponse> searchUsers(String query);
     void banUser(Long userId);
     void unbanUser(Long userId);
 }

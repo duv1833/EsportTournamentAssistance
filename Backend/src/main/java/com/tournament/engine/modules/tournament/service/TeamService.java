@@ -17,6 +17,7 @@ public interface TeamService {
     
     TeamResponse getTeamByInviteCode(String inviteCode);
     void joinTeamByInviteCode(String inviteCode, com.tournament.engine.modules.tournament.dto.JoinTeamRequest request);
+    void disbandTeam(Long teamId, Long captainId);
 
     // Admin features
     void deleteTeam(Long teamId);

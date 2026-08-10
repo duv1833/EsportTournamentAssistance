@@ -56,7 +56,8 @@ export default function JoinTeamPage() {
     setSuccess('');
 
     try {
-      const res = await teamService.joinTeamByInviteCode(inviteCode, currentUser.id, inGameName);
+      const fixedIgn = currentUser?.nickname || currentUser?.displayName || currentUser?.username;
+      const res = await teamService.joinTeamByInviteCode(inviteCode, currentUser.id, fixedIgn);
       if (res.success) {
         setSuccess('Đã gửi yêu cầu tham gia đội tuyển thành công! Vui lòng chờ Đội trưởng duyệt.');
       } else {
@@ -141,23 +142,14 @@ export default function JoinTeamPage() {
               </div>
             </div>
 
-            {!currentUser && (
-              <div className="p-3 bg-warning-amber/10 border border-warning-amber/30 text-warning-amber font-mono text-xs">
-                // Bạn cần đăng nhập để tham gia đội tuyển này.
+            {currentUser && (
+              <div className="bg-surface-charcoal p-3 border border-outline-variant/60 font-mono text-xs text-tactical-gray flex items-center justify-between">
+                <span>Tên In-Game cố định:</span>
+                <span className="text-warning-amber font-bold">
+                  {currentUser.nickname || currentUser.displayName || currentUser.username}
+                </span>
               </div>
             )}
-
-            <div>
-              <label className="block font-mono text-xs text-tactical-gray uppercase mb-2">Tên Trong Game (In-Game Name / Riot ID)</label>
-              <input
-                type="text"
-                value={inGameName}
-                onChange={(e) => setInGameName(e.target.value)}
-                placeholder="Ví dụ: TenZ#NA1..."
-                required
-                className="w-full bg-background border border-outline-variant px-4 py-3 text-sm text-off-white focus:border-primary-red outline-none font-mono"
-              />
-            </div>
 
             <TactileButton
               variant="primary"

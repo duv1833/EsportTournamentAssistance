@@ -20,10 +20,12 @@ export default function Teams({ currentUser: propUser, onJoinTeam }) {
     setLoading(true);
     try {
       const res = await teamService.getAllTeams();
-      if (res.success) {
+      if (res?.success) {
         setTeams(res.data || []);
+      } else if (Array.isArray(res)) {
+        setTeams(res);
       } else {
-        setError(res.message);
+        setError(res?.message || 'Lỗi khi tải danh sách đội tuyển');
       }
     } catch (err) {
       setError('Lỗi khi tải danh sách đội tuyển');

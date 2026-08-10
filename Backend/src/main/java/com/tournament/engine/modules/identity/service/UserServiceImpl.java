@@ -25,6 +25,16 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        if (request.getUsername() == null || !request.getUsername().matches("^[a-zA-Z0-9_]{3,20}$")) {
+            throw new RuntimeException("Tên đăng nhập phải từ 3-20 ký tự, chỉ gồm chữ cái, số và dấu gạch dưới!");
+        }
+        if (request.getEmail() == null || !request.getEmail().matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new RuntimeException("Email không hợp lệ!");
+        }
+        if (request.getPassword() == null || request.getPassword().length() < 6) {
+            throw new RuntimeException("Mật khẩu phải có ít nhất 6 ký tự!");
+        }
+
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Tên đăng nhập đã tồn tại!");
         }
@@ -106,17 +116,48 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
-        if (request.getFullName() != null) {
-            user.setFullName(request.getFullName());
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            String fullName = request.getFullName().trim();
+            if (fullName.length() < 2 || fullName.length() > 50) {
+                throw new RuntimeException("Họ và tên phải có độ dài từ 2 đến 50 ký tự!");
+            }
+            if (!fullName.matches("^[a-zA-ZÀ-ỹ\\s'-]+$")) {
+                throw new RuntimeException("Họ và tên chỉ được chứa chữ cái và khoảng trắng, không chứa số hoặc ký tự đặc biệt!");
+            }
+            user.setFullName(fullName);
         }
-        if (request.getNickname() != null) {
-            user.setNickname(request.getNickname());
+        if (request.getNickname() != null && !request.getNickname().isBlank()) {
+            String nick = request.getNickname().trim();
+            if (!nick.matches("^[a-zA-Z0-9_\\s]{2,20}#[a-zA-Z0-9]{2,6}$")) {
+                throw new RuntimeException("Tên In-Game phải đúng định dạng 'Tên ingame + #Tag' (Ví dụ: TenZ#NA1, Faker#KR1, Dux#0006)");
+            }
+            user.setNickname(nick);
         }
-        if (request.getPhoneNumber() != null) {
-            user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
+            String phone = request.getPhoneNumber().trim();
+            if (!phone.matches("^(0[3|5|7|8|9])+([0-9]{8})$")) {
+                throw new RuntimeException("Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam gồm 10 chữ số (Ví dụ: 0912345678)");
+            }
+            user.setPhoneNumber(phone);
         }
-        if (request.getAvatarUrl() != null) {
-            user.setAvatarUrl(request.getAvatarUrl());
+        if (request.getAvatarUrl() != null && !request.getAvatarUrl().isBlank()) {
+            String url = request.getAvatarUrl().trim();
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                throw new RuntimeException("URL Ảnh đại diện phải bắt đầu bằng http:// hoặc https://");
+            }
+            user.setAvatarUrl(url);
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            String newEmail = request.getEmail().trim();
+            if (!newEmail.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+                throw new RuntimeException("Định dạng email không hợp lệ!");
+            }
+            if (!newEmail.equalsIgnoreCase(user.getEmail())) {
+                if (userRepository.existsByEmail(newEmail)) {
+                    throw new RuntimeException("Email '" + newEmail + "' đã được sử dụng bởi tài khoản khác!");
+                }
+                user.setEmail(newEmail);
+            }
         }
 
         user = userRepository.saveAndFlush(user);
@@ -126,6 +167,18 @@ public class UserServiceImpl implements UserService {
     @Override
     public java.util.List<com.tournament.engine.modules.identity.dto.UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
+                .map(this::mapToUserResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    public java.util.List<com.tournament.engine.modules.identity.dto.UserResponse> searchUsers(String query) {
+        if (query == null || query.trim().length() < 1) {
+            return java.util.Collections.emptyList();
+        }
+        String q = query.trim();
+        return userRepository.findTop10ByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(q, q, q).stream()
+                .filter(u -> Boolean.TRUE.equals(u.getIsActive()))
                 .map(this::mapToUserResponse)
                 .collect(java.util.stream.Collectors.toList());
     }

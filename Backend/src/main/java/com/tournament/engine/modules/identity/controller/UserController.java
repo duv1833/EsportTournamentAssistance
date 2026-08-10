@@ -37,4 +37,14 @@ public class UserController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<java.util.List<UserResponse>>> searchUsers(@RequestParam String query) {
+        try {
+            java.util.List<UserResponse> users = userService.searchUsers(query);
+            return ResponseEntity.ok(ApiResponse.success(users, "Tìm kiếm người dùng thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

@@ -22,6 +22,7 @@ public class TeamResponse {
     private String inviteCode;
     private Long tournamentId;
     private String tournamentName;
+    private String tournamentStatus;
     private List<TeamMemberResponse> members;
 
     public Long getId() { return id; }
@@ -54,6 +55,9 @@ public class TeamResponse {
     public String getTournamentName() { return tournamentName; }
     public void setTournamentName(String tournamentName) { this.tournamentName = tournamentName; }
 
+    public String getTournamentStatus() { return tournamentStatus; }
+    public void setTournamentStatus(String tournamentStatus) { this.tournamentStatus = tournamentStatus; }
+
     public List<TeamMemberResponse> getMembers() { return members; }
     public void setMembers(List<TeamMemberResponse> members) { this.members = members; }
 
@@ -72,6 +76,7 @@ public class TeamResponse {
         private String inviteCode;
         private Long tournamentId;
         private String tournamentName;
+        private String tournamentStatus;
         private List<TeamMemberResponse> members;
 
         public TeamResponseBuilder id(Long id) { this.id = id; return this; }
@@ -84,6 +89,7 @@ public class TeamResponse {
         public TeamResponseBuilder inviteCode(String inviteCode) { this.inviteCode = inviteCode; return this; }
         public TeamResponseBuilder tournamentId(Long tournamentId) { this.tournamentId = tournamentId; return this; }
         public TeamResponseBuilder tournamentName(String tournamentName) { this.tournamentName = tournamentName; return this; }
+        public TeamResponseBuilder tournamentStatus(String tournamentStatus) { this.tournamentStatus = tournamentStatus; return this; }
         public TeamResponseBuilder members(List<TeamMemberResponse> members) { this.members = members; return this; }
 
         public TeamResponse build() {
@@ -98,6 +104,7 @@ public class TeamResponse {
             obj.setInviteCode(inviteCode);
             obj.setTournamentId(tournamentId);
             obj.setTournamentName(tournamentName);
+            obj.setTournamentStatus(tournamentStatus);
             obj.setMembers(members);
             return obj;
         }

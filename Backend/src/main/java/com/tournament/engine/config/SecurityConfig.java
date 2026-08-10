@@ -73,8 +73,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/tournaments/**").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/teams/**").permitAll()
+                .requestMatchers("/api/v1/teams/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/matches/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users/**").permitAll()
                 .anyRequest().authenticated()
             );
 

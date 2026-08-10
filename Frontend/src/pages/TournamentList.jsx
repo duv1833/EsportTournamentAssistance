@@ -37,13 +37,17 @@ export default function TournamentList() {
     setLoading(true);
     try {
       const res = await getAllTournaments();
-      if (res.success) {
+      if (res?.success) {
         setTournaments(res.data || []);
+      } else if (Array.isArray(res)) {
+        setTournaments(res);
       }
-      if (currentUser) {
+      if (currentUser?.id) {
         const myRes = await getMyTournaments();
-        if (myRes.success) {
+        if (myRes?.success) {
           setMyTournaments(myRes.data || []);
+        } else if (Array.isArray(myRes)) {
+          setMyTournaments(myRes);
         }
       }
     } catch (err) {
@@ -55,7 +59,7 @@ export default function TournamentList() {
 
   useEffect(() => {
     fetchTournaments();
-  }, [currentUser]);
+  }, [currentUser?.id]);
 
   const handleCreateTournament = async (e) => {
     e.preventDefault();

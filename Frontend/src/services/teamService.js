@@ -61,5 +61,12 @@ export const teamService = {
   joinTeamByInviteCode: async (inviteCode, userId, inGameName) => {
     const response = await api.post(`/teams/join-by-code/${inviteCode}`, { userId, inGameName });
     return response.data;
+  },
+
+  disbandTeam: async (teamId, captainId) => {
+    const response = await api.post(`/teams/${teamId}/disband`, null, {
+      params: { captainId }
+    });
+    return response.data;
   }
 };

@@ -16,7 +16,7 @@ export default function RegisterForm({ registerForm, setRegisterForm, onSubmit, 
             <Shield className="w-12 h-12 text-primary-red" strokeWidth={2} />
           </div>
 
-          <h2 className="font-display text-3xl md:text-4xl text-[#ffb3b2] tracking-wider uppercase mb-1 text-center">VALORANT TOURNAMENT ENGINE</h2>
+          <h2 className="font-display text-3xl md:text-4xl text-[#ffb3b2] tracking-wider uppercase mb-1 text-center">ETA ENGINE</h2>
           <p className="font-body text-xs text-tactical-gray mb-6 text-center">Tạo tài khoản để bắt đầu tham gia giải đấu</p>
 
           {authError && (
