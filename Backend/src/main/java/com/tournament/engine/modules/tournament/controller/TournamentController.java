@@ -34,7 +34,12 @@ public class TournamentController {
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<List<TournamentResponse>>> getMyTournaments() {
         try {
-            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = (auth != null && auth.isAuthenticated() && !"anonymousUser".equalsIgnoreCase(auth.getName())) 
+                    ? auth.getName() : null;
+            if (username == null) {
+                return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList(), "Chưa đăng nhập"));
+            }
             List<TournamentResponse> response = tournamentService.getMyTournaments(username);
             return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách giải đấu của tôi thành công!"));
         } catch (Exception e) {
@@ -55,7 +60,12 @@ public class TournamentController {
     @PostMapping
     public ResponseEntity<ApiResponse<TournamentResponse>> createTournament(@Valid @RequestBody TournamentCreateRequest request) {
         try {
-            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = (auth != null && auth.isAuthenticated() && !"anonymousUser".equalsIgnoreCase(auth.getName())) 
+                    ? auth.getName() : null;
+            if (username == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error("Vui lòng đăng nhập lại để tạo giải đấu!"));
+            }
             TournamentResponse response = tournamentService.createTournament(request, username);
             return ResponseEntity.ok(ApiResponse.success(response, "Tạo giải đấu thành công!"));
         } catch (Exception e) {
@@ -81,7 +91,12 @@ public class TournamentController {
             @RequestBody TournamentCreateRequest request
     ) {
         try {
-            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = (auth != null && auth.isAuthenticated() && !"anonymousUser".equalsIgnoreCase(auth.getName())) 
+                    ? auth.getName() : null;
+            if (username == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error("Vui lòng đăng nhập lại để cập nhật giải đấu!"));
+            }
             tournamentService.updateTournament(id, request, username);
             return ResponseEntity.ok(ApiResponse.success(null, "Cập nhật giải đấu thành công!"));
         } catch (Exception e) {

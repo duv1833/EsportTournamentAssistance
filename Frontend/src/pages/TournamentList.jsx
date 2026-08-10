@@ -128,7 +128,8 @@ export default function TournamentList() {
         setError(res.message || (editingId ? 'Cập nhật giải đấu thất bại!' : 'Tạo giải đấu thất bại!'));
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi hệ thống!');
+      const msg = err.response?.data?.message || (err.response?.status === 403 || err.response?.status === 401 ? 'Phiên đăng nhập đã hết hạn hoặc bạn chưa đăng nhập. Vui lòng đăng nhập lại!' : 'Lỗi hệ thống khi kết nối server!');
+      setError(msg);
     } finally {
       setCreateLoading(false);
     }

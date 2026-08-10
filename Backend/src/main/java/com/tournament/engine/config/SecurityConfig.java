@@ -72,10 +72,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/tournaments/**").permitAll()
-                .requestMatchers("/api/v1/teams/**").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/matches/**").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users/**").permitAll()
+                .requestMatchers("/api/v1/tournaments", "/api/v1/tournaments/**").permitAll()
+                .requestMatchers("/api/v1/teams", "/api/v1/teams/**").permitAll()
+                .requestMatchers("/api/v1/matches", "/api/v1/matches/**").permitAll()
+                .requestMatchers("/api/v1/users", "/api/v1/users/**").permitAll()
                 .anyRequest().authenticated()
             );
 

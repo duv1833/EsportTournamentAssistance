@@ -1,7 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import TactileButton from '../common/TactileButton';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function JoinTeamModal({ joinTeamModal, setJoinTeamModal, handleJoinTeamFromTournament, isTournamentLoading }) {
+  const { currentUser } = useAuth();
+
+  useEffect(() => {
+    if (joinTeamModal.isOpen && !joinTeamModal.inGameName && currentUser) {
+      const defaultNick = currentUser.nickname || currentUser.displayName || currentUser.username || '';
+      setJoinTeamModal(prev => ({ ...prev, inGameName: defaultNick }));
+    }
+  }, [joinTeamModal.isOpen, currentUser]);
   if (!joinTeamModal.isOpen) return null;
 
   return (

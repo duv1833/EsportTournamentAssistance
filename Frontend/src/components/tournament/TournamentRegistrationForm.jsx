@@ -9,10 +9,20 @@ export default function TournamentRegistrationForm({ tournament, onCancel, onSuc
   const [formData, setFormData] = useState({
     teamName: '',
     teamTag: '',
-    captainInGameName: '',
-    captainPhoneNumber: '',
+    captainInGameName: currentUser?.nickname || currentUser?.displayName || currentUser?.username || '',
+    captainPhoneNumber: currentUser?.phoneNumber || '',
     logoUrl: ''
   });
+
+  React.useEffect(() => {
+    if (currentUser) {
+      setFormData(prev => ({
+        ...prev,
+        captainInGameName: prev.captainInGameName || currentUser.nickname || currentUser.displayName || currentUser.username || '',
+        captainPhoneNumber: prev.captainPhoneNumber || currentUser.phoneNumber || ''
+      }));
+    }
+  }, [currentUser]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');

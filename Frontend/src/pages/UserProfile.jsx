@@ -8,9 +8,23 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
   const { currentUser: authUser, updateUser } = useAuth();
   const currentUser = propUser || authUser;
 
+  const parseNickname = (nick, id) => {
+    if (!nick || !nick.trim()) {
+      return { ignName: '', ignTag: String(id || '0001').padStart(4, '0') };
+    }
+    const parts = nick.split('#');
+    if (parts.length >= 2) {
+      return { ignName: parts[0].trim(), ignTag: parts.slice(1).join('#').trim() };
+    }
+    return { ignName: nick.trim(), ignTag: String(id || '0001').padStart(4, '0') };
+  };
+
+  const initialNick = parseNickname(currentUser?.nickname, currentUser?.id);
+
   const [formData, setFormData] = useState({
     fullName: currentUser?.fullName || '',
-    nickname: currentUser?.nickname || '',
+    ignName: initialNick.ignName,
+    ignTag: initialNick.ignTag,
     phoneNumber: currentUser?.phoneNumber || '',
     avatarUrl: currentUser?.avatarUrl || '',
     email: currentUser?.email || ''
@@ -26,9 +40,11 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
         try {
           const res = await userService.getUserProfile(currentUser.id);
           if (res.success && res.data) {
+            const parsed = parseNickname(res.data.nickname, currentUser.id);
             setFormData({
               fullName: res.data.fullName || '',
-              nickname: res.data.nickname || '',
+              ignName: parsed.ignName,
+              ignTag: parsed.ignTag,
               phoneNumber: res.data.phoneNumber || '',
               avatarUrl: res.data.avatarUrl || '',
               email: res.data.email || ''
@@ -47,9 +63,11 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
         } catch (err) {
           console.error("Lỗi khi tải thông tin cá nhân từ server:", err);
           if (currentUser) {
+            const parsed = parseNickname(currentUser.nickname, currentUser.id);
             setFormData({
               fullName: currentUser.fullName || '',
-              nickname: currentUser.nickname || '',
+              ignName: parsed.ignName,
+              ignTag: parsed.ignTag,
               phoneNumber: currentUser.phoneNumber || '',
               avatarUrl: currentUser.avatarUrl || '',
               email: currentUser.email || ''
@@ -75,12 +93,14 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
       }
     }
 
-    // 2. Validate Nickname / In-Game Name (#Tag format)
-    if (formData.nickname && formData.nickname.trim()) {
-      const nick = formData.nickname.trim();
+    // 2. Validate Nickname / In-Game Name & Tag
+    let combinedNickname = '';
+    if (formData.ignName && formData.ignName.trim()) {
+      const tag = formData.ignTag && formData.ignTag.trim() ? formData.ignTag.trim().replace(/^#/, '') : '0001';
+      combinedNickname = `${formData.ignName.trim()}#${tag}`;
       const nickRegex = /^[a-zA-Z0-9_\s]{2,20}#[a-zA-Z0-9]{2,6}$/;
-      if (!nickRegex.test(nick)) {
-        setError('Tên In-Game phải đúng định dạng "Tên ingame + #Tag" (Ví dụ: TenZ#NA1, Faker#KR1, Dux#0006)');
+      if (!nickRegex.test(combinedNickname)) {
+        setError('Tên In-Game phải có từ 2-20 ký tự và Tag từ 2-6 ký tự chữ hoặc số!');
         return;
       }
     }
@@ -123,7 +143,14 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
     setSuccess('');
 
     try {
-      const res = await userService.updateUserProfile(currentUser.id, formData);
+      const payload = {
+        fullName: formData.fullName,
+        nickname: combinedNickname,
+        phoneNumber: formData.phoneNumber,
+        avatarUrl: formData.avatarUrl,
+        email: formData.email
+      };
+      const res = await userService.updateUserProfile(currentUser.id, payload);
       if (res.success) {
         setSuccess('Cập nhật thông tin cá nhân thành công!');
         const updatedUserData = {
@@ -150,7 +177,10 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
   };
 
   const getPreviewDisplayName = () => {
-    if (formData.nickname && formData.nickname.trim()) return formData.nickname.trim();
+    if (formData.ignName && formData.ignName.trim()) {
+      const tag = formData.ignTag && formData.ignTag.trim() ? formData.ignTag.trim().replace(/^#/, '') : '';
+      return tag ? `${formData.ignName.trim()}#${tag}` : formData.ignName.trim();
+    }
     if (formData.fullName && formData.fullName.trim()) return formData.fullName.trim();
     return currentUser?.username || 'Gamer';
   };
@@ -254,21 +284,42 @@ export default function UserProfile({ currentUser: propUser, onUserUpdated }) {
               </div>
             </div>
 
-            {/* Nickname / In-Game Name */}
-            <div>
-              <label className="block font-mono text-xs uppercase text-warning-amber mb-1.5 flex items-center gap-1.5 font-bold">
-                <Sparkles size={14} /> Tên In-Game Cố Định (Định dạng: Tên ingame + #Tag)
-              </label>
-              <input
-                type="text"
-                value={formData.nickname}
-                onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
-                placeholder="VD: TenZ#NA1, Faker#KR1, SGP_Pro#VN..."
-                className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
-              />
-              <p className="font-mono text-[10px] text-warning-amber mt-1.5">
-                * Yêu cầu nhập đúng định dạng <b>Tên ingame + #Tag</b> (Ví dụ: <b>TenZ#NA1</b>, <b>Faker#KR1</b>). Tên này sẽ cố định khi bạn thi đấu bất kỳ giải đấu nào.
-              </p>
+            {/* Nickname / In-Game Name & Tag (2 Separate Fields) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
+                <label className="block font-mono text-xs uppercase text-warning-amber mb-1.5 flex items-center gap-1.5 font-bold">
+                  <Sparkles size={14} /> Tên In-Game (IGN)
+                </label>
+                <input
+                  type="text"
+                  value={formData.ignName}
+                  onChange={(e) => setFormData({ ...formData, ignName: e.target.value })}
+                  placeholder="VD: PRX_CAPTAIN, TenZ, Faker"
+                  className="w-full bg-background border border-outline-variant p-3 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red"
+                />
+              </div>
+
+              <div>
+                <label className="block font-mono text-xs uppercase text-warning-amber mb-1.5 flex items-center gap-1.5 font-bold">
+                  #TAG
+                </label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-warning-amber font-mono font-bold">#</span>
+                  <input
+                    type="text"
+                    value={formData.ignTag}
+                    onChange={(e) => setFormData({ ...formData, ignTag: e.target.value.replace(/^#/, '') })}
+                    placeholder="0011"
+                    className="w-full bg-background border border-outline-variant p-3 pl-7 text-off-white font-mono text-sm focus:outline-none focus:border-primary-red uppercase"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-3">
+                <p className="font-mono text-[10px] text-warning-amber">
+                  * Tên In-Game hoàn chỉnh: <b className="text-off-white font-bold">{formData.ignName ? `${formData.ignName.trim()}#${formData.ignTag ? formData.ignTag.trim().replace(/^#/, '') : '0001'}` : 'Chưa thiết lập'}</b>. Thông tin này sẽ tự động điền khi bạn đăng ký tạo đội tham gia giải đấu.
+                </p>
+              </div>
             </div>
 
             {/* Full Name */}
