@@ -48,7 +48,7 @@ public class TournamentServiceImpl implements TournamentService {
     @Override
     @Transactional(readOnly = true)
     public List<TournamentResponse> getAllTournaments() {
-        return tournamentRepository.findByApprovalStatus(Tournament.ApprovalStatus.APPROVED).stream()
+        return tournamentRepository.findByApprovalStatusWithCreator(Tournament.ApprovalStatus.APPROVED).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -56,7 +56,7 @@ public class TournamentServiceImpl implements TournamentService {
     @Override
     @Transactional(readOnly = true)
     public List<TournamentResponse> getMyTournaments(String username) {
-        return tournamentRepository.findByCreatorUsername(username).stream()
+        return tournamentRepository.findByCreatorUsernameWithCreator(username).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

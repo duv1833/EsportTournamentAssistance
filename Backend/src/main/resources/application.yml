@@ -6,6 +6,11 @@ spring:
     username: ducvu1
     password: 123
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      idle-timeout: 30000
+      connection-timeout: 20000
   jpa:
     hibernate:
       ddl-auto: update
@@ -21,3 +26,4 @@ server:
 pandascore:
   api-key: ${PANDASCORE_API_KEY:YOUR_API_KEY_HERE}
   base-url: https://api.pandascore.co
+

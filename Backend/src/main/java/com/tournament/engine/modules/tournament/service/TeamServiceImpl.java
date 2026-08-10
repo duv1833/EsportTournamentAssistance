@@ -29,9 +29,9 @@ public class TeamServiceImpl implements TeamService {
     private final TournamentRegistrationRepository registrationRepository;
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<TeamResponse> getAllTeams() {
-        return teamRepository.findAll().stream()
+        return teamRepository.findAllWithCaptainAndMembers().stream()
                 .filter(t -> t.getIsActive() == null || t.getIsActive())
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
