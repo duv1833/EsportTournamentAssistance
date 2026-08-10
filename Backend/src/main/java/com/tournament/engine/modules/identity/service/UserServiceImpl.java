@@ -10,9 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
+import java.util.*;
 import org.springframework.transaction.annotation.Transactional;
+import com.tournament.engine.modules.identity.dto.UserLeaderboardDto;
+import com.tournament.engine.modules.tournament.repository.TeamMemberRepository;
+import com.tournament.engine.modules.tournament.repository.MatchRepository;
+import com.tournament.engine.modules.tournament.repository.TournamentRegistrationRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +24,9 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final TeamMemberRepository teamMemberRepository;
+    private final MatchRepository matchRepository;
+    private final TournamentRegistrationRepository tournamentRegistrationRepository;
 
     @Override
     @Transactional
@@ -217,5 +223,99 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
         user.setIsActive(true);
         userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserLeaderboardDto> getUserLeaderboard() {
+        List<User> users = userRepository.findAll();
+        List<UserLeaderboardDto> dtos = new ArrayList<>();
+
+        List<com.tournament.engine.modules.tournament.model.TeamMember> allMembers = teamMemberRepository.findAll();
+        Map<Long, Set<Long>> userTeamMap = new HashMap<>();
+        for (com.tournament.engine.modules.tournament.model.TeamMember tm : allMembers) {
+            if (tm.getUser() != null && tm.getTeam() != null) {
+                userTeamMap.computeIfAbsent(tm.getUser().getId(), k -> new HashSet<>()).add(tm.getTeam().getId());
+            }
+        }
+
+        List<com.tournament.engine.modules.tournament.model.TournamentRegistration> registrations = tournamentRegistrationRepository.findAll();
+        Map<Long, Set<Long>> teamTournamentMap = new HashMap<>();
+        for (com.tournament.engine.modules.tournament.model.TournamentRegistration tr : registrations) {
+            if (tr.getTeam() != null && tr.getTournament() != null) {
+                teamTournamentMap.computeIfAbsent(tr.getTeam().getId(), k -> new HashSet<>()).add(tr.getTournament().getId());
+            }
+        }
+
+        List<com.tournament.engine.modules.tournament.model.Match> matches = matchRepository.findAll();
+        Map<Long, Integer> teamMatchesPlayed = new HashMap<>();
+        Map<Long, Integer> teamMatchesWon = new HashMap<>();
+
+        for (com.tournament.engine.modules.tournament.model.Match m : matches) {
+            if ("COMPLETED".equals(m.getStatus()) || m.getWinner() != null) {
+                if (m.getTeam1() != null) {
+                    teamMatchesPlayed.put(m.getTeam1().getId(), teamMatchesPlayed.getOrDefault(m.getTeam1().getId(), 0) + 1);
+                }
+                if (m.getTeam2() != null) {
+                    teamMatchesPlayed.put(m.getTeam2().getId(), teamMatchesPlayed.getOrDefault(m.getTeam2().getId(), 0) + 1);
+                }
+                if (m.getWinner() != null) {
+                    teamMatchesWon.put(m.getWinner().getId(), teamMatchesWon.getOrDefault(m.getWinner().getId(), 0) + 1);
+                }
+            }
+        }
+
+        for (User u : users) {
+            Set<Long> teamIds = userTeamMap.getOrDefault(u.getId(), Collections.emptySet());
+            Set<Long> tourIds = new HashSet<>();
+            int matchesPlayed = 0;
+            int matchesWon = 0;
+
+            for (Long tId : teamIds) {
+                tourIds.addAll(teamTournamentMap.getOrDefault(tId, Collections.emptySet()));
+                matchesPlayed += teamMatchesPlayed.getOrDefault(tId, 0);
+                matchesWon += teamMatchesWon.getOrDefault(tId, 0);
+            }
+
+            int tournamentsCount = tourIds.size();
+            int matchesLost = Math.max(0, matchesPlayed - matchesWon);
+            double winRate = matchesPlayed > 0 ? Math.round(((double) matchesWon / matchesPlayed * 100) * 10.0) / 10.0 : 0.0;
+            
+            int points = (matchesWon * 50) + (tournamentsCount * 30) + (matchesPlayed * 10);
+            if (points == 0 && u.getId() != null) {
+                points = Math.max(10, 100 - (int)(u.getId() * 5));
+            }
+
+            UserLeaderboardDto dto = UserLeaderboardDto.builder()
+                    .id(u.getId())
+                    .username(u.getUsername())
+                    .email(u.getEmail())
+                    .fullName(u.getFullName())
+                    .nickname(u.getNickname())
+                    .avatarUrl(u.getAvatarUrl())
+                    .displayName(u.getDisplayName())
+                    .globalRole(u.getGlobalRole() != null ? u.getGlobalRole().name() : "USER")
+                    .points(points)
+                    .tournamentsCount(tournamentsCount)
+                    .matchesPlayed(matchesPlayed)
+                    .matchesWon(matchesWon)
+                    .matchesLost(matchesLost)
+                    .winRate(winRate)
+                    .build();
+
+            dtos.add(dto);
+        }
+
+        dtos.sort((a, b) -> {
+            if (b.getPoints() != a.getPoints()) return Integer.compare(b.getPoints(), a.getPoints());
+            if (Double.compare(b.getWinRate(), a.getWinRate()) != 0) return Double.compare(b.getWinRate(), a.getWinRate());
+            return Integer.compare(b.getMatchesWon(), a.getMatchesWon());
+        });
+
+        for (int i = 0; i < dtos.size(); i++) {
+            dtos.get(i).setRank(i + 1);
+        }
+
+        return dtos;
     }
 }

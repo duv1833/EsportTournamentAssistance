@@ -14,5 +14,10 @@ export const userService = {
   searchUsers: async (query) => {
     const response = await api.get('/users/search', { params: { query } });
     return response.data;
+  },
+
+  getUserLeaderboard: async () => {
+    const response = await api.get('/users/leaderboard');
+    return response.data;
   }
 };

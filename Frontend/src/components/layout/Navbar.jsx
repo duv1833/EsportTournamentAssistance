@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Swords, Trophy, Shield, Newspaper, Layers, LogOut, Menu, X, ShieldCheck, User, ChevronDown, Settings } from 'lucide-react';
+import { Home, Swords, Trophy, Shield, Newspaper, Layers, LogOut, Menu, X, ShieldCheck, User, ChevronDown, Settings, Medal } from 'lucide-react';
 import TactileButton from '../common/TactileButton';
 import { useAuth } from '../../contexts/AuthContext';
 import NotificationDropdown from './NotificationDropdown';
@@ -34,6 +34,7 @@ export default function Navbar() {
     { path: '/', label: 'TRANG CHỦ', icon: Home },
     { path: '/matches', label: 'LỊCH THI ĐẤU', icon: Swords },
     { path: '/tournaments', label: 'GIẢI ĐẤU', icon: Trophy },
+    { path: '/leaderboard', label: 'BXH NGƯỜI DÙNG', icon: Medal },
     { path: '/teams', label: 'ĐỘI TUYỂN', icon: Shield },
     { path: '/manage-team', label: 'QUẢN LÝ ĐỘI', icon: ShieldCheck },
     { path: '/news', label: 'TIN TỨC', icon: Newspaper },

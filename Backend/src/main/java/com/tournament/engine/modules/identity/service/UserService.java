@@ -20,4 +20,7 @@ public interface UserService {
     List<UserResponse> searchUsers(String query);
     void banUser(Long userId);
     void unbanUser(Long userId);
+
+    // Leaderboard
+    List<com.tournament.engine.modules.identity.dto.UserLeaderboardDto> getUserLeaderboard();
 }

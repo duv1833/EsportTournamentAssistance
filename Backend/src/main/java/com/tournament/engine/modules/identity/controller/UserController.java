@@ -47,4 +47,14 @@ public class UserController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @GetMapping("/leaderboard")
+    public ResponseEntity<ApiResponse<java.util.List<com.tournament.engine.modules.identity.dto.UserLeaderboardDto>>> getUserLeaderboard() {
+        try {
+            java.util.List<com.tournament.engine.modules.identity.dto.UserLeaderboardDto> leaderboard = userService.getUserLeaderboard();
+            return ResponseEntity.ok(ApiResponse.success(leaderboard, "Lấy bảng xếp hạng người dùng thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

@@ -22,6 +22,7 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const Lobby = lazy(() => import('./pages/Lobby'));
 const NewsPage = lazy(() => import('./pages/NewsPage'));
 const JoinTeamPage = lazy(() => import('./pages/JoinTeamPage'));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
 
 const LoadingFallback = () => (
   <div className="flex h-screen items-center justify-center bg-background">
@@ -46,6 +47,7 @@ function AppLayout() {
               <Route path="/tournaments" element={<PageTransition><TournamentList /></PageTransition>} />
               <Route path="/tournaments/:id/*" element={<PageTransition><TournamentDetailsVLR currentUser={currentUser} /></PageTransition>} />
               <Route path="/matches" element={<PageTransition><MatchSchedule /></PageTransition>} />
+              <Route path="/leaderboard" element={<PageTransition><LeaderboardPage /></PageTransition>} />
               <Route path="/teams" element={<PageTransition><Teams /></PageTransition>} />
               <Route path="/manage-team" element={<PageTransition><ManageTeam /></PageTransition>} />
               <Route path="/manage_team" element={<PageTransition><ManageTeam /></PageTransition>} />
