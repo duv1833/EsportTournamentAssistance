@@ -31,8 +31,8 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
-  const register = async (username, email, password, role) => {
-    const res = await authRegister(username, email, password, role);
+  const register = async (username, email, password, phoneNumber, nickname) => {
+    const res = await authRegister(username, email, password, phoneNumber, nickname);
     if (res.success && res.data) {
       setCurrentUser(res.data);
     }

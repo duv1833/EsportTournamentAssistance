@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, BadgeCheck, Mail, Key, ArrowRight, Globe } from 'lucide-react';
+import { Shield, BadgeCheck, Mail, Key, ArrowRight, Globe, Phone, Gamepad2 } from 'lucide-react';
 import TactileButton from '../common/TactileButton';
 
 export default function RegisterForm({ registerForm, setRegisterForm, onSubmit, isLoading, authError, authSuccess, onSwitchToLogin }) {
@@ -62,12 +62,42 @@ export default function RegisterForm({ registerForm, setRegisterForm, onSubmit, 
             </div>
 
             <div className="w-full flex flex-col gap-1.5">
-              <label className="font-mono text-[10px] text-tactical-gray uppercase tracking-wider">MẬT KHẨU</label>
+              <label className="font-mono text-[10px] text-tactical-gray uppercase tracking-wider">SỐ ĐIỆN THOẠI <span className="text-primary-red">*</span></label>
+              <div className="relative flex items-center bg-background border border-outline-variant/60 focus-within:border-primary-red">
+                <Phone className="absolute left-3 text-tactical-gray" size={16} />
+                <input
+                  type="tel"
+                  placeholder="0912345678"
+                  disabled={isLoading}
+                  className="w-full bg-transparent p-3 pl-10 text-off-white outline-none font-mono text-xs"
+                  value={registerForm.phoneNumber || ''}
+                  onChange={(e) => setRegisterForm({ ...registerForm, phoneNumber: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="w-full flex flex-col gap-1.5">
+              <label className="font-mono text-[10px] text-tactical-gray uppercase tracking-wider">RIOT ID IN-GAME <span className="text-primary-red">* (TênIngame#TAG)</span></label>
+              <div className="relative flex items-center bg-background border border-outline-variant/60 focus-within:border-primary-red">
+                <Gamepad2 className="absolute left-3 text-tactical-gray" size={16} />
+                <input
+                  type="text"
+                  placeholder="TenZ#SEN hoặc Player#VN1"
+                  disabled={isLoading}
+                  className="w-full bg-transparent p-3 pl-10 text-off-white outline-none font-mono text-xs"
+                  value={registerForm.nickname || ''}
+                  onChange={(e) => setRegisterForm({ ...registerForm, nickname: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="w-full flex flex-col gap-1.5">
+              <label className="font-mono text-[10px] text-tactical-gray uppercase tracking-wider">MẬT KHẨU <span className="text-primary-red">* (≥12 ký tự, 1 số, 1 ký tự đặc biệt)</span></label>
               <div className="relative flex items-center bg-background border border-outline-variant/60 focus-within:border-primary-red">
                 <Key className="absolute left-3 text-tactical-gray" size={16} />
                 <input
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="≥12 ký tự, gồm 1 số & 1 ký tự đặc biệt (!@#...)"
                   disabled={isLoading}
                   className="w-full bg-transparent p-3 pl-10 text-off-white outline-none font-mono text-xs"
                   value={registerForm.password}
@@ -82,7 +112,7 @@ export default function RegisterForm({ registerForm, setRegisterForm, onSubmit, 
                 <Key className="absolute left-3 text-tactical-gray" size={16} />
                 <input
                   type="password"
-                  placeholder="***"
+                  placeholder="Nhập lại mật khẩu vừa tạo"
                   disabled={isLoading}
                   className="w-full bg-transparent p-3 pl-10 text-off-white outline-none font-mono text-xs"
                   value={registerForm.confirmPassword}

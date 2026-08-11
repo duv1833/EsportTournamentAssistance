@@ -5,6 +5,8 @@ import com.tournament.engine.modules.identity.repository.UserRepository;
 import com.tournament.engine.modules.tournament.dto.TournamentCreateRequest;
 import com.tournament.engine.modules.tournament.dto.TournamentRegisterRequest;
 import com.tournament.engine.modules.tournament.dto.TournamentResponse;
+import com.tournament.engine.modules.tournament.model.Match;
+import com.tournament.engine.modules.tournament.model.MatchAuditLog;
 import com.tournament.engine.modules.tournament.model.Team;
 import com.tournament.engine.modules.tournament.model.TeamMember;
 import com.tournament.engine.modules.tournament.model.Tournament;
@@ -15,12 +17,16 @@ import com.tournament.engine.modules.tournament.repository.TeamMemberRepository;
 import com.tournament.engine.modules.tournament.repository.TournamentOrganizerRepository;
 import com.tournament.engine.modules.tournament.repository.TournamentRegistrationRepository;
 import com.tournament.engine.modules.tournament.repository.TournamentRepository;
+import com.tournament.engine.modules.tournament.repository.MatchRepository;
+import com.tournament.engine.modules.tournament.repository.MatchAuditLogRepository;
 import com.tournament.engine.modules.tournament.dto.AgentStatResponse;
 import com.tournament.engine.modules.drafting.model.Agent;
 import com.tournament.engine.modules.drafting.model.DraftAction;
 import com.tournament.engine.modules.drafting.model.DraftSequenceTemplate;
 import com.tournament.engine.modules.drafting.repository.AgentRepository;
 import com.tournament.engine.modules.drafting.repository.DraftActionRepository;
+import com.tournament.engine.modules.drafting.repository.MatchDraftStateRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +50,9 @@ public class TournamentServiceImpl implements TournamentService {
     private final UserRepository userRepository;
     private final AgentRepository agentRepository;
     private final DraftActionRepository draftActionRepository;
+    private final MatchRepository matchRepository;
+    private final MatchAuditLogRepository matchAuditLogRepository;
+    private final MatchDraftStateRepository matchDraftStateRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -206,20 +215,94 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional
+    public void cancelTournament(Long tournamentId, Long userId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
+
+        User user = null;
+        if (userId != null) {
+            user = userRepository.findById(userId).orElse(null);
+        }
+
+        if (user == null) {
+            org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equalsIgnoreCase(auth.getName())) {
+                user = userRepository.findByUsername(auth.getName()).orElse(null);
+            }
+        }
+
+        if (user == null) {
+            throw new RuntimeException("Không tìm thấy thông tin tài khoản!");
+        }
+
+        final Long currentUserId = user.getId();
+        boolean isAdmin = user.getGlobalRole() == User.GlobalRole.ADMIN;
+        boolean isCreator = tournament.getCreator() != null && tournament.getCreator().getId().equals(currentUserId);
+        boolean isOrganizer = tournamentOrganizerRepository.findByTournamentId(tournamentId).stream()
+                .anyMatch(o -> o.getUser() != null && o.getUser().getId().equals(currentUserId));
+
+        if (!isAdmin && !isCreator && !isOrganizer) {
+            throw new RuntimeException("Bạn không có quyền hủy giải đấu này!");
+        }
+
+        tournament.setRegistrationStatus(Tournament.RegistrationStatus.CANCELLED);
+        tournamentRepository.save(tournament);
+    }
+
+    @Override
+    @Transactional
     public void deleteTournamentByAdmin(Long tournamentId, Long adminUserId) {
         validateAdmin(adminUserId);
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giải đấu!"));
 
-        // Delete all registrations for this tournament
+        // 1. Delete all matches and related match records (audit logs, draft actions, draft states)
+        List<Match> matches = matchRepository.findByTournamentIdOrderByRoundNumberAscPositionInRoundAsc(tournamentId);
+        if (matches != null && !matches.isEmpty()) {
+            for (Match match : matches) {
+                Long matchId = match.getId();
+
+                // Delete match audit logs
+                List<MatchAuditLog> auditLogs = matchAuditLogRepository.findByMatchIdOrderByCreatedAtDesc(matchId);
+                if (auditLogs != null && !auditLogs.isEmpty()) {
+                    matchAuditLogRepository.deleteAll(auditLogs);
+                }
+
+                // Delete draft actions
+                List<DraftAction> draftActions = draftActionRepository.findByMatchIdOrderByStepNumberAsc(matchId);
+                if (draftActions != null && !draftActions.isEmpty()) {
+                    draftActionRepository.deleteAll(draftActions);
+                }
+
+                // Delete match draft state if exists
+                matchDraftStateRepository.findById(matchId).ifPresent(matchDraftStateRepository::delete);
+            }
+
+            // Break self-referencing nextMatch constraints before batch deleting matches
+            for (Match match : matches) {
+                match.setNextMatch(null);
+            }
+            matchRepository.saveAll(matches);
+            matchRepository.flush();
+
+            // Delete matches
+            matchRepository.deleteAll(matches);
+            matchRepository.flush();
+        }
+
+        // 2. Delete all registrations for this tournament
         List<TournamentRegistration> registrations = registrationRepository.findByTournamentId(tournamentId);
-        registrationRepository.deleteAll(registrations);
+        if (registrations != null && !registrations.isEmpty()) {
+            registrationRepository.deleteAll(registrations);
+        }
 
-        // Delete all organizers for this tournament
+        // 3. Delete all organizers for this tournament
         List<TournamentOrganizer> organizers = tournamentOrganizerRepository.findByTournamentId(tournamentId);
-        tournamentOrganizerRepository.deleteAll(organizers);
+        if (organizers != null && !organizers.isEmpty()) {
+            tournamentOrganizerRepository.deleteAll(organizers);
+        }
 
-        // Delete the tournament
+        // 4. Delete the tournament
         tournamentRepository.delete(tournament);
     }
 

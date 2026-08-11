@@ -37,8 +37,16 @@ public class UserServiceImpl implements UserService {
         if (request.getEmail() == null || !request.getEmail().matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
             throw new RuntimeException("Email không hợp lệ!");
         }
-        if (request.getPassword() == null || request.getPassword().length() < 6) {
-            throw new RuntimeException("Mật khẩu phải có ít nhất 6 ký tự!");
+        if (request.getPassword() == null || request.getPassword().length() < 12 
+                || !request.getPassword().matches(".*[0-9].*") 
+                || !request.getPassword().matches(".*[^a-zA-Z0-9].*")) {
+            throw new RuntimeException("Mật khẩu phải có ít nhất 12 ký tự, bao gồm ít nhất 1 chữ số và 1 ký tự đặc biệt (!@#$%...)!");
+        }
+        if (request.getPhoneNumber() == null || !request.getPhoneNumber().trim().matches("^(0[3|5|7|8|9][0-9]{8}|0[0-9]{9,10}|\\+?[0-9]{9,12})$")) {
+            throw new RuntimeException("Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại Việt Nam hợp lệ (VD: 0912345678).");
+        }
+        if (request.getNickname() == null || !request.getNickname().trim().matches("^.+#.{1,6}$")) {
+            throw new RuntimeException("Riot ID In-game không hợp lệ! Bắt buộc nhập đúng định dạng TênIngame#TAG (Ví dụ: TenZ#SEN, Player#VN1).");
         }
 
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -49,9 +57,11 @@ public class UserServiceImpl implements UserService {
         }
 
         User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
+                .username(request.getUsername().trim())
+                .email(request.getEmail().trim())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .phoneNumber(request.getPhoneNumber().trim())
+                .nickname(request.getNickname().trim())
                 .globalRole(User.GlobalRole.USER)
                 .roles(java.util.Set.of(User.GlobalRole.USER))
                 .isActive(true)

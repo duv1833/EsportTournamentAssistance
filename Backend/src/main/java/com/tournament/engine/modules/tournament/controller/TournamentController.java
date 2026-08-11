@@ -196,6 +196,21 @@ public class TournamentController {
         }
     }
 
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<Void>> cancelTournament(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long adminUserId
+    ) {
+        try {
+            Long effectiveUserId = userId != null ? userId : adminUserId;
+            tournamentService.cancelTournament(id, effectiveUserId);
+            return ResponseEntity.ok(ApiResponse.success(null, "Đã hủy giải đấu thành công!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/{id}/admin-delete")
     public ResponseEntity<ApiResponse<Void>> deleteTournamentByAdmin(
             @PathVariable Long id,

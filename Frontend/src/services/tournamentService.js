@@ -88,6 +88,11 @@ export const updateTournamentByAdmin = async (tournamentId, data, adminUserId) =
   return response.data;
 };
 
+export const cancelTournament = async (tournamentId, userId) => {
+  const response = await api.put(`/tournaments/${tournamentId}/cancel`, null, { params: { userId } });
+  return response.data;
+};
+
 export const deleteTournamentByAdmin = async (tournamentId, adminUserId) => {
   const response = await api.delete(`/tournaments/${tournamentId}/admin-delete`, { params: { adminUserId } });
   return response.data;

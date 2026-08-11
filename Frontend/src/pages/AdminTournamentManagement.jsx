@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, CheckCircle2, XCircle, Clock, Search, Filter, AlertCircle, RefreshCw, Pencil, Trash2 } from 'lucide-react';
-import { getAdminTournaments, approveTournament, rejectTournament, updateTournamentByAdmin, deleteTournamentByAdmin } from '../services/tournamentService';
+import { ShieldCheck, CheckCircle2, XCircle, Clock, Search, Filter, AlertCircle, RefreshCw, Pencil, Trash2, Ban } from 'lucide-react';
+import { getAdminTournaments, approveTournament, rejectTournament, updateTournamentByAdmin, deleteTournamentByAdmin, cancelTournament } from '../services/tournamentService';
 import TactileButton from '../components/common/TactileButton';
 import EmptyState from '../components/common/EmptyState';
 
@@ -86,9 +86,31 @@ export default function AdminTournamentManagement({ currentUser }) {
     }
   };
 
+  const handleCancel = async (id) => {
+    if (!currentUser) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn HỦY giải đấu ID #${id}? Giải đấu sẽ đổi trạng thái sang CANCELLED và ẩn đăng ký.`)) return;
+
+    setActionLoadingId(id);
+    setErrorMessage('');
+    setSuccessMessage('');
+    try {
+      const res = await cancelTournament(id, currentUser.id);
+      if (res.success) {
+        setSuccessMessage(`Đã hủy giải đấu ID #${id} (Soft Delete) thành công!`);
+        await fetchTournaments();
+      } else {
+        setErrorMessage(res.message || 'Hủy giải đấu thất bại');
+      }
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || 'Có lỗi khi hủy giải đấu');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!currentUser) return;
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa hoàn toàn giải đấu ID #${id} khỏi hệ thống?`)) return;
+    if (!window.confirm(`⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XÓA VĨNH VIỄN giải đấu ID #${id} cùng toàn bộ trận đấu khỏi CSDL? Thao tác này không thể hoàn tác.`)) return;
 
     setActionLoadingId(id);
     setErrorMessage('');
@@ -96,7 +118,7 @@ export default function AdminTournamentManagement({ currentUser }) {
     try {
       const res = await deleteTournamentByAdmin(id, currentUser.id);
       if (res.success) {
-        setSuccessMessage(`Đã xóa thành công giải đấu ID #${id}!`);
+        setSuccessMessage(`Đã xóa vĩnh viễn giải đấu ID #${id}!`);
         await fetchTournaments();
       } else {
         setErrorMessage(res.message || 'Xóa giải đấu thất bại');
@@ -341,19 +363,32 @@ export default function AdminTournamentManagement({ currentUser }) {
                     <TactileButton
                       onClick={() => openEditModal(t)}
                       disabled={actionLoadingId === t.id}
-                      className="w-full bg-warning-amber text-background font-display text-xs py-2.5 px-4 uppercase tracking-wider font-bold hover:brightness-110 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      className="w-full bg-warning-amber text-background font-display text-xs py-2 px-3 uppercase tracking-wider font-bold hover:brightness-110 flex items-center justify-center gap-1.5 disabled:opacity-50"
                     >
-                      <Pencil size={14} />
+                      <Pencil size={13} />
                       Sửa
                     </TactileButton>
+
+                    {t.registrationStatus !== 'CANCELLED' && (
+                      <TactileButton
+                        onClick={() => handleCancel(t.id)}
+                        disabled={actionLoadingId === t.id}
+                        className="w-full bg-surface-bright border border-warning-amber/50 text-warning-amber font-display text-xs py-2 px-3 uppercase tracking-wider font-bold hover:bg-warning-amber/10 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                        title="Soft Delete: Hủy giải đấu và dừng đăng ký nhưng giữ lịch sử trong DB"
+                      >
+                        <Ban size={13} />
+                        Hủy Giải
+                      </TactileButton>
+                    )}
 
                     <TactileButton
                       onClick={() => handleDelete(t.id)}
                       disabled={actionLoadingId === t.id}
-                      className="w-full bg-primary-red text-off-white font-display text-xs py-2.5 px-4 uppercase tracking-wider font-bold hover:brightness-110 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      className="w-full bg-primary-red text-off-white font-display text-xs py-2 px-3 uppercase tracking-wider font-bold hover:brightness-110 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      title="Hard Delete: Xóa vĩnh viễn giải đấu và mọi trận đấu khỏi DB"
                     >
-                      <Trash2 size={14} />
-                      {actionLoadingId === t.id ? 'Đang xóa...' : 'Xóa'}
+                      <Trash2 size={13} />
+                      {actionLoadingId === t.id ? 'Đang xóa...' : 'Xóa Vĩnh Viễn'}
                     </TactileButton>
                   </>
                 )}

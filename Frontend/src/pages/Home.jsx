@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Pause, Play, ArrowRight, MonitorPlay, Bell, 
 import TactileButton from '../components/common/TactileButton';
 import { getAllTournaments } from '../services/tournamentService';
 import { userService } from '../services/userService';
+import { getAllUpcomingMatches, getExternalRunningMatches, getExternalUpcomingMatches } from '../services/matchService';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 
 // ─── Hero Slider ──────────────────────────────────────────
@@ -103,32 +104,42 @@ function HeroSlider({ slides, currentSlide, setCurrentSlide, isPlaying, setIsPla
 }
 
 // ─── Live Ticker Bar ──────────────────────────────────────
-function LiveTickerBar({ onWatchLive }) {
+function LiveTickerBar({ match, onWatchLive }) {
+  const liveMatch = match || {
+    tournament: 'VCT PACIFIC 2026 - UPPER FINAL',
+    team1: 'PAPER REX',
+    team1Short: 'PRX',
+    team2: 'GEN.G ESPORTS',
+    team2Short: 'GEN',
+    score1: 1,
+    score2: 1
+  };
+
   return (
     <section className="bg-surface-charcoal border-b border-outline-variant relative z-20">
       <div className="container mx-auto max-w-7xl px-6 md:px-12 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <span className="bg-primary-red text-off-white font-display text-xs px-3 py-1 flex items-center gap-1.5 rounded-sm uppercase tracking-wider font-bold">
+        <div className="flex items-center gap-4 w-full md:w-auto min-w-0">
+          <span className="bg-primary-red text-off-white font-display text-xs px-3 py-1 flex items-center gap-1.5 rounded-sm uppercase tracking-wider font-bold shrink-0">
             <span className="w-2 h-2 bg-off-white rounded-full animate-pulse"></span> LIVE NOW
           </span>
-          <span className="font-mono text-xs text-tactical-gray uppercase tracking-wider hidden md:inline-block">
-            VCT CHALLENGERS VN - BÁN KẾT NHÁNH THẮNG
+          <span className="font-mono text-xs text-tactical-gray uppercase tracking-wider hidden md:inline-block truncate">
+            {liveMatch.tournament}
           </span>
         </div>
         <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="font-body font-semibold text-off-white/60 uppercase hidden sm:inline-block text-xs">TEAM SECRET</span>
-              <span className="font-display text-lg text-off-white">TS</span>
+              <span className="font-body font-semibold text-off-white/60 uppercase hidden sm:inline-block text-xs">{liveMatch.team1}</span>
+              <span className="font-display text-lg text-off-white">{liveMatch.team1Short}</span>
             </div>
             <div className="flex items-center gap-3 bg-surface-container-low px-4 py-1.5 rounded border border-outline-variant">
-              <span className="font-display text-lg text-primary-red">1</span>
+              <span className="font-display text-lg text-primary-red">{liveMatch.score1 ?? 0}</span>
               <span className="font-mono text-xs text-tactical-gray">-</span>
-              <span className="font-display text-lg text-off-white">0</span>
+              <span className="font-display text-lg text-off-white">{liveMatch.score2 ?? 0}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-display text-lg text-off-white">PRX</span>
-              <span className="font-body font-semibold text-off-white/60 uppercase hidden sm:inline-block text-xs">PAPER REX</span>
+              <span className="font-display text-lg text-off-white">{liveMatch.team2Short}</span>
+              <span className="font-body font-semibold text-off-white/60 uppercase hidden sm:inline-block text-xs">{liveMatch.team2}</span>
             </div>
           </div>
           <TactileButton variant="secondary" onClick={onWatchLive} className="text-xs flex items-center gap-2 shrink-0">
@@ -141,36 +152,44 @@ function LiveTickerBar({ onWatchLive }) {
 }
 
 // ─── Match Card ───────────────────────────────────────────
-function MatchCard({ tournament, status, statusColor, team1, team1Short, team2, team2Short, time, onClick }) {
+function MatchCard({ tournament, status, statusColor, team1, team1Short, team1Logo, team2, team2Short, team2Logo, score1 = 0, score2 = 0, time, onClick }) {
   return (
     <div
       onClick={onClick}
       className="bg-surface-charcoal border border-outline-variant p-6 hover:border-warning-amber transition-colors group relative overflow-hidden clip-corner-top cursor-pointer"
     >
-      <div className="flex justify-between items-center mb-6 border-b border-outline-variant/30 pb-4">
-        <span className="font-mono text-xs text-tactical-gray uppercase tracking-wider">{tournament}</span>
-        <span className={`font-mono text-xs px-2.5 py-0.5 border uppercase tracking-wider ${statusColor}`}>
+      <div className="flex justify-between items-center mb-6 border-b border-outline-variant/30 pb-4 gap-2">
+        <span className="font-mono text-xs text-tactical-gray uppercase tracking-wider truncate">{tournament}</span>
+        <span className={`font-mono text-xs px-2.5 py-0.5 border uppercase tracking-wider shrink-0 ${statusColor}`}>
           {status}
         </span>
       </div>
       <div className="flex justify-between items-center gap-4 opacity-90">
-        <div className="flex-1 text-center">
-          <div className="w-14 h-14 mx-auto bg-surface-bright flex items-center justify-center mb-2 border border-outline-variant">
-            <span className="font-display text-lg text-off-white">{team1Short}</span>
+        <div className="flex-1 text-center min-w-0">
+          <div className="w-14 h-14 mx-auto bg-surface-bright flex items-center justify-center mb-2 border border-outline-variant rounded overflow-hidden p-1">
+            {team1Logo ? (
+              <img src={team1Logo} alt={team1} className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+            ) : (
+              <span className="font-display text-lg text-off-white">{team1Short}</span>
+            )}
           </div>
           <h4 className="font-body font-semibold text-xs text-off-white uppercase truncate">{team1}</h4>
         </div>
-        <div className="flex flex-col items-center justify-center px-2">
+        <div className="flex flex-col items-center justify-center px-2 shrink-0">
           <div className="flex items-center gap-3">
-            <span className="font-display text-3xl text-tactical-gray">0</span>
+            <span className={`font-display text-3xl ${score1 > score2 ? 'text-primary-red font-bold' : 'text-tactical-gray'}`}>{score1}</span>
             <span className="font-mono text-xs text-tactical-gray">-</span>
-            <span className="font-display text-3xl text-tactical-gray">0</span>
+            <span className={`font-display text-3xl ${score2 > score1 ? 'text-primary-red font-bold' : 'text-tactical-gray'}`}>{score2}</span>
           </div>
-          <span className="font-body text-[11px] text-off-white/70 mt-1 whitespace-nowrap">{time}</span>
+          <span className="font-mono text-[11px] text-warning-amber mt-1 whitespace-nowrap">{time}</span>
         </div>
-        <div className="flex-1 text-center">
-          <div className="w-14 h-14 mx-auto bg-surface-bright flex items-center justify-center mb-2 border border-outline-variant">
-            <span className="font-display text-lg text-off-white">{team2Short}</span>
+        <div className="flex-1 text-center min-w-0">
+          <div className="w-14 h-14 mx-auto bg-surface-bright flex items-center justify-center mb-2 border border-outline-variant rounded overflow-hidden p-1">
+            {team2Logo ? (
+              <img src={team2Logo} alt={team2} className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+            ) : (
+              <span className="font-display text-lg text-off-white">{team2Short}</span>
+            )}
           </div>
           <h4 className="font-body font-semibold text-xs text-off-white uppercase truncate">{team2}</h4>
         </div>
@@ -356,22 +375,148 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
 
-  // Real tournaments state
+  // Real tournaments & matches state
   const [realTournaments, setRealTournaments] = useState([]);
+  const [featuredMatches, setFeaturedMatches] = useState([]);
   const [loadingTournaments, setLoadingTournaments] = useState(true);
+  const [loadingMatches, setLoadingMatches] = useState(true);
+
+  const MOCK_HOME_MATCHES = [
+    {
+      id: 9001,
+      tournament: 'VCT PACIFIC 2026 - UPPER FINAL',
+      status: 'ĐANG DIỄN RA',
+      statusColor: 'text-primary-red border-primary-red',
+      team1: 'PAPER REX',
+      team1Short: 'PRX',
+      team1Logo: 'https://cdn.pandascore.co/images/team/image/128489/600px_paper_rex_logo.png',
+      team2: 'GEN.G ESPORTS',
+      team2Short: 'GEN',
+      team2Logo: 'https://cdn.pandascore.co/images/team/image/126746/600px_gen.g_all_mode.png',
+      score1: 1,
+      score2: 1,
+      time: 'LIVE • MAP 3'
+    },
+    {
+      id: 9002,
+      tournament: 'VCT AMERICAS 2026 - GROUP STAGE',
+      status: 'ĐANG DIỄN RA',
+      statusColor: 'text-primary-red border-primary-red',
+      team1: 'SENTINELS',
+      team1Short: 'SEN',
+      team1Logo: 'https://cdn.pandascore.co/images/team/image/127871/600px_sentinels_logo.png',
+      team2: 'LOUD',
+      team2Short: 'LOUD',
+      team2Logo: 'https://cdn.pandascore.co/images/team/image/130541/600px_loud_logo.png',
+      score1: 1,
+      score2: 0,
+      time: 'LIVE • MAP 2'
+    },
+    {
+      id: 9010,
+      tournament: 'VCT MASTERS 2026 - GRAND FINAL',
+      status: 'SẮP DIỄN RA',
+      statusColor: 'text-warning-amber border-warning-amber',
+      team1: 'T1',
+      team1Short: 'T1',
+      team1Logo: 'https://cdn.pandascore.co/images/team/image/126749/600px_t1_all_mode.png',
+      team2: 'DRX',
+      team2Short: 'DRX',
+      team2Logo: 'https://cdn.pandascore.co/images/team/image/130172/600px_drx_all_mode.png',
+      score1: 0,
+      score2: 0,
+      time: '20:00 HÔM NAY'
+    },
+    {
+      id: 9003,
+      tournament: 'VCT EMEA 2026 - PLAYOFFS',
+      status: 'ĐANG DIỄN RA',
+      statusColor: 'text-primary-red border-primary-red',
+      team1: 'FNATIC',
+      team1Short: 'FNC',
+      team1Logo: 'https://cdn.pandascore.co/images/team/image/394/600px_fnatic_2020_logo.png',
+      team2: 'TEAM HERETICS',
+      team2Short: 'TH',
+      team2Logo: 'https://cdn.pandascore.co/images/team/image/127014/600px_team_heretics_all_mode.png',
+      score1: 0,
+      score2: 1,
+      time: 'LIVE • MAP 2'
+    }
+  ];
 
   useEffect(() => {
     const fetchRealData = async () => {
       setLoadingTournaments(true);
+      setLoadingMatches(true);
       try {
-        const res = await getAllTournaments();
-        if (res.success) {
-          setRealTournaments(res.data || []);
+        const [tournRes, internalMatchesRes, externalRunningRes] = await Promise.allSettled([
+          getAllTournaments(),
+          getAllUpcomingMatches(),
+          getExternalRunningMatches(1, 10)
+        ]);
+
+        if (tournRes.status === 'fulfilled' && tournRes.value?.success) {
+          setRealTournaments(tournRes.value.data || []);
         }
+
+        let combined = [];
+
+        // 1. Dữ liệu trận đấu hệ thống (Database internal matches)
+        if (internalMatchesRes.status === 'fulfilled' && internalMatchesRes.value?.data?.length > 0) {
+          const internalMapped = internalMatchesRes.value.data.map(m => ({
+            id: `int_${m.id}`,
+            tournament: m.tournamentName?.toUpperCase() || 'GIẢI ĐẤU HỆ THỐNG',
+            status: m.status === 'COMPLETED' ? 'ĐÃ KẾT THÚC' : m.status === 'IN_PROGRESS' ? 'ĐANG DIỄN RA' : 'SẮP DIỄN RA',
+            statusColor: m.status === 'IN_PROGRESS' ? 'text-primary-red border-primary-red' : 'text-warning-amber border-warning-amber',
+            team1: m.team1Name?.toUpperCase() || 'TEAM A',
+            team1Short: m.team1Short || m.team1Name?.substring(0, 3).toUpperCase() || 'T1',
+            team2: m.team2Name?.toUpperCase() || 'TEAM B',
+            team2Short: m.team2Short || m.team2Name?.substring(0, 3).toUpperCase() || 'T2',
+            score1: m.score1 ?? 0,
+            score2: m.score2 ?? 0,
+            time: m.scheduledAt ? new Date(m.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'LIVE'
+          }));
+          combined.push(...internalMapped);
+        }
+
+        // 2. Dữ liệu trận đấu VCT chuyên nghiệp từ PandaScore API
+        if (externalRunningRes.status === 'fulfilled' && externalRunningRes.value?.data?.length > 0) {
+          const extMapped = externalRunningRes.value.data.map(m => {
+            const opps = m.opponents || [];
+            const t1 = opps[0]?.opponent || {};
+            const t2 = opps[1]?.opponent || {};
+            const res = m.results || [];
+            return {
+              id: `ext_${m.id}`,
+              tournament: `${m.league?.name || 'VCT'} - ${m.name || 'MATCH'}`.toUpperCase(),
+              status: m.status === 'running' ? 'ĐANG DIỄN RA' : 'SẮP DIỄN RA',
+              statusColor: m.status === 'running' ? 'text-primary-red border-primary-red' : 'text-warning-amber border-warning-amber',
+              team1: t1.name?.toUpperCase() || 'TEAM A',
+              team1Short: t1.acronym || t1.name?.substring(0, 3).toUpperCase() || 'T1',
+              team1Logo: t1.image_url,
+              team2: t2.name?.toUpperCase() || 'TEAM B',
+              team2Short: t2.acronym || t2.name?.substring(0, 3).toUpperCase() || 'T2',
+              team2Logo: t2.image_url,
+              score1: res[0]?.score ?? 0,
+              score2: res[1]?.score ?? 0,
+              time: m.status === 'running' ? 'LIVE' : 'UPCOMING'
+            };
+          });
+          combined.push(...extMapped);
+        }
+
+        if (combined.length === 0) {
+          setFeaturedMatches(MOCK_HOME_MATCHES);
+        } else {
+          setFeaturedMatches(combined.slice(0, 4));
+        }
+
       } catch (err) {
-        console.error("Lỗi khi tải giải đấu thực:", err);
+        console.error("Lỗi khi tải dữ liệu trang chủ:", err);
+        setFeaturedMatches(MOCK_HOME_MATCHES);
       } finally {
         setLoadingTournaments(false);
+        setLoadingMatches(false);
       }
     };
     fetchRealData();
@@ -439,7 +584,7 @@ export default function Home() {
         onSlideClick={(slide) => navigate(slide.targetPath)}
       />
 
-      <LiveTickerBar onWatchLive={() => navigate('/matches')} />
+      <LiveTickerBar match={featuredMatches[0]} onWatchLive={() => navigate('/matches')} />
 
       {/* Quick Stats Section */}
       <section className="py-8 bg-surface-charcoal border-b border-outline-variant">
@@ -489,28 +634,28 @@ export default function Home() {
                   </TactileButton>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <MatchCard
-                    tournament="GIẢI ĐẤU CỘNG ĐỒNG - CHUNG KẾT"
-                    status="SẮP DIỄN RA"
-                    statusColor="text-warning-amber border-warning-amber"
-                    team1="VIKING ESPORTS"
-                    team1Short="VK"
-                    team2="FANCY UNITED"
-                    team2Short="FC"
-                    time="19:00 HÔM NAY"
-                    onClick={() => navigate('/matches')}
-                  />
-                  <MatchCard
-                    tournament="VCT CHALLENGERS VN - VÒNG BẢNG"
-                    status="ĐANG DIỄN RA"
-                    statusColor="text-primary-red border-primary-red"
-                    team1="TEAM FLASH"
-                    team1Short="FL"
-                    team2="CERBERUS"
-                    team2Short="CB"
-                    time="LIVE"
-                    onClick={() => navigate('/matches')}
-                  />
+                  {loadingMatches ? (
+                    <LoadingSkeleton type="card" count={2} />
+                  ) : (
+                    featuredMatches.map((m) => (
+                      <MatchCard
+                        key={m.id}
+                        tournament={m.tournament}
+                        status={m.status}
+                        statusColor={m.statusColor}
+                        team1={m.team1}
+                        team1Short={m.team1Short}
+                        team1Logo={m.team1Logo}
+                        team2={m.team2}
+                        team2Short={m.team2Short}
+                        team2Logo={m.team2Logo}
+                        score1={m.score1}
+                        score2={m.score2}
+                        time={m.time}
+                        onClick={() => navigate('/matches')}
+                      />
+                    ))
+                  )}
                 </div>
               </div>
 

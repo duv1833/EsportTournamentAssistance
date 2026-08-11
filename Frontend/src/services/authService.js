@@ -10,8 +10,8 @@ export const login = async (usernameOrEmail, password) => {
   return response.data;
 };
 
-export const register = async (username, email, password, role) => {
-  const response = await api.post('/auth/register', { username, email, password, role });
+export const register = async (username, email, password, phoneNumber, nickname) => {
+  const response = await api.post('/auth/register', { username, email, password, phoneNumber, nickname });
   if (response.data && response.data.success) {
     // Save user info & token to localStorage
     localStorage.setItem('token', response.data.data.token);

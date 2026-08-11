@@ -475,48 +475,138 @@ const MOCK_EXTERNAL_MATCHES = {
       status: 'running',
       scheduled_at: new Date().toISOString(),
       number_of_games: 3,
-      league: { name: 'VCT International 2026' },
-      serie: { full_name: 'Masters Kickoff' },
-      tournament: { name: 'Champions Tour Playoffs' },
+      league: { name: 'VCT Pacific 2026' },
+      serie: { full_name: 'Stage 1 Playoffs' },
+      tournament: { name: 'Upper Final BO3' },
       opponents: [
-        { opponent: { name: 'Sentinels', image_url: null } },
-        { opponent: { name: 'Paper Rex', image_url: null } }
+        { opponent: { name: 'Paper Rex', image_url: 'https://cdn.pandascore.co/images/team/image/128489/600px_paper_rex_logo.png' } },
+        { opponent: { name: 'Gen.G Esports', image_url: 'https://cdn.pandascore.co/images/team/image/126746/600px_gen.g_all_mode.png' } }
       ],
       results: [{ score: 1 }, { score: 1 }]
+    },
+    {
+      id: 9002,
+      name: 'Group Stage Week 3',
+      status: 'running',
+      scheduled_at: new Date().toISOString(),
+      number_of_games: 3,
+      league: { name: 'VCT Americas 2026' },
+      serie: { full_name: 'Stage 1 Regular Season' },
+      tournament: { name: 'Group Alpha' },
+      opponents: [
+        { opponent: { name: 'Sentinels', image_url: 'https://cdn.pandascore.co/images/team/image/127871/600px_sentinels_logo.png' } },
+        { opponent: { name: 'LOUD', image_url: 'https://cdn.pandascore.co/images/team/image/130541/600px_loud_logo.png' } }
+      ],
+      results: [{ score: 1 }, { score: 0 }]
+    },
+    {
+      id: 9003,
+      name: 'Upper Semifinal',
+      status: 'running',
+      scheduled_at: new Date().toISOString(),
+      number_of_games: 3,
+      league: { name: 'VCT EMEA 2026' },
+      serie: { full_name: 'Stage 1 Playoffs' },
+      tournament: { name: 'Playoffs Day 4' },
+      opponents: [
+        { opponent: { name: 'Fnatic', image_url: 'https://cdn.pandascore.co/images/team/image/394/600px_fnatic_2020_logo.png' } },
+        { opponent: { name: 'Team Heretics', image_url: 'https://cdn.pandascore.co/images/team/image/127014/600px_team_heretics_all_mode.png' } }
+      ],
+      results: [{ score: 0 }, { score: 1 }]
     }
   ],
   upcoming: [
     {
-      id: 9002,
-      name: 'Lower Semifinal',
+      id: 9010,
+      name: 'Grand Final',
       status: 'not_started',
       scheduled_at: new Date(Date.now() + 86400000).toISOString(),
-      number_of_games: 3,
-      league: { name: 'VCT Champions 2026' },
-      serie: { full_name: 'Pacific Stage 1' },
-      tournament: { name: 'Group Alpha' },
+      number_of_games: 5,
+      league: { name: 'VCT Masters 2026' },
+      serie: { full_name: 'International Masters' },
+      tournament: { name: 'Championship Final BO5' },
       opponents: [
-        { opponent: { name: 'Gen.G Esports', image_url: null } },
-        { opponent: { name: 'Fnatic', image_url: null } }
+        { opponent: { name: 'T1', image_url: 'https://cdn.pandascore.co/images/team/image/126749/600px_t1_all_mode.png' } },
+        { opponent: { name: 'DRX', image_url: 'https://cdn.pandascore.co/images/team/image/130172/600px_drx_all_mode.png' } }
+      ],
+      results: [{ score: 0 }, { score: 0 }]
+    },
+    {
+      id: 9011,
+      name: 'Lower Semifinal',
+      status: 'not_started',
+      scheduled_at: new Date(Date.now() + 172800000).toISOString(),
+      number_of_games: 3,
+      league: { name: 'VCT Americas 2026' },
+      serie: { full_name: 'Stage 1 Playoffs' },
+      tournament: { name: 'Lower Bracket Round 2' },
+      opponents: [
+        { opponent: { name: '100 Thieves', image_url: 'https://cdn.pandascore.co/images/team/image/126639/600px_100_thieves_all_mode.png' } },
+        { opponent: { name: 'NRG', image_url: 'https://cdn.pandascore.co/images/team/image/126584/600px_nrg_all_mode.png' } }
+      ],
+      results: [{ score: 0 }, { score: 0 }]
+    },
+    {
+      id: 9012,
+      name: 'Lower Bracket Elimination',
+      status: 'not_started',
+      scheduled_at: new Date(Date.now() + 259200000).toISOString(),
+      number_of_games: 3,
+      league: { name: 'VCT Pacific 2026' },
+      serie: { full_name: 'Stage 1 Knockouts' },
+      tournament: { name: 'Lower Round 1' },
+      opponents: [
+        { opponent: { name: 'Talon Esports', image_url: 'https://cdn.pandascore.co/images/team/image/127393/600px_talon_esports_all_mode.png' } },
+        { opponent: { name: 'ZETA DIVISION', image_url: 'https://cdn.pandascore.co/images/team/image/129302/600px_zeta_division_all_mode.png' } }
       ],
       results: [{ score: 0 }, { score: 0 }]
     }
   ],
   past: [
     {
-      id: 9004,
+      id: 9020,
       name: 'Grand Final',
       status: 'finished',
       scheduled_at: new Date(Date.now() - 86400000).toISOString(),
       number_of_games: 5,
-      league: { name: 'VCT Masters Madrid' },
+      league: { name: 'VCT Masters 2026' },
       serie: { full_name: 'Grand Final BO5' },
       tournament: { name: 'Playoffs' },
       opponents: [
-        { opponent: { name: 'Sentinels', image_url: null } },
-        { opponent: { name: 'Gen.G Esports', image_url: null } }
+        { opponent: { name: 'Gen.G Esports', image_url: 'https://cdn.pandascore.co/images/team/image/126746/600px_gen.g_all_mode.png' } },
+        { opponent: { name: 'Sentinels', image_url: 'https://cdn.pandascore.co/images/team/image/127871/600px_sentinels_logo.png' } }
       ],
       results: [{ score: 3 }, { score: 2 }]
+    },
+    {
+      id: 9021,
+      name: 'Upper Bracket Final',
+      status: 'finished',
+      scheduled_at: new Date(Date.now() - 172800000).toISOString(),
+      number_of_games: 3,
+      league: { name: 'VCT Kickoff Pacific' },
+      serie: { full_name: 'Playoffs' },
+      tournament: { name: 'Upper Final' },
+      opponents: [
+        { opponent: { name: 'Paper Rex', image_url: 'https://cdn.pandascore.co/images/team/image/128489/600px_paper_rex_logo.png' } },
+        { opponent: { name: 'DRX', image_url: 'https://cdn.pandascore.co/images/team/image/130172/600px_drx_all_mode.png' } }
+      ],
+      results: [{ score: 2 }, { score: 1 }]
+    },
+    {
+      id: 9022,
+      name: 'Lower Final',
+      status: 'finished',
+      scheduled_at: new Date(Date.now() - 259200000).toISOString(),
+      number_of_games: 5,
+      league: { name: 'VCT EMEA Kickoff' },
+      serie: { full_name: 'Lower Final BO5' },
+      tournament: { name: 'Knockout Stage' },
+      opponents: [
+        { opponent: { name: 'Fnatic', image_url: 'https://cdn.pandascore.co/images/team/image/394/600px_fnatic_2020_logo.png' } },
+        { opponent: { name: 'Team Heretics', image_url: 'https://cdn.pandascore.co/images/team/image/127014/600px_team_heretics_all_mode.png' } }
+      ],
+      results: [{ score: 3 }, { score: 1 }]
     }
   ]
 };

@@ -10,6 +10,8 @@ export default function RegisterPage() {
   const [registerForm, setRegisterForm] = useState({
     username: '',
     email: '',
+    phoneNumber: '',
+    nickname: '',
     password: '',
     confirmPassword: '',
     tos: false
@@ -20,25 +22,38 @@ export default function RegisterPage() {
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    if (!registerForm.username || !registerForm.email || !registerForm.password || !registerForm.confirmPassword) {
-      setAuthError('Vui lòng điền đầy đủ các thông tin đăng ký!');
+    if (!registerForm.username || !registerForm.email || !registerForm.phoneNumber || !registerForm.nickname || !registerForm.password || !registerForm.confirmPassword) {
+      setAuthError('Vui lòng điền đầy đủ các thông tin đăng ký (gồm Số điện thoại và Riot ID)!');
       return;
     }
 
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-    if (!usernameRegex.test(registerForm.username)) {
+    if (!usernameRegex.test(registerForm.username.trim())) {
       setAuthError('Tên đăng nhập phải từ 3-20 ký tự, chỉ gồm chữ cái, số và dấu gạch dưới!');
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(registerForm.email)) {
+    if (!emailRegex.test(registerForm.email.trim())) {
       setAuthError('Email không hợp lệ!');
       return;
     }
 
-    if (registerForm.password.length < 6) {
-      setAuthError('Mật khẩu phải có ít nhất 6 ký tự!');
+    const phoneRegex = /^(0[3|5|7|8|9][0-9]{8}|0[0-9]{9,10}|\+?[0-9]{9,12})$/;
+    if (!phoneRegex.test(registerForm.phoneNumber.trim())) {
+      setAuthError('Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại hợp lệ (VD: 0912345678).');
+      return;
+    }
+
+    const riotIdRegex = /^.+#.{1,6}$/;
+    if (!riotIdRegex.test(registerForm.nickname.trim())) {
+      setAuthError('Riot ID In-game không hợp lệ! Bắt buộc nhập đúng định dạng TênIngame#TAG (Ví dụ: TenZ#SEN, Player#VN1).');
+      return;
+    }
+
+    const passwordRegex = /^(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{12,}$/;
+    if (!passwordRegex.test(registerForm.password)) {
+      setAuthError('Mật khẩu phải có ít nhất 12 ký tự, bao gồm ít nhất 1 chữ số và 1 ký tự đặc biệt (!@#$%...)!');
       return;
     }
 
@@ -56,10 +71,16 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const data = await register(registerForm.username, registerForm.email, registerForm.password);
+      const data = await register(
+        registerForm.username.trim(),
+        registerForm.email.trim(),
+        registerForm.password,
+        registerForm.phoneNumber.trim(),
+        registerForm.nickname.trim()
+      );
       if (data.success) {
         setAuthSuccess(data.message || 'Đăng ký tài khoản thành công!');
-        setRegisterForm({ username: '', email: '', password: '', confirmPassword: '', tos: false });
+        setRegisterForm({ username: '', email: '', phoneNumber: '', nickname: '', password: '', confirmPassword: '', tos: false });
         setTimeout(() => {
           navigate('/');
         }, 1200);
